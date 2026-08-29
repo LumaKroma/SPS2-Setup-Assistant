@@ -1,0 +1,23 @@
+{
+  "name": "LumaKroma.Sps2SetupAssistant.Editor.Tests",
+  "rootNamespace": "LumaKroma.Sps2SetupAssistant.Editor.Tests",
+  "references": [
+    "LumaKroma.Sps2SetupAssistant.Editor"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS"
+  ],
+  "versionDefines": [],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

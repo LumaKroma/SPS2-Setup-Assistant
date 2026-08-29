@@ -1,0 +1,16 @@
+name: Validate private package source
+
+on:
+  pull_request:
+  push:
+    branches:
+      - main
+
+jobs:
+  static-validation:
+    runs-on: windows-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Validate package and public API boundary
+        shell: pwsh
+        run: ./Tools/Validate-Package.ps1
