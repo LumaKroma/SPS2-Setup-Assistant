@@ -3,8 +3,7 @@
   "rootNamespace": "LumaKroma.Sps2SetupAssistant.Editor",
   "references": [
     "VRC.SDK3A",
-    "com.vrcfury.api",
-    "nadena.dev.modular-avatar.core"
+    "com.vrcfury.api"
   ],
   "includePlatforms": [
     "Editor"

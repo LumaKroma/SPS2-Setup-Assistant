@@ -51,6 +51,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
 
         private void OnGUI()
         {
+            EnsureSelectedBackendIsAvailable();
+
             EditorGUILayout.LabelField("SPS2 Setup Assistant", EditorStyles.boldLabel);
             EditorGUILayout.HelpBox(
                 "Private 0.1.0 PoC. Creates one removable, tool-owned Socket setup root. " +
@@ -63,9 +65,19 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 typeof(VRCAvatarDescriptor),
                 true);
 
-            backend = (AttachmentBackend)GUILayout.Toolbar(
-                (int)backend,
-                new[] { "VRCFury", "VRCFury + Modular Avatar" });
+            var availableBackends = AttachmentBackendRegistry.AvailableBackends;
+            var backendIndex = availableBackends.ToList().IndexOf(backend);
+            backendIndex = GUILayout.Toolbar(
+                backendIndex,
+                availableBackends.Select(AttachmentBackendRegistry.GetDisplayName).ToArray());
+            backend = availableBackends[backendIndex];
+
+            if (!AttachmentBackendRegistry.IsAvailable(AttachmentBackend.VrcFuryWithModularAvatar))
+            {
+                EditorGUILayout.HelpBox(
+                    "Modular Avatar is not installed at a supported version. The VRCFury-only profile remains fully available.",
+                    MessageType.None);
+            }
 
             EditorGUILayout.Space();
             EditorGUILayout.LabelField("Socket locations", EditorStyles.boldLabel);
@@ -141,6 +153,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             if (selected != null)
             {
                 descriptor = selected.GetComponentInParent<VRCAvatarDescriptor>();
+            }
+        }
+
+        private void EnsureSelectedBackendIsAvailable()
+        {
+            if (!AttachmentBackendRegistry.IsAvailable(backend))
+            {
+                backend = AttachmentBackendRegistry.AvailableBackends[0];
             }
         }
     }

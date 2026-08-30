@@ -23,7 +23,8 @@ SPS2 Socket Setup [com.lumakroma.sps2-setup-assistant]
 Each numbered location node is the attachment system's `Bone Anchor`; its
 child is the editable `Socket Pose`.
 
-Two attachment profiles are available:
+The VRCFury profile is always available. A second profile appears when a
+supported Modular Avatar version is installed:
 
 - **VRCFury** — public VRCFury Armature Link plus public VRCFury Socket API.
 - **VRCFury + Modular Avatar** — public MA Bone Proxy plus public VRCFury
@@ -48,14 +49,19 @@ for the exact hierarchy and current heuristic boundary.
 
 ## Dependencies
 
-The private PoC targets Unity `2022.3` and declares these VPM dependency floors:
+The private PoC targets Unity `2022.3` and declares these required VPM
+dependency floors:
 
 - VRChat Avatars SDK `3.10.4`
 - VRCFury `1.1401.0`
-- Modular Avatar `1.18.1`
 
-The floors and latest stable versions still require the Issue #121 Unity
-compile matrix before any release claim.
+Modular Avatar is optional. When Modular Avatar `1.18.1` or newer in the
+supported `1.x` range is present, a conditional Editor integration assembly
+adds the **VRCFury + Modular Avatar** profile. Without MA, that assembly and
+its tests are excluded and the VRCFury-only profile remains available.
+
+The required floors, optional MA range, and latest stable versions still
+require the Issue #121 Unity compile matrix before any release claim.
 
 ## Validation status
 

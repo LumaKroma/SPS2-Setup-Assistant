@@ -6,4 +6,6 @@ Open `Tools > LumaKroma > SPS2 Setup Assistant`, select a valid Humanoid
 
 This private 0.1.0 proof of concept is Editor-only. Generated transforms remain
 editable and advanced Socket settings stay in the native VRCFury Inspector.
+Modular Avatar is optional; its attachment profile appears only when a
+supported MA `1.x` package is installed.
 See `Documentation~/OUTPUT_CONTRACT.md` for the exact safety boundary.

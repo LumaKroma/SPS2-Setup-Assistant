@@ -5,7 +5,6 @@ using com.vrcfury.api;
 using com.vrcfury.api.Components;
 using LumaKroma.Sps2SetupAssistant.Editor.Model;
 using LumaKroma.Sps2SetupAssistant.Editor.Planning;
-using nadena.dev.modular_avatar.core;
 using UnityEditor;
 using UnityEditor.SceneManagement;
 using UnityEngine;
@@ -28,6 +27,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         {
             generatedRoot = null;
             unavailableReasons = Array.Empty<string>();
+
+            if (!AttachmentBackendRegistry.IsAvailable(backend))
+            {
+                error = $"The {AttachmentBackendRegistry.GetDisplayName(backend)} attachment backend is unavailable.";
+                return false;
+            }
 
             if (!HumanoidSnapshot.TryCapture(descriptor, out var snapshot, out error))
             {
@@ -165,23 +170,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             HumanBodyBones bone,
             AttachmentBackend backend)
         {
-            switch (backend)
+            if (!AttachmentBackendRegistry.TryApply(backend, anchor, bone, out var error))
             {
-                case AttachmentBackend.VrcFury:
-                    var armatureLink = FuryComponents.CreateArmatureLink(anchor);
-                    armatureLink.LinkTo(bone);
-                    armatureLink.SetAlign(true);
-                    break;
-
-                case AttachmentBackend.VrcFuryWithModularAvatar:
-                    var proxy = anchor.AddComponent<ModularAvatarBoneProxy>();
-                    proxy.boneReference = bone;
-                    proxy.attachmentMode = BoneProxyAttachmentMode.AsChildAtRoot;
-                    proxy.matchScale = false;
-                    break;
-
-                default:
-                    throw new ArgumentOutOfRangeException(nameof(backend), backend, null);
+                throw new InvalidOperationException(error);
             }
         }
 

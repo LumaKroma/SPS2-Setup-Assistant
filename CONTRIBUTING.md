@@ -24,6 +24,10 @@ Allowed dependency surfaces:
   fields/enums;
 - documented VRChat SDK and Unity Editor APIs.
 
+Modular Avatar is optional. Its public integration must remain isolated in a
+version-defined Editor assembly. The core Editor assembly and VPM dependency
+manifest must continue to compile/install without MA.
+
 Do not use reflection, dependency private/internal types, dependency serialized
 field names, source copying, vendoring or patching. Do not modify avatar FBX,
 source model/prefab, Animator Controllers, Expressions Menu, materials,

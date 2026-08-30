@@ -44,6 +44,11 @@ ordinary `Socket Pose` Transform afterward.
 - **VRCFury + Modular Avatar:** `Bone Anchor` receives a public MA Bone Proxy in
   `AsChildAtRoot`; `Socket Pose` receives a public VRCFury Socket.
 
+The VRCFury profile is always present. The Modular Avatar profile is registered
+by a conditional Editor assembly only when supported MA `1.x` is installed; it
+is absent from the selector otherwise. MA is not a package installation or core
+assembly dependency.
+
 The Socket uses VRCFury `Auto` mode and its other native defaults. Radius
 Offset, tags, Guided Path, depth actions and legacy options remain untouched
 until an explicit, API-backed product decision authorizes them.
