@@ -7,6 +7,7 @@
   profiles.
 - Add a one-button Editor window, grouped Undo transaction and tool-owned root
   replacement boundary.
+- Include every generated authoring component in the grouped Undo transaction.
 - Add EditMode test sources and deterministic package/source validation.
 - Keep Modular Avatar optional through a version-defined Editor integration;
   the VRCFury-only profile remains available without MA.

@@ -85,7 +85,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     var socketPose = CreateGameObject(SocketPoseName, anchor.transform);
                     socketPose.transform.SetPositionAndRotation(placement.WorldPosition, placement.WorldRotation);
 
-                    var socket = FuryComponents.CreateSocket(socketPose);
+                    var socket = UndoComponentRegistration.Invoke(
+                        socketPose,
+                        "Set Up SPS2 Sockets",
+                        () => FuryComponents.CreateSocket(socketPose));
                     socket.SetName(placement.Preset.DisplayName);
                     socket.SetMode(FurySocket.Mode.Auto);
                 }

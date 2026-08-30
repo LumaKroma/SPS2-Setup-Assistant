@@ -31,12 +31,14 @@ $requiredFiles = @(
     'Packages\com.lumakroma.sps2-setup-assistant\Documentation~\OUTPUT_CONTRACT.md',
     'Packages\com.lumakroma.sps2-setup-assistant\Editor\Generation\SocketSetupGenerator.cs',
     'Packages\com.lumakroma.sps2-setup-assistant\Editor\Model\AttachmentBackendRegistry.cs',
+    'Packages\com.lumakroma.sps2-setup-assistant\Editor\Model\UndoComponentRegistration.cs',
     'Packages\com.lumakroma.sps2-setup-assistant\Editor\ModularAvatar\LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.asmdef',
     'Packages\com.lumakroma.sps2-setup-assistant\Editor\ModularAvatar\ModularAvatarAttachmentBackend.cs',
     'Packages\com.lumakroma.sps2-setup-assistant\Tests\Editor\AttachmentBackendRegistryTests.cs',
     'Packages\com.lumakroma.sps2-setup-assistant\Tests\Editor\ModularAvatar\LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.Tests.asmdef',
     'Packages\com.lumakroma.sps2-setup-assistant\Tests\Editor\ModularAvatar\ModularAvatarAttachmentBackendTests.cs',
-    'Packages\com.lumakroma.sps2-setup-assistant\Tests\Editor\SocketPlacementPlannerTests.cs'
+    'Packages\com.lumakroma.sps2-setup-assistant\Tests\Editor\SocketPlacementPlannerTests.cs',
+    'Packages\com.lumakroma.sps2-setup-assistant\Tests\Editor\UndoComponentRegistrationTests.cs'
 )
 
 foreach ($relativePath in $requiredFiles) {
@@ -102,6 +104,8 @@ Assert-Condition ($source.Contains('FuryComponents.CreateArmatureLink')) 'Public
 Assert-Condition ($source.Contains('ModularAvatarBoneProxy')) 'Public Modular Avatar Bone Proxy integration is missing.'
 Assert-Condition ($source.Contains('AttachmentBackendRegistry.IsAvailable')) 'Backend availability guard is missing.'
 Assert-Condition ($source.Contains('Undo.RevertAllDownToGroup')) 'Atomic Undo rollback is missing.'
+Assert-Condition ($source.Contains('Undo.RegisterCreatedObjectUndo(component, undoName)')) 'External factory components must be registered with Undo.'
+Assert-Condition ($maSource.Contains('Undo.AddComponent<ModularAvatarBoneProxy>')) 'Modular Avatar components must be created through Undo.'
 
 $catalogPath = Join-Path $packageRoot 'Editor\Model\SocketCatalog.cs'
 $catalogText = Get-Content -Raw -LiteralPath $catalogPath

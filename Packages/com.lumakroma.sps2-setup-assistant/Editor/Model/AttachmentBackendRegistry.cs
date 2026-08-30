@@ -83,7 +83,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
 
             public void Apply(GameObject anchor, HumanBodyBones bone)
             {
-                var armatureLink = FuryComponents.CreateArmatureLink(anchor);
+                var armatureLink = UndoComponentRegistration.Invoke(
+                    anchor,
+                    "Set Up SPS2 Sockets",
+                    () => FuryComponents.CreateArmatureLink(anchor));
                 armatureLink.LinkTo(bone);
                 armatureLink.SetAlign(true);
             }

@@ -19,7 +19,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar
 
         public void Apply(GameObject anchor, HumanBodyBones bone)
         {
-            var proxy = anchor.AddComponent<ModularAvatarBoneProxy>();
+            var proxy = Undo.AddComponent<ModularAvatarBoneProxy>(anchor);
             proxy.boneReference = bone;
             proxy.attachmentMode = BoneProxyAttachmentMode.AsChildAtRoot;
             proxy.matchScale = false;

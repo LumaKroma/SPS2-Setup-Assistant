@@ -1,5 +1,6 @@
 using LumaKroma.Sps2SetupAssistant.Editor.Model;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 
 namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
@@ -19,16 +20,28 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             var anchor = new GameObject("Anchor");
             try
             {
+                Undo.IncrementCurrentGroup();
+                var undoGroup = Undo.GetCurrentGroup();
+                Undo.SetCurrentGroupName("Add VRCFury Attachment");
+
                 Assert.That(AttachmentBackendRegistry.TryApply(
                     AttachmentBackend.VrcFury,
                     anchor,
                     HumanBodyBones.Head,
                     out var error), Is.True, error);
-                Assert.That(anchor.GetComponents<Component>(), Is.Not.Empty);
+                Undo.CollapseUndoOperations(undoGroup);
+
+                Assert.That(anchor.GetComponents<Component>().Length, Is.GreaterThan(1));
+
+                Undo.PerformUndo();
+                Assert.That(anchor.GetComponents<Component>(), Has.Length.EqualTo(1));
+
+                Undo.PerformRedo();
                 Assert.That(anchor.GetComponents<Component>().Length, Is.GreaterThan(1));
             }
             finally
             {
+                Undo.ClearAll();
                 Object.DestroyImmediate(anchor);
             }
         }
