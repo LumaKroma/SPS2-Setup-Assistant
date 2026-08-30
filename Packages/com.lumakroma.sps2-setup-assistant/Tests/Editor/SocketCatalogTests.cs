@@ -12,8 +12,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
         [Test]
         public void Catalog_HasExactlyEightUniqueOrderedPresets()
         {
-            Assert.That(SocketCatalog.Presets, Has.Count.EqualTo(8));
-            Assert.That(SocketCatalog.Presets.Select(preset => preset.Id).Distinct(), Has.Count.EqualTo(8));
+            Assert.That(SocketCatalog.Presets.Count, Is.EqualTo(8));
+            Assert.That(SocketCatalog.Presets.Select(preset => preset.Id).Distinct().Count(), Is.EqualTo(8));
             Assert.That(SocketCatalog.Presets.Select(preset => preset.Order), Is.EqualTo(Enumerable.Range(1, 8)));
         }
 

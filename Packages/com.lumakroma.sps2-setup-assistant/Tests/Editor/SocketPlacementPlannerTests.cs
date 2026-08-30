@@ -67,7 +67,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
                 out var error), Is.True, error);
 
             Assert.That(plan.Placements.Select(item => item.Preset.Id), Has.None.EqualTo(SocketPresetId.LeftHand));
-            Assert.That(plan.Placements, Has.Count.EqualTo(7));
+            Assert.That(plan.Placements.Count, Is.EqualTo(7));
             Assert.That(unavailable.Single(), Does.StartWith("Left Hand:"));
         }
 
