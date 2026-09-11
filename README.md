@@ -8,6 +8,20 @@ one setup command.
 This repository is currently a **private 0.1.0 proof of concept**. It is not a
 published VPM listing or a runtime-compatibility claim.
 
+## Setup screen preview
+
+`Tools > LumaKroma > SPS2 Setup Assistant` opens the Japanese setup-screen
+preview for Issue #121. It includes the 15-location catalog, 7/12/15-location
+profiles, custom locations, pose/depth fields, path settings, and an in-game
+menu outline. Its serialized settings belong to the Editor window only;
+Apply and test-Plug placement are disabled. It does not modify an avatar or
+implement the proposed runtime behavior.
+
+The existing functional eight-location PoC is available separately under
+`Tools > LumaKroma > SPS2 Setup Assistant (0.1 PoC)`. The output and generation
+contract below applies to that PoC. The screen preview does not expand that
+contract. See [screen review status](Packages/com.lumakroma.sps2-setup-assistant/Documentation~/UI_PREVIEW.md).
+
 ## Output
 
 The assistant creates one removable root directly beneath the selected avatar.
