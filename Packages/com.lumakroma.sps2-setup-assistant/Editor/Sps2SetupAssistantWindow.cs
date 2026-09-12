@@ -57,7 +57,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         public void RecoverAvatar()
         {
             if (EditorApplication.isPlayingOrWillChangePlaymode) { Repaint(); return; }
-            if (descriptor == null && GlobalObjectId.TryParse(avatarId, out var id))
+            if (descriptor == null && !string.IsNullOrEmpty(avatarId) && GlobalObjectId.TryParse(avatarId, out var id))
                 descriptor = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(id) as VRCAvatarDescriptor;
             if (descriptor == null && string.IsNullOrEmpty(avatarId))
             {

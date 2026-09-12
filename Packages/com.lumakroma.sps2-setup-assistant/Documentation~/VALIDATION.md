@@ -1,3 +1,21 @@
+# VPM readiness audit — 2026-09-13
+
+Baselinebf1d209ef196099d75b81483f2f6a07ffcb24963. Audit found and fixed a null/empty
+GlobalObjectId parse in RecoverAvatar (previously observed Editor exception) and
+an old label assertion after the approved neck wording change. No runtime change.
+Owned Unity2022.3.22f1/VRCFury1.1403: empty-selection new window recovery passes;
+all38 Editor/optional-MA tests pass after correction (one stale assertion failed
+before correction). Compilation zero errors, package and whitespace checks pass.
+
+Release readiness remains incomplete: repository private, no releases or release
+workflow, manifest0.2.0-dev.1, README placeholder URLs. Need public VPM index/ZIP
+with exact package boundaries and hash, version/release automation, explicit
+VRCFury/lilToon prerequisite setup, and fresh VCC/ALCOM install verification.
+Exclude development evidence/contracts from the distribution ZIP. MIT permission
+covers included IcePop; no avatar model or dependency shader is included.
+Final-commit VRC PC validation is still outstanding; this is a warm-host
+Pragmatic Development audit, not Release/Candidate certification. No publication.
+
 # Diagnostic WD false-positive repair — 2026-09-13
 
 Baseline667bd3ea7ec2fa7ec28022ec41e6511464ce0b24. Source observation:
