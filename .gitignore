@@ -12,3 +12,4 @@
 *.sln
 *.user
 *.unitypackage
+.artifacts/

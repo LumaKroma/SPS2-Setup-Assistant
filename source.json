@@ -1,0 +1,16 @@
+{
+  "description": "SPS2 Setup Assistant",
+  "githubRepos": [],
+  "infoLink": {
+    "url": "https://github.com/LumaKroma/SPS2-Setup-Assistant",
+    "text": "GitHub"
+  },
+  "url": "https://lumakroma.github.io/SPS2-Setup-Assistant/index.json",
+  "id": "com.lumakroma.sps2-listing",
+  "name": "LumaKroma SPS2 Setup Assistant",
+  "author": {
+    "url": "https://github.com/LumaKroma",
+    "name": "LumaKroma"
+  },
+  "packages": []
+}

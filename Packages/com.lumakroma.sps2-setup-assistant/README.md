@@ -1,18 +1,53 @@
-# SPS2 Setup Assistant package
+# SPS2 Setup Assistant
 
-Private development candidate `0.2.0-dev.1`.
-Open `Tools > LumaKroma > SPS2 Setup Assistant`, select a Humanoid
-`VRCAvatarDescriptor`, select a preset and adjust the included parts, then use
-`プレハブを生成`. After generation, `プレハブを再生成` restores automatic placement and
-`置き換えずに変更を反映` preserves existing Socket poses. `テストプラグ出現` adds the
-owned IcePop Plug, which remains in the uploaded avatar when present.
+VRChatアバターへのSPS2セットアップを補助するUnity Editorツール
 
-The one-column UI supports 15 fixed parts, custom Transforms, typed depth
-actions, penetration paths and native VRCFury integration. VRCFury `1.1403.0`
-is required by the guarded compatibility adapter. Modular Avatar is optional;
-enable its attachment option only when a supported MA `1.x` package is installed.
-The test Plug material separately requires lilToon.
+使用する部位を選ぶだけでソケットの配置やメニューの生成をまとめて行えます。
 
-Read the [output contract](Documentation~/OUTPUT_CONTRACT.md),
-[validation results and remaining gates](Documentation~/VALIDATION.md), and
-[display asset provenance](Documentation~/ASSET_PROVENANCE.md).
+## 導入
+
+現在は公開準備中です。以下のリポジトリ追加リンクは、初回公開後に利用できます。
+
+先に[VRCFury](https://vcc.vrcfury.com/)と[lilToon](https://lilxyzw.github.io/vpm-repos/vpm.json)のリポジトリをVCCまたはALCOMに登録し、導入先のアバタープロジェクトへ両パッケージを追加してください。
+
+[こちらからリポジトリを追加](vcc://vpm/addRepo?url=https%3A%2F%2Flumakroma.github.io%2FSPS2-Setup-Assistant%2Findex.json)し、VCCまたはALCOMで追加を承認してください。
+
+続いて導入先のアバタープロジェクトを開き、パッケージ一覧から **SPS2 Setup Assistant** を追加してください。
+
+手動で追加する場合のリポジトリURL：`https://lumakroma.github.io/SPS2-Setup-Assistant/index.json`
+
+## 使い方
+
+一番シンプルな方法は、上部メニュー欄から `Tools > LumaKroma > SPS2 Setup Assistant` を開いて対象アバターを指定 → `プレハブを生成`。
+
+生成前にプリセットや使用する部位、深度アクション、設定項目をカスタマイズできます。
+
+設定の変更・再生成、テストプラグの配置もできます。
+
+対象はHumanoidアバターのみです。自動配置の結果はアバターによって異なるため、生成後に位置や向きを確認してください。
+
+## 機能
+
+- プリセットを使ったセットアップ
+- 使用する部位に応じたソケットの自動配置
+- ソケットを操作するメニューの自動生成
+- 深度アクションの設定
+- 口と肛門をつなぐ貫通経路の生成
+- Auto Mode・後方互換性・インスタント起動・Local Onlyの設定
+- 手動調整した位置を維持した設定の反映
+- 設定に合わせた再生成
+- 通常のテストプラグと、貫通確認用の長いテストプラグの配置
+
+## 依存
+
+- Unity 2022.3
+- VRChat Avatars SDK
+- VRCFury
+- lilToon（テストプラグの表示用）
+- Modular Avatar（任意・追従方式の追加）
+
+## ライセンス
+
+コード・ドキュメントおよび同梱のIcePopアセットはMITライセンスです。
+
+本ツールは非公式の補助ツールです。

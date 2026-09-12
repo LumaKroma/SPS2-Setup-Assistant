@@ -6,11 +6,15 @@ VRChatアバターへのSPS2セットアップを補助するUnity Editorツー�
 
 ## 導入
 
-[こちらからリポジトリを追加](REPOSITORY_ADD_URL)し、VCCまたはALCOMで追加を承認してください。
+現在は公開準備中です。以下のリポジトリ追加リンクは、初回公開後に利用できます。
+
+先に[VRCFury](https://vcc.vrcfury.com/)と[lilToon](https://lilxyzw.github.io/vpm-repos/vpm.json)のリポジトリをVCCまたはALCOMに登録し、導入先のアバタープロジェクトへ両パッケージを追加してください。
+
+[こちらからリポジトリを追加](vcc://vpm/addRepo?url=https%3A%2F%2Flumakroma.github.io%2FSPS2-Setup-Assistant%2Findex.json)し、VCCまたはALCOMで追加を承認してください。
 
 続いて導入先のアバタープロジェクトを開き、パッケージ一覧から **SPS2 Setup Assistant** を追加してください。
 
-手動で追加する場合のリポジトリURL：`REPOSITORY_INDEX_URL`
+手動で追加する場合のリポジトリURL：`https://lumakroma.github.io/SPS2-Setup-Assistant/index.json`
 
 ## 使い方
 

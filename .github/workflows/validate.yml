@@ -1,4 +1,4 @@
-name: Validate private package source
+name: Validate package and VPM archive
 
 on:
   pull_request:
@@ -11,6 +11,14 @@ jobs:
     runs-on: windows-latest
     steps:
       - uses: actions/checkout@v4
+        with:
+          lfs: true
       - name: Validate package and public API boundary
         shell: pwsh
         run: ./Tools/Validate-Package.ps1
+      - name: Validate reproducible distribution
+        shell: pwsh
+        run: |
+          $a = ./Tools/Build-VpmPackage.ps1 -OutputDirectory .artifacts/a | ConvertFrom-Json
+          $b = ./Tools/Build-VpmPackage.ps1 -OutputDirectory .artifacts/b | ConvertFrom-Json
+          if ($a.sha256 -ne $b.sha256) { throw 'Archive is not reproducible' }

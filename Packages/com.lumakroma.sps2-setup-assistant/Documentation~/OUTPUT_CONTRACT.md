@@ -1,3 +1,12 @@
+# VPM packaging amendment — 2026-09-13
+
+Distribution contains Assets/Editor/Runtime, their metadata, root package.json,
+MIT LICENSE.md and Japanese README with metadata. Tests and Documentation~ are
+development-only and excluded from ZIP. Product runtime/settings unchanged.
+Release creation is a manual draft step; listing publication requires a public
+repository and published, validated release. Version remains0.2.0-dev.1 pending
+runtime/publication gates. Public indexes preserve all prior versions and hashes.
+
 # Native diagnostic Write Defaults amendment — 2026-09-13
 
 Instant-start WD policy ignores VRCFury's observed preview-only empty-layer notice.
