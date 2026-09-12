@@ -1,0 +1,22 @@
+[
+  {
+    "localPath": "C:\\Users\\konoh\\Desktop\\VRChat\\自分用\\LumaGimmics\\LumaGimmicsTest\\.codex-staging\\issue121-definition\\refactor-before-semantic.txt",
+    "sha256": "803312D4C90AFFA488F4913DEF9F6C6B6C82F0A7DC65BA845763A43EB8B6AE06"
+  },
+  {
+    "localPath": "C:\\Users\\konoh\\Desktop\\VRChat\\自分用\\LumaGimmics\\LumaGimmicsTest\\.codex-staging\\issue121-definition\\refactor-after-semantic.txt",
+    "sha256": "B11B6ED83C676FCEB1A9037E543B098C58327A1E1156A597F256E1D6C70074B4"
+  },
+  {
+    "localPath": "C:\\Users\\konoh\\Desktop\\VRChat\\自分用\\LumaGimmics\\LumaGimmicsTest\\.codex-staging\\issue121-definition\\refactor-semantic-diff.json",
+    "sha256": "09077CECA741C8E268E217A56C27B3DC7321969FCD94D28612D44006B93DD3A3"
+  },
+  {
+    "localPath": "C:\\Users\\konoh\\Desktop\\VRChat\\自分用\\LumaGimmics\\LumaGimmicsTest\\.codex-staging\\issue121-definition\\refactor-window.png",
+    "sha256": "0936F6CE2C031B349E4AF0064C944521C9B2B132FC0E733D7536A1E5A8B5B231"
+  },
+  {
+    "localPath": "C:\\Users\\konoh\\Desktop\\VRChat\\自分用\\LumaGimmics\\LumaGimmicsTest\\.codex-staging\\issue121-definition\\refactor-console-raw.json",
+    "sha256": "0B936003049CDD432DB80A804C3D47750813AB562F1990037A6CFFFF0D7822FD"
+  }
+]

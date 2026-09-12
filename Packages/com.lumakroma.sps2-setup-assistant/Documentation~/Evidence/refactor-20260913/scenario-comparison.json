@@ -1,0 +1,62 @@
+[
+  {
+    "scenario": "casual",
+    "comparedLines": 1870,
+    "equal": true,
+    "normalizedSha256": "02ACFAA91BFD0202B8CBD9F73CE7F941F2467A3980AC1DD57C51C90AEF54900E"
+  },
+  {
+    "scenario": "default",
+    "comparedLines": 2835,
+    "equal": true,
+    "normalizedSha256": "EF8D9424F63190EF5B2C015494A08CF75B2E70FF49C2C4615DE4D29E85A61227"
+  },
+  {
+    "scenario": "full",
+    "comparedLines": 3464,
+    "equal": true,
+    "normalizedSha256": "A30A015DCCAE33A31E6FB3249134B4FA5636A0265DF40DA2A2334AEAF4680F26"
+  },
+  {
+    "scenario": "mouth-only",
+    "comparedLines": 3103,
+    "equal": true,
+    "normalizedSha256": "DF2ED26CB8789BD1F5B5C659C39A40A75E94766A27B37C9C4ECEC9053D00120C"
+  },
+  {
+    "scenario": "anus-only",
+    "comparedLines": 3073,
+    "equal": true,
+    "normalizedSha256": "DF3E1A5F3AD6C23CF927D1A9A2610B08049737B2511041E3D4C71CA73C31BCEB"
+  },
+  {
+    "scenario": "neither",
+    "comparedLines": 2609,
+    "equal": true,
+    "normalizedSha256": "EB314162A77C8C8A884C2DBA1DD1A929C4CA274557DB7A44268BCD53FDC8E241"
+  },
+  {
+    "scenario": "penetration-off",
+    "comparedLines": 3073,
+    "equal": true,
+    "normalizedSha256": "314125970FF444C174CC739C729BA1920B1F2D94C88FE83E00088197CD538F19"
+  },
+  {
+    "scenario": "collapse-off",
+    "comparedLines": 3464,
+    "equal": true,
+    "normalizedSha256": "3468366FA223CE46AA582100E4D2861ADA9D19704C73D16401DA6A2201D2F260"
+  },
+  {
+    "scenario": "ma-full",
+    "comparedLines": 3014,
+    "equal": true,
+    "normalizedSha256": "E645AB41ED4A778C4D20559BDD96164E618FC3631E797FB24B85F52F36EF89D6"
+  },
+  {
+    "scenario": "instant-on",
+    "comparedLines": 3464,
+    "equal": true,
+    "normalizedSha256": "C958586CEF2E89534D5AE7B4AABD8022B190D680CFCCF1FB6F1F98711640A1F7"
+  }
+]

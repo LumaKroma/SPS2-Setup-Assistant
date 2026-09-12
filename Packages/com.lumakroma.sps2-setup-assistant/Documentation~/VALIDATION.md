@@ -1,3 +1,43 @@
+# Behavior-preserving refactor — 2026-09-13
+
+Baseline `adde0d8e5f60edab0a48aef67a4f08ff90801e06`. User accepted current
+functionality and requested a behavior-preserving review/refactor, with other-avatar
+validation still pending. Contract impact: none. No serialized fields, public API,
+defaults, tooltip copy, layout order, placement calculations, native path settings,
+menu generation, Undo transaction ordering or persistence behavior changed.
+
+The window now separates preset, socket, option and generation-control drawing;
+fixed popup labels and the fully rewritten help-circle buffer are reused. Generator
+helpers isolate path clearing, oral tangent assignment and authoring identity updates
+at their previous call sites. Independent read-only review found no must-fix issue.
+
+Validation in the existing officially owned session 6 (Unity 2022.3.22f1,
+VRCFury 1.1403.0, SDK 3.10.4, CoplayDev 10.2.0):
+
+- Before/after generated snapshots for casual/default/full, mouth-only, anus-only,
+  neither endpoint, penetration off, Collapse off, MA full and Instant on match.
+  Of 38,251 serialized lines, 29,969 comparable lines match exactly. Excluded only
+  clone-specific object-reference child FileIDs and redundant oscId character-array
+  children; their parent resolved reference paths and normalized strings remain
+  compared. Raw local artifacts and hashes, probe source and results are retained.
+- Existing EditMode suites: 21/21 passed. Path positions/rotations, constraints,
+  Collapse-only preservation, parent off/on and Undo/Redo probes passed.
+- Native full SDK preprocess with both test plugs passed: menu ordering, Local Only
+  default 0/unsaved, preserved manual position, plug reuse, and repeated socket
+  OFF/ON/OFF/ON/OFF with Instant true and false. MA anus-only preprocess passed:
+  excluded mouth Socket/menu absent, path markers 1/1/1/0, no missing constraints.
+- All 100 compiled package inputs match the warm host (line-ending normalization
+  where needed). Actual public Editor screen capture inspected at pixelsPerPoint 1:
+  visible controls and inline help remain intact; viewport scrolling is preserved.
+- One already-known VRCFury Inspector MissingReferenceException followed destruction
+  of a disposable test plug. Its full stack is retained; 195 ordinary Debug.Log
+  entries were misclassified by MCP as Exception. After restoring original avatar
+  selection/window, final Editor is ready, compilation-error-free and Console 0.
+
+Evidence: `Evidence/refactor-20260913`. Original user avatar was not regenerated or
+saved; Editor stays open. This reuses the previously recorded management/warm-host
+split deviation and exact owned client, not a new launch. No VRC client or other-avatar
+claim; Project remains Validation / VRC PC. No push, merge, release or upload.
 # User-provided tooltip copy — 2026-09-13
 
 Baselinebb414673b1dcdd782545efbba6ce62feb2c65216. Only three tooltip literals

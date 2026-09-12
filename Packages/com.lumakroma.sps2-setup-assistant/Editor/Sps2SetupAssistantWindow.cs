@@ -18,6 +18,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         private MessageType messageType;
         private GUIStyle title;
         private GUIStyle helpStyle;
+        private readonly Vector3[] helpCirclePoints = new Vector3[33];
+        private static readonly string[] PresetLabels = { "カジュアル", "デフォルト", "フル" };
+        private static readonly string[] DepthUnitLabels = { "メートル", "プラグ長", "ローカル" };
+        private static readonly string[] ActionKindLabels = { "BlendShape", "Animation Clip", "オブジェクト ON・OFF" };
+        private static readonly string[] ObjectStateLabels = { "ON", "OFF" };
 
         [MenuItem("Tools/LumaKroma/SPS2 Setup Assistant")]
         public static void Open()
@@ -83,82 +88,102 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 var next = (VRCAvatarDescriptor)EditorGUILayout.ObjectField("アバター", descriptor, typeof(VRCAvatarDescriptor), true);
                 if (next != descriptor) Change(() => BindAvatar(next));
                 scroll = EditorGUILayout.BeginScrollView(scroll);
-                GUILayout.Space(10);
-                GUILayout.Label("プリセット", EditorStyles.boldLabel);
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    var labels = new[] { "カジュアル", "デフォルト", "フル" };
-                    for (int i = 0; i < 3; i++)
-                    {
-                        int value = i;
-                        if (GUILayout.Button(labels[i], GUILayout.Height(28))) Change(() => FullSetupCatalog.ApplyPreset(settings, value));
-                    }
-                }
-                for (int category = 0; category < FullSetupCatalog.Categories.Length; category++)
-                {
-                    GUILayout.Space(12);
-                    GUILayout.Label(FullSetupCatalog.Categories[category], EditorStyles.boldLabel);
-                    foreach (var part in settings.parts.Where(p => p.category == category).ToArray()) DrawPart(part);
-                    if (category == 5 && GUILayout.Button("＋ カスタム部位を追加")) Change(() => settings.parts.Add(new SocketSettings
-                    {
-                        id = Guid.NewGuid().ToString("N"), name = "カスタム " + (settings.parts.Count(p => p.custom) + 1),
-                        custom = true, category = 5, included = true
-                    }));
-                }
-                GUILayout.Space(12);
-                Toggle("貫通", settings.penetration, v => settings.penetration = v,
-                    "口-肛門の間にプラグが通る経路を生成します。非常に長いプラグの場合、体を貫通します。\n「体内で太さを0にする」をオンにすると、体内の太さを0にし、出口の外では元の太さに戻します。");
-                if (settings.penetration)
-                {
-                    using (new EditorGUILayout.HorizontalScope())
-                    {
-                        GUILayout.Space(18);
-                        Toggle("体内で太さを0にする", !settings.showInternalThickness, v => settings.showInternalThickness = !v);
-                    }
-                }
-                Toggle("Auto Mode", settings.autoMode, v => settings.autoMode = v,
-                    "プラグに最も近い対象ソケットを自動で有効にするメニューを追加します。");
-                Toggle("後方互換性", settings.legacy, v => settings.legacy = v,
-                    "SPS1・DPS・TPSのプラグにも対応させ、互換機能の切り替えメニューを追加します。\nSPS2同士だけで使う場合はオフにできます。");
-                Toggle("インスタント起動", settings.instant, v => settings.instant = v,
-                    "口と膣のソケットをまとめてオンにするボタンをメニューに追加します。\n後方互換性がオフのときに動作します。");
-                Toggle("Local Only", settings.localOnly, v => settings.localOnly = v);
-                GUILayout.Space(8);
-                Toggle("Modular Avatarで追従", settings.modularAvatar, v => settings.modularAvatar = v);
-                GUILayout.Space(12);
+                DrawPresets();
+                DrawSocketParts();
+                DrawOptions();
                 EditorGUILayout.EndScrollView();
-                if (!string.IsNullOrEmpty(message)) EditorGUILayout.HelpBox(message, messageType);
-                bool generated = FullSetupGenerator.HasGeneratedRoot(descriptor);
-                if (descriptor == null)
-                {
-                    EditorGUILayout.HelpBox("対象アバターを選択してください。以前の対象が開かれている場合は再検出できます。", MessageType.Info);
-                    if (GUILayout.Button("対象アバターを再検出")) Change(() => { avatarId = null; RecoverAvatar(); });
-                }
-                else if (EditorApplication.isPlayingOrWillChangePlaymode)
-                    EditorGUILayout.HelpBox("再生を停止すると生成・再生成できます。", MessageType.Info);
-                using (new EditorGUI.DisabledScope(descriptor == null || EditorApplication.isPlayingOrWillChangePlaymode))
-                {
-                    if (!generated)
-                    {
-                        if (GUILayout.Button("プレハブを生成", GUILayout.Height(34))) Apply(true);
-                    }
-                    else
-                    {
-                        if (GUILayout.Button("プレハブを再生成", GUILayout.Height(30))) Apply(true);
-                        if (GUILayout.Button("置き換えずに変更を反映", GUILayout.Height(30))) Apply(false);
-                        if (GUILayout.Button("貫通テストプラグ出現", GUILayout.Height(30)))
-                        {
-                            bool ok = FullSetupGenerator.ShowLongTestPlug(descriptor, out var error); SetMessage(error, ok);
-                        }
-                        if (GUILayout.Button("テストプラグ出現", GUILayout.Height(30)))
-                        {
-                            bool ok = FullSetupGenerator.ShowTestPlug(descriptor, out var error); SetMessage(error, ok);
-                        }
-                    }
-                }
+                DrawGenerationControls();
                 GUILayout.Space(8);
             }
         }
+        private void DrawPresets()
+        {
+            GUILayout.Space(10);
+            GUILayout.Label("プリセット", EditorStyles.boldLabel);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                var labels = PresetLabels;
+                for (int i = 0; i < 3; i++)
+                {
+                    int value = i;
+                    if (GUILayout.Button(labels[i], GUILayout.Height(28))) Change(() => FullSetupCatalog.ApplyPreset(settings, value));
+                }
+            }
+        }
+
+        private void DrawSocketParts()
+        {
+            for (int category = 0; category < FullSetupCatalog.Categories.Length; category++)
+            {
+                GUILayout.Space(12);
+                GUILayout.Label(FullSetupCatalog.Categories[category], EditorStyles.boldLabel);
+                foreach (var part in settings.parts.Where(p => p.category == category).ToArray()) DrawPart(part);
+                if (category == 5 && GUILayout.Button("＋ カスタム部位を追加")) Change(() => settings.parts.Add(new SocketSettings
+                {
+                    id = Guid.NewGuid().ToString("N"), name = "カスタム " + (settings.parts.Count(p => p.custom) + 1),
+                    custom = true, category = 5, included = true
+                }));
+            }
+        }
+
+        private void DrawOptions()
+        {
+            GUILayout.Space(12);
+            Toggle("貫通", settings.penetration, v => settings.penetration = v,
+                "口-肛門の間にプラグが通る経路を生成します。非常に長いプラグの場合、体を貫通します。\n「体内で太さを0にする」をオンにすると、体内の太さを0にし、出口の外では元の太さに戻します。");
+            if (settings.penetration)
+            {
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    GUILayout.Space(18);
+                    Toggle("体内で太さを0にする", !settings.showInternalThickness, v => settings.showInternalThickness = !v);
+                }
+            }
+            Toggle("Auto Mode", settings.autoMode, v => settings.autoMode = v,
+                "プラグに最も近い対象ソケットを自動で有効にするメニューを追加します。");
+            Toggle("後方互換性", settings.legacy, v => settings.legacy = v,
+                "SPS1・DPS・TPSのプラグにも対応させ、互換機能の切り替えメニューを追加します。\nSPS2同士だけで使う場合はオフにできます。");
+            Toggle("インスタント起動", settings.instant, v => settings.instant = v,
+                "口と膣のソケットをまとめてオンにするボタンをメニューに追加します。\n後方互換性がオフのときに動作します。");
+            Toggle("Local Only", settings.localOnly, v => settings.localOnly = v);
+            GUILayout.Space(8);
+            Toggle("Modular Avatarで追従", settings.modularAvatar, v => settings.modularAvatar = v);
+            GUILayout.Space(12);
+        }
+
+        private void DrawGenerationControls()
+        {
+            if (!string.IsNullOrEmpty(message)) EditorGUILayout.HelpBox(message, messageType);
+            bool generated = FullSetupGenerator.HasGeneratedRoot(descriptor);
+            if (descriptor == null)
+            {
+                EditorGUILayout.HelpBox("対象アバターを選択してください。以前の対象が開かれている場合は再検出できます。", MessageType.Info);
+                if (GUILayout.Button("対象アバターを再検出")) Change(() => { avatarId = null; RecoverAvatar(); });
+            }
+            else if (EditorApplication.isPlayingOrWillChangePlaymode)
+                EditorGUILayout.HelpBox("再生を停止すると生成・再生成できます。", MessageType.Info);
+            using (new EditorGUI.DisabledScope(descriptor == null || EditorApplication.isPlayingOrWillChangePlaymode))
+            {
+                if (!generated)
+                {
+                    if (GUILayout.Button("プレハブを生成", GUILayout.Height(34))) Apply(true);
+                }
+                else
+                {
+                    if (GUILayout.Button("プレハブを再生成", GUILayout.Height(30))) Apply(true);
+                    if (GUILayout.Button("置き換えずに変更を反映", GUILayout.Height(30))) Apply(false);
+                    if (GUILayout.Button("貫通テストプラグ出現", GUILayout.Height(30)))
+                    {
+                        bool ok = FullSetupGenerator.ShowLongTestPlug(descriptor, out var error); SetMessage(error, ok);
+                    }
+                    if (GUILayout.Button("テストプラグ出現", GUILayout.Height(30)))
+                    {
+                        bool ok = FullSetupGenerator.ShowTestPlug(descriptor, out var error); SetMessage(error, ok);
+                    }
+                }
+            }
+        }
+
         private void DrawPart(SocketSettings part)
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
@@ -174,8 +199,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     }
                     if (part.included)
                     {
-                    bool depth = EditorGUILayout.ToggleLeft("深度アクション", part.depth, GUILayout.MinWidth(114));
-                    if (depth != part.depth) Change(() => { part.depth = depth; if (depth && part.actions.Count == 0) part.actions.Add(new DepthActionSettings()); });
+                        bool depth = EditorGUILayout.ToggleLeft("深度アクション", part.depth, GUILayout.MinWidth(114));
+                        if (depth != part.depth) Change(() => { part.depth = depth; if (depth && part.actions.Count == 0) part.actions.Add(new DepthActionSettings()); });
                     }
                     if (part.custom && GUILayout.Button("−", GUILayout.Width(24))) Change(() => settings.parts.Remove(part));
                 }
@@ -203,7 +228,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             {
                 EditorGUIUtility.labelWidth = 28;
                 float start = EditorGUILayout.FloatField("近", part.range.x), end = EditorGUILayout.FloatField("遠", part.range.y);
-                int units = EditorGUILayout.Popup((int)part.units, new[] { "メートル", "プラグ長", "ローカル" }, GUILayout.Width(90));
+                int units = EditorGUILayout.Popup((int)part.units, DepthUnitLabels, GUILayout.Width(90));
                 if (start != part.range.x || end != part.range.y || units != (int)part.units)
                     if (!float.IsNaN(start) && !float.IsInfinity(start) && !float.IsNaN(end) && !float.IsInfinity(end))
                         Change(() => { start = Mathf.Clamp(start, -1, 3); end = Mathf.Clamp(end, -1, 3); part.range = new Vector2(Mathf.Min(start, end), Mathf.Max(start, end)); part.units = (DepthUnits)units; });
@@ -214,44 +239,44 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         {
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
-            using (new EditorGUILayout.HorizontalScope())
-            {
-                int kind = EditorGUILayout.Popup((int)action.kind, new[] { "BlendShape", "Animation Clip", "オブジェクト ON・OFF" });
-                if (kind != (int)action.kind) Change(() => action.kind = (DepthActionKind)kind);
-                if (GUILayout.Button("−", GUILayout.Width(24))) Change(() => part.actions.Remove(action));
-            }
-            if (action.kind == DepthActionKind.BlendShape)
-            {
-                var renderer = (SkinnedMeshRenderer)EditorGUILayout.ObjectField("メッシュ", action.renderer, typeof(SkinnedMeshRenderer), true);
-                if (renderer != action.renderer) Change(() => { action.renderer = renderer; action.shape = ""; });
-                var mesh = action.renderer != null ? action.renderer.sharedMesh : null;
-                var names = new[] { "未設定" }.Concat(mesh == null ? Array.Empty<string>() : Enumerable.Range(0, mesh.blendShapeCount).Select(mesh.GetBlendShapeName)).ToArray();
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    EditorGUIUtility.labelWidth = 62;
-                    int index = Math.Max(0, Array.IndexOf(names, action.shape));
-                    int next = EditorGUILayout.Popup("シェイプ", index, names);
-                    EditorGUIUtility.labelWidth = 20;
-                    float weight = EditorGUILayout.FloatField("値", action.weight, GUILayout.Width(78));
-                    if (next != index || weight != action.weight) Change(() => { action.shape = next == 0 ? "" : names[next]; action.weight = Mathf.Clamp(weight, 0, 100); });
-                    EditorGUIUtility.labelWidth = 100;
+                    int kind = EditorGUILayout.Popup((int)action.kind, ActionKindLabels);
+                    if (kind != (int)action.kind) Change(() => action.kind = (DepthActionKind)kind);
+                    if (GUILayout.Button("−", GUILayout.Width(24))) Change(() => part.actions.Remove(action));
                 }
-            }
-            else if (action.kind == DepthActionKind.AnimationClip)
-            {
-                var clip = (AnimationClip)EditorGUILayout.ObjectField(action.clip, typeof(AnimationClip), false);
-                if (clip != action.clip) Change(() => action.clip = clip);
-            }
-            else
-            {
-                using (new EditorGUILayout.HorizontalScope())
+                if (action.kind == DepthActionKind.BlendShape)
                 {
-                    var target = (GameObject)EditorGUILayout.ObjectField(action.target, typeof(GameObject), true);
-                    int mode = EditorGUILayout.Popup(action.objectOn ? 0 : 1, new[] { "ON", "OFF" }, GUILayout.Width(60));
-                    if (target != action.target || (mode == 0) != action.objectOn) Change(() => { action.target = target; action.objectOn = mode == 0; });
+                    var renderer = (SkinnedMeshRenderer)EditorGUILayout.ObjectField("メッシュ", action.renderer, typeof(SkinnedMeshRenderer), true);
+                    if (renderer != action.renderer) Change(() => { action.renderer = renderer; action.shape = ""; });
+                    var mesh = action.renderer != null ? action.renderer.sharedMesh : null;
+                    var names = new[] { "未設定" }.Concat(mesh == null ? Array.Empty<string>() : Enumerable.Range(0, mesh.blendShapeCount).Select(mesh.GetBlendShapeName)).ToArray();
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        EditorGUIUtility.labelWidth = 62;
+                        int index = Math.Max(0, Array.IndexOf(names, action.shape));
+                        int next = EditorGUILayout.Popup("シェイプ", index, names);
+                        EditorGUIUtility.labelWidth = 20;
+                        float weight = EditorGUILayout.FloatField("値", action.weight, GUILayout.Width(78));
+                        if (next != index || weight != action.weight) Change(() => { action.shape = next == 0 ? "" : names[next]; action.weight = Mathf.Clamp(weight, 0, 100); });
+                        EditorGUIUtility.labelWidth = 100;
+                    }
                 }
-            }
-            GUILayout.Space(4);
+                else if (action.kind == DepthActionKind.AnimationClip)
+                {
+                    var clip = (AnimationClip)EditorGUILayout.ObjectField(action.clip, typeof(AnimationClip), false);
+                    if (clip != action.clip) Change(() => action.clip = clip);
+                }
+                else
+                {
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        var target = (GameObject)EditorGUILayout.ObjectField(action.target, typeof(GameObject), true);
+                        int mode = EditorGUILayout.Popup(action.objectOn ? 0 : 1, ObjectStateLabels, GUILayout.Width(60));
+                        if (target != action.target || (mode == 0) != action.objectOn) Change(() => { action.target = target; action.objectOn = mode == 0; });
+                    }
+                }
+                GUILayout.Space(4);
             }
         }
         private void Apply(bool regenerate)
@@ -268,7 +293,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 bool next = hasTooltip
                     ? EditorGUILayout.ToggleLeft(content, value, GUILayout.Width(EditorStyles.label.CalcSize(content).x + 16))
                     : EditorGUILayout.ToggleLeft(content, value);
-                if (!string.IsNullOrEmpty(tooltip))
+                if (hasTooltip)
                 {
                     DrawHelp(tooltip);
                     GUILayout.FlexibleSpace();
@@ -287,7 +312,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             };
             if (Event.current.type == EventType.Repaint)
             {
-                var points = new Vector3[33];
+                var points = helpCirclePoints;
                 for (int i = 0; i < points.Length; i++)
                 {
                     float angle = i * Mathf.PI * 2 / (points.Length - 1);

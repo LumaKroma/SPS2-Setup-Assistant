@@ -406,7 +406,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     throw new InvalidOperationException("既存分を含む Auto Mode 対象が16個を超えます。Auto Mode を外すか対象を減らしてください。");
                 if (root.legacy != null) { Undo.DestroyObjectImmediate(root.legacy); root.legacy = null; }
                 Undo.RecordObject(root.gameObject, UndoName); root.gameObject.name = RootName;
-                foreach (var generated in root.sockets) VrcFuryCompatibility.SetAuthoringIdentity(generated.socket, Sps2SetupStorage.Token(root, generated.id));
+                UpdateAuthoringIdentities(root);
                 CommitMetadata(root, metadataBefore);
                 EditorSceneManager.MarkSceneDirty(avatar.gameObject.scene);
                 Selection.activeGameObject = root.gameObject;
@@ -433,6 +433,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             return true;
         }
 
+        private static void UpdateAuthoringIdentities(Sps2SetupContext root)
+        {
+            foreach (var generated in root.sockets) VrcFuryCompatibility.SetAuthoringIdentity(generated.socket, Sps2SetupStorage.Token(root, generated.id));
+        }
+
         private static void CommitMetadata(Sps2SetupContext root, string before)
         {
             string after = Sps2SetupStorage.Serialize(root);
@@ -443,13 +448,18 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             EditorUtility.SetDirty(root.asset);
             AssetDatabase.SaveAssetIfDirty(root.asset);
         }
-        private static void ConfigurePath(Sps2SetupContext root, VRCAvatarDescriptor avatar, SetupSettings settings, List<string> warnings,
-            BodyBasis basis, AvatarSurface surface)
+        private static void ClearPath(Sps2SetupContext root, VRCAvatarDescriptor avatar)
         {
             var old = root.transform.Find(PathName);
             foreach (var socket in root.sockets.Where(s => s.id == "mouth" || s.id == "anus"))
             { VrcFuryCompatibility.SetPath(socket.socket, Array.Empty<Transform>(), avatar.transform); socket.pathStops = Array.Empty<Transform>(); }
             if (old != null) Undo.DestroyObjectImmediate(old.gameObject);
+        }
+
+        private static void ConfigurePath(Sps2SetupContext root, VRCAvatarDescriptor avatar, SetupSettings settings, List<string> warnings,
+            BodyBasis basis, AvatarSurface surface)
+        {
+            ClearPath(root, avatar);
             var mouth = root.sockets.Find(s => s.id == "mouth"); var anus = root.sockets.Find(s => s.id == "anus");
             if (!settings.penetration || (mouth == null && anus == null)) return;
             var animator = avatar.GetComponent<Animator>();
@@ -500,6 +510,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 Stop("Mouth Exit", mouthPose, -mouthPose.forward) };
             if (mouth != null) VrcFuryCompatibility.SetPath(mouth.socket, mouth.pathStops, avatar.transform, !settings.showInternalThickness);
             if (anus != null) VrcFuryCompatibility.SetPath(anus.socket, anus.pathStops, avatar.transform, !settings.showInternalThickness);
+            ConfigureOralTangents(mouth, anus, mouthPose, throatCenter, avatar);
+        }
+
+        private static void ConfigureOralTangents(GeneratedSocket mouth, GeneratedSocket anus, Transform mouthPose,
+            Vector3 throatCenter, VRCAvatarDescriptor avatar)
+        {
             // First enter the oral cavity, then turn down at the measured neck center.
             float bend = Vector3.Distance(mouthPose.position, throatCenter);
             var oralControl = mouthPose.position - avatar.transform.forward * (bend * .8f) + avatar.transform.up * (bend * .2f);
@@ -570,7 +586,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 Undo.RecordObject(root.gameObject, UndoName); root.gameObject.name = RootName;
                 if (metadataChanged)
                 {
-                    foreach (var generated in root.sockets) VrcFuryCompatibility.SetAuthoringIdentity(generated.socket, Sps2SetupStorage.Token(root, generated.id));
+                    UpdateAuthoringIdentities(root);
                     CommitMetadata(root, metadataBefore);
                 }
                 EditorSceneManager.MarkSceneDirty(avatar.gameObject.scene);

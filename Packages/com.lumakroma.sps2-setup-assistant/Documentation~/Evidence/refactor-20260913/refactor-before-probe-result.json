@@ -1,0 +1,62 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        {
+          "scenario": "casual",
+          "lines": 2318,
+          "sha256": "46DDC0C8AB9AF7C0A59A4C940B8595A719F330B09A9E634792C73C198DB8FD22"
+        },
+        {
+          "scenario": "default",
+          "lines": 3585,
+          "sha256": "0737ACDA2C2F84C2E79143ACE09340D3A398F8B4F248815FBC18917CB445B2C4"
+        },
+        {
+          "scenario": "full",
+          "lines": 4393,
+          "sha256": "BE3CA9936AA1A75D1E665B9309BB2D31D4267DE6ED667F739DD2F0918A8741EC"
+        },
+        {
+          "scenario": "mouth-only",
+          "lines": 3962,
+          "sha256": "7F58184BF53FC0AEA92B2206600C526A95437FF957B5670FE21E588795D21141"
+        },
+        {
+          "scenario": "anus-only",
+          "lines": 3930,
+          "sha256": "2E8DDA87288AC9090F28F69E861BDA3A077E36DBF07BE18FFD478459767BA20B"
+        },
+        {
+          "scenario": "neither",
+          "lines": 3386,
+          "sha256": "B4970CE6A3BA6980F49E886A2F42FA912FA5ABF3022A55463F256DF024911855"
+        },
+        {
+          "scenario": "penetration-off",
+          "lines": 3966,
+          "sha256": "42F853E58A1823E213CE0AB38F5DEAABDC4D0DA50111C664051FE99D1C226914"
+        },
+        {
+          "scenario": "collapse-off",
+          "lines": 4393,
+          "sha256": "AF07CCE5EEFCE4A0B0D75B44F3ED546ACC4292D79350E60BBC175ADBC68BD57B"
+        },
+        {
+          "scenario": "ma-full",
+          "lines": 3925,
+          "sha256": "C69614A42473A531060886242B15311DF19BBB8BD800448159843EB827D58890"
+        },
+        {
+          "scenario": "instant-on",
+          "lines": 4393,
+          "sha256": "FEF182632C3DD03D8FB4FB4B6467B314435E24D2243DBC31AE027CF110558CE9"
+        }
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}
