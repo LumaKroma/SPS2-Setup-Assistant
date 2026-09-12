@@ -80,10 +80,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             Transform Bone(params HumanBodyBones[] candidates) => candidates.Select(animator.GetBoneTransform).FirstOrDefault(t => t != null);
             var p = new Placement();
             var h = basis.Height;
-            var forward = basis.Forward;
-            var up = basis.Up;
-            var right = basis.Right;
-            Vector3 offset = Vector3.zero, inward = -forward;
+            var forward = avatar.transform.forward;
+            var up = avatar.transform.up;
+            var right = avatar.transform.right;
+            Vector3 offset = Vector3.zero, direction = forward;
             var chest = Bone(HumanBodyBones.UpperChest, HumanBodyBones.Chest, HumanBodyBones.Spine);
             if (part.custom)
             {
@@ -102,7 +102,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 case "earLeft": case "earRight":
                     p.first = Bone(HumanBodyBones.Head); p.bone = HumanBodyBones.Head;
                     offset = right * h * .052f * (part.id == "earLeft" ? -1 : 1);
-                    inward = part.id == "earLeft" ? right : -right;
+                    direction = part.id == "earLeft" ? -right : right;
                     break;
                 case "nippleLeft": case "nippleRight":
                     p.first = Breast(avatar, part.id == "nippleLeft");
@@ -119,15 +119,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 case "vagina": case "anus":
                     p.first = Bone(HumanBodyBones.Hips); p.bone = HumanBodyBones.Hips;
                     offset = forward * h * .06f * (part.id == "vagina" ? 1 : -1);
-                    inward = part.id == "vagina" ? -forward : forward;
+                    direction = part.id == "vagina" ? -forward : forward;
                     break;
                 case "handLeft": case "handRight":
                     bool left = part.id == "handLeft";
                     p.bone = left ? HumanBodyBones.LeftHand : HumanBodyBones.RightHand;
                     p.first = Bone(p.bone);
                     var arm = Bone(left ? HumanBodyBones.LeftLowerArm : HumanBodyBones.RightLowerArm);
-                    var direction = p.first != null && arm != null ? (p.first.position - arm.position).normalized : right * (left ? -1 : 1);
-                    offset = direction * h * .022f; inward = -direction;
+                    var armDirection = p.first != null && arm != null ? (p.first.position - arm.position).normalized : right * (left ? -1 : 1);
+                    offset = armDirection * h * .022f; direction = -armDirection;
                     break;
                 case "hands":
                     p.first = Bone(HumanBodyBones.LeftHand); p.second = Bone(HumanBodyBones.RightHand);
@@ -140,7 +140,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     bool leftFoot = part.id == "footLeft";
                     var toe = leftFoot ? HumanBodyBones.LeftToes : HumanBodyBones.RightToes;
                     p.bone = Bone(toe) != null ? toe : leftFoot ? HumanBodyBones.LeftFoot : HumanBodyBones.RightFoot;
-                    p.first = Bone(p.bone); offset = forward * h * .05f + up * h * .012f; inward = -offset.normalized;
+                    p.first = Bone(p.bone); offset = forward * h * .05f + up * h * .012f; direction = -offset.normalized;
                     break;
                 case "feet":
                     p.first = Bone(HumanBodyBones.LeftToes, HumanBodyBones.LeftFoot);
@@ -152,13 +152,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             bool middle = part.id == "chest" || part.id == "hands" || part.id == "thighs" || part.id == "feet";
             if (p.first == null || (middle && p.second == null)) return null;
             p.position = (p.second == null ? p.first.position : (p.first.position + p.second.position) * .5f) + offset;
-            if (Vector3.Cross(inward, up).sqrMagnitude < .000001f) up = right;
+            if (Vector3.Cross(direction, up).sqrMagnitude < .000001f) up = right;
             Vector3 point;
             if (part.id == "mouth" && surface.Mouth(out point)) p.position = point;
             else if (part.id == "earLeft" || part.id == "earRight")
             {
                 float side = part.id == "earLeft" ? -1 : 1;
-                if (surface.Extreme(p.first, right, side, out point, side)) p.position = point;
+                if (surface.Extreme(p.first, right, side, out point, side, avatar.VisemeSkinnedMesh)) p.position = point;
             }
             else if (part.id == "nippleLeft" || part.id == "nippleRight")
             {
@@ -172,13 +172,16 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     var center = (leftTip + rightTip) * .5f;
                     p.position = surface.Ray(center, forward, h * .15f, out point) ? point : center;
                 }
+                direction = -up; up = forward;
             }
             else if (part.id == "vagina" || part.id == "anus")
             {
                 // Locate the crotch surface below the pelvis, not the hips' front/back at bone height.
                 var center = p.first.position + forward * h * (part.id == "vagina" ? .012f : -.014f);
-                if (surface.Ray(center, -up, h * .2f, out point)) p.position = point;
-                inward = part.id == "vagina" ? up : (up + forward * .15f).normalized;
+                direction = -up;
+                if (surface.Ray(center, -up, h * .2f, out point, out var normal))
+                { p.position = point; direction = Vector3.ProjectOnPlane(normal, right).normalized; }
+                up = forward;
             }
             else if (part.id == "handLeft" || part.id == "handRight")
             {
@@ -186,8 +189,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (finger != null)
                 {
                     var center = Vector3.Lerp(p.first.position, finger.position, .75f);
-                    p.position = surface.Ray(center, forward, h * .08f, out point) ? point : center;
-                    inward = -forward;
+                    var palmNormal = -avatar.transform.up;
+                    if (surface.Ray(center, palmNormal, h * .08f, out point, out var normal))
+                    { p.position = point; palmNormal = normal; }
+                    else p.position = center;
+                    // The plug travels along the palm; native radius offset lifts it off the skin.
+                    direction = Vector3.ProjectOnPlane(-forward, palmNormal).normalized;
+                    up = palmNormal;
                 }
             }
             else if (part.id == "footLeft" || part.id == "footRight")
@@ -196,9 +204,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 var ankle = Bone(left ? HumanBodyBones.LeftFoot : HumanBodyBones.RightFoot);
                 var toe = Bone(left ? HumanBodyBones.LeftToes : HumanBodyBones.RightToes);
                 var center = toe != null ? Vector3.Lerp(ankle.position, toe.position, .6f) : ankle.position;
-                if (surface.Ray(center, -up, h * .12f, out point)) p.position = point;
+                if (surface.Extreme(ankle, forward, 1, out var front) && surface.Extreme(ankle, forward, -1, out var back) &&
+                    surface.Extreme(ankle, right, 1, out var outside) && surface.Extreme(ankle, right, -1, out var inside))
+                {
+                    center = Vector3.Lerp(back, front, .6f);
+                    center += right * (Vector3.Dot((outside + inside) * .5f - center, right));
+                }
+                var soleNormal = -up;
+                if (surface.Ray(center, -up, h * .12f, out point, out var normal)) { p.position = point; soleNormal = normal; }
                 else p.position = center;
-                inward = up;
+                direction = Vector3.ProjectOnPlane(toe != null ? toe.position - ankle.position : forward, soleNormal).normalized;
+                up = soleNormal;
             }
             else if (part.id == "hands" || part.id == "feet")
             {
@@ -209,7 +225,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (leftPose != null && rightPose != null)
                 {
                     p.position = (leftPose.position + rightPose.position) * .5f;
-                    inward = part.id == "hands" ? -forward : up;
+                    direction = (leftPose.rotation * Vector3.forward + rightPose.rotation * Vector3.forward).normalized;
+                    up = (leftPose.rotation * Vector3.up + rightPose.rotation * Vector3.up).normalized;
                 }
             }
             else if (part.id == "thighs")
@@ -218,8 +235,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (leftKnee != null && rightKnee != null)
                     p.position = (Vector3.Lerp(p.first.position, leftKnee.position, .18f) + Vector3.Lerp(p.second.position, rightKnee.position, .18f)) * .5f;
             }
-            if (Vector3.Cross(inward, up).sqrMagnitude < .000001f) up = forward;
-            p.rotation = Quaternion.LookRotation(inward, up);
+            if (direction.sqrMagnitude < .000001f) direction = forward;
+            if (Vector3.Cross(direction, up).sqrMagnitude < .000001f) up = right;
+            p.rotation = Quaternion.LookRotation(direction, up);
             return p;
         }
 
@@ -291,6 +309,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (settings.parts.GroupBy(p => p.id).Any(g => string.IsNullOrEmpty(g.Key) || g.Count() != 1))
                     throw new InvalidOperationException("部位の識別子が重複または欠落しています。");
                 using var surface = new AvatarSurface(avatar);
+                if (!surface.HasBody) warnings.Add("体の表面を特定できませんでした。ボーンを基準に配置したため、位置と向きを確認してください。");
                 var placements = new Dictionary<string, Placement>();
                 foreach (var part in settings.parts.Where(p => p.included))
                 {

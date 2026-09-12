@@ -1,3 +1,46 @@
+# Menu and placement delta — 2026-09-12
+
+Baseline `0eb74bec80d6ba562855a9987d807f8782c0217d`; same owned session 6,
+Unity 2022.3.22f1 / SDK 3.10.4 / VRCFury 1.1403.0 / CoplayDev 10.2.0.
+The source and evidence manifests in `Evidence/menu-placement-20260912` pin
+this delta separately from earlier evidence. This is development validation.
+
+- Observed native SDK and optional MA preprocessing with 15 generated sockets:
+  one SPS2 root; page 1 `設定|口|胸の間|膣|肛門|右手|左手|次へ`, page 2
+  `両手|その他`. Shared settings are nested; existing native options/socket remain.
+- Local Only checked: native Stealth control appears under Settings, parameter
+  initial 0/unsaved. Unchecked (MA probe): both Local Only and old Stealth menu
+  controls absent; native parameter still 0/unsaved. No new runtime graph.
+- Actual generated FX evaluation with Instant present/removed follows mouth
+  OFF/ON/OFF/ON/OFF. Native networking/haptics remain VRC/GM acceptance gates.
+- Actual MANUKA skin weights distinguish face `Body` (only Head coverage) from
+  `Manuka_body`. Unmapped Humanoid Toes and active `Shrink_stocking` explain the
+  failed foot queries. Temporary measurements exclude Shrink shapes, preserve
+  heel pose, and leave every original blendshape weight unchanged.
+- New poses place chest ring horizontally; palm/sole/cleavage use native radius
+  offset along outward +Y. Pelvic origins use underside surface rays; nipple
+  origins use breast surface. Fifteen poses and direction vectors were captured.
+- The first translated/yaw90/scaled1.2 probe exposed a missing mesh-scale
+  transform (up to 0.2013 m error). After correction, inverse-avatar position
+  differences are <= 0.000003341 m and quaternion angle differences are 0.
+- All 21 existing EditMode tests pass (0 failed/skipped). They cover existing
+  package contracts; new placement/menu observations use real disposable probes.
+- Front/side clothed MANUKA renders were inspected locally. Occluded pelvic and
+  cleavage regions cannot receive visual acceptance from these renders. Other
+  avatars, hand poses, shoes/clothing fit and subjective quality remain unverified.
+
+The user scene and its existing 12-socket root were not regenerated or saved.
+The updated setup window is bound to MANUKA_lilToon with applied settings loaded.
+Use regeneration to adopt new automatic poses/radius offsets; nonreplacement
+preserves manual edits. The owned Editor remains open at the user's request.
+A native Plug inspector callback logged MissingReferenceException after a
+transient probe Plug was destroyed; its stack was retained. This is probe
+teardown evidence, not a runtime pass. Normal native progress logs were also
+misclassified as Exception by MCP; they were identified by Debug.Log stacks.
+
+No upload/push/merge/release. Exact-commit VRC PC and the prior visual/runtime
+acceptance gates remain open; do not infer those passes from Editor results.
+
 # User-requested repair validation — 2026-09-12
 
 Repair baseline: `71d891c6cedf44066dfbac6d1ff3fd420d127ef2`.

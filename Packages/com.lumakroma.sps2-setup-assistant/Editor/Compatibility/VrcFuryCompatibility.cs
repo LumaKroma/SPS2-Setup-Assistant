@@ -69,6 +69,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             var wrapper = UndoComponentRegistration.Invoke(pose, "SPS2 セットアップ", () => FuryComponents.CreateSocket(pose));
             wrapper.SetName(part.name);
             wrapper.SetMode(part.id == "mouth" || part.id == "anus" ? FurySocket.Mode.Ring : FurySocket.Mode.Auto);
+            if (part.id == "chest" || part.id == "handLeft" || part.id == "handRight" || part.id == "hands" ||
+                part.id == "footLeft" || part.id == "footRight" || part.id == "feet") wrapper.UseRadiusOffset();
             var component = FindSocket(pose);
             Configure(component, part, setup, warnings);
             return component;

@@ -37,12 +37,13 @@ namespace LumaKroma.Sps2SetupAssistant
         public bool autoMode = true;
         public bool legacy = true;
         public bool instant = true;
+        public bool localOnly;
         public bool modularAvatar;
 
         public SetupSettings Copy()
         {
             var copy = new SetupSettings { penetration = penetration, autoMode = autoMode,
-                legacy = legacy, instant = instant, modularAvatar = modularAvatar };
+                legacy = legacy, instant = instant, localOnly = localOnly, modularAvatar = modularAvatar };
             foreach (var part in parts) copy.parts.Add(part.Copy());
             return copy;
         }

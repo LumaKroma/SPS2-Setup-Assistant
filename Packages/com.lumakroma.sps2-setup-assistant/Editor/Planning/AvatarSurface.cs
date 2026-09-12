@@ -20,10 +20,27 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Planning
             {
                 this.renderer = renderer;
                 mesh = new Mesh { hideFlags = HideFlags.HideAndDontSave };
-                renderer.BakeMesh(mesh, true);
-                world = mesh.vertices.Select(v => renderer.transform.position + renderer.transform.rotation * v).ToArray();
+                var source = new GameObject("SPS2 temporary skin measurement") { hideFlags = HideFlags.HideAndDontSave };
+                try
+                {
+                    source.transform.SetPositionAndRotation(renderer.transform.position, renderer.transform.rotation);
+                    source.transform.localScale = renderer.transform.lossyScale;
+                    var skin = source.AddComponent<SkinnedMeshRenderer>();
+                    skin.sharedMesh = renderer.sharedMesh; skin.bones = renderer.bones; skin.rootBone = renderer.rootBone;
+                    skin.quality = renderer.quality;
+                    for (int i = 0; i < renderer.sharedMesh.blendShapeCount; i++)
+                    {
+                        string name = renderer.sharedMesh.GetBlendShapeName(i);
+                        bool hideUnderClothing = name.StartsWith("Shrink", StringComparison.OrdinalIgnoreCase);
+                        skin.SetBlendShapeWeight(i, hideUnderClothing ? 0 : renderer.GetBlendShapeWeight(i));
+                    }
+                    skin.BakeMesh(mesh, true);
+                }
+                finally { UnityEngine.Object.DestroyImmediate(source); }
+                world = mesh.vertices.Select(v => renderer.transform.TransformPoint(v)).ToArray();
                 helper = new GameObject("SPS2 temporary surface query") { hideFlags = HideFlags.HideAndDontSave };
                 helper.transform.SetPositionAndRotation(renderer.transform.position, renderer.transform.rotation);
+                helper.transform.localScale = renderer.transform.lossyScale;
                 collider = helper.AddComponent<MeshCollider>(); collider.sharedMesh = mesh;
                 Physics.SyncTransforms();
             }
@@ -32,6 +49,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Planning
         private readonly VRCAvatarDescriptor avatar;
         private readonly Dictionary<SkinnedMeshRenderer, Snapshot> snapshots = new Dictionary<SkinnedMeshRenderer, Snapshot>();
         private readonly SkinnedMeshRenderer body;
+        public bool HasBody => body != null;
         public AvatarSurface(VRCAvatarDescriptor avatar)
         {
             this.avatar = avatar;
@@ -40,12 +58,19 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Planning
                 HumanBodyBones.LeftHand, HumanBodyBones.RightHand, HumanBodyBones.LeftFoot, HumanBodyBones.RightFoot }
                 .Select(animator.GetBoneTransform).Where(t => t != null).ToArray();
             var candidates = avatar.GetComponentsInChildren<SkinnedMeshRenderer>(true).Where(r => r.sharedMesh != null && r.bones.Length > 0)
-                .Select(r => new { renderer = r, coverage = major.Count(b => r.bones.Contains(b)),
-                    named = r.name.Equals("Body", StringComparison.OrdinalIgnoreCase) || r.sharedMesh.name.Equals("Body", StringComparison.OrdinalIgnoreCase) })
-                .Where(r => r.coverage >= 3).OrderByDescending(r => r.named).ThenByDescending(r => r.coverage).ToArray();
+                .Select(r => new { renderer = r, coverage = WeightedCoverage(r, major),
+                    named = r.name.Equals("Body", StringComparison.OrdinalIgnoreCase) || r.name.EndsWith("_body", StringComparison.OrdinalIgnoreCase) })
+                .Where(r => r.coverage >= 3).OrderByDescending(r => r.coverage).ThenByDescending(r => r.named).ToArray();
             // An ambiguous clothing/body pair is not an anatomical measurement.
             if (candidates.Length != 0 && (candidates.Length == 1 || candidates[0].named != candidates[1].named || candidates[0].coverage != candidates[1].coverage))
                 body = candidates[0].renderer;
+        }
+        private static int WeightedCoverage(SkinnedMeshRenderer renderer, Transform[] major)
+        {
+            var totals = new float[renderer.bones.Length];
+            foreach (var weight in renderer.sharedMesh.GetAllBoneWeights())
+                if (weight.boneIndex < totals.Length) totals[weight.boneIndex] += weight.weight;
+            return major.Count(b => { int index = Array.IndexOf(renderer.bones, b); return index >= 0 && totals[index] >= 1; });
         }
         private Snapshot Get(SkinnedMeshRenderer renderer)
         {
@@ -54,13 +79,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Planning
             return snapshot;
         }
         public bool Ray(Vector3 center, Vector3 outward, float reach, out Vector3 point, SkinnedMeshRenderer renderer = null)
+            => Ray(center, outward, reach, out point, out _, renderer);
+        public bool Ray(Vector3 center, Vector3 outward, float reach, out Vector3 point, out Vector3 normal, SkinnedMeshRenderer renderer = null)
         {
-            point = center;
+            point = center; normal = outward.normalized;
             var snapshot = Get(renderer != null ? renderer : body);
             if (snapshot == null || outward.sqrMagnitude < .000001f) return false;
             outward.Normalize();
             if (!snapshot.collider.Raycast(new Ray(center + outward * reach, -outward), out var hit, reach * 2)) return false;
-            point = hit.point; return true;
+            point = hit.point; normal = hit.normal.normalized; return true;
         }
         public bool Mouth(out Vector3 point)
         {
@@ -80,12 +107,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Planning
             if (!Ray(center, avatar.transform.forward, .15f * Mathf.Abs(avatar.transform.lossyScale.y), out point, renderer)) point = center;
             return true;
         }
-        public bool Extreme(Transform bone, Vector3 axis, float sign, out Vector3 point, float side = 0)
+        public bool Extreme(Transform bone, Vector3 axis, float sign, out Vector3 point, float side = 0, SkinnedMeshRenderer renderer = null)
         {
             point = bone != null ? bone.position : Vector3.zero;
-            var snapshot = Get(body); if (snapshot == null || bone == null) return false;
-            var mesh = body.sharedMesh; var counts = mesh.GetBonesPerVertex(); var weights = mesh.GetAllBoneWeights();
-            var bones = body.bones; int cursor = 0; float best = float.NegativeInfinity; bool found = false;
+            renderer = renderer != null ? renderer : body;
+            var snapshot = Get(renderer); if (snapshot == null || bone == null) return false;
+            var mesh = renderer.sharedMesh; var counts = mesh.GetBonesPerVertex(); var weights = mesh.GetAllBoneWeights();
+            var bones = renderer.bones; int cursor = 0; float best = float.NegativeInfinity; bool found = false;
             {
                 for (int i = 0; i < counts.Length; i++)
                 {

@@ -58,13 +58,24 @@ Casual selects mouth, chest middle, both hands and their middle, vagina and anus
 and thigh middle (15). Presets change fixed-part inclusion only; custom parts,
 depth values and inactive action-type inputs survive switching.
 
-Automatic placement uses avatar-aligned Humanoid measurements plus a temporary
-baked body mesh. A uniquely selected body supplies surface rays and weighted
-bone vertices; descriptor mouth viseme deltas locate the mouth center. Hand
-placement uses wrist/finger measurements and feet use the sole surface. Paired
-positions use the resulting individual poses. Missing or ambiguous surface
-data falls back to bone measurements. Local +Z points inward; inspect and adjust
-poses for each avatar. Surface estimates are not an anatomical guarantee.
+Automatic placement uses avatar-aligned Humanoid measurements plus temporary
+baked mesh measurements. Body selection counts actual vertex influence across
+major bones; a bones array containing unused entries is not body coverage.
+Descriptor viseme mesh supplies mouth and ear measurements. Temporary skin
+copies exclude `Shrink*` clothing-hiding shapes, retain other shape values
+(including heel pose), and never change the source avatar. Queries apply the
+renderer world transform including scale. A missing/ambiguous body reports a
+bone-estimate warning. Surface estimates are not an anatomical guarantee.
+
+Nipples use the breast surface. Pelvis sockets use the underside surface near
+the hips, with sagittal outward normals. Cleavage points down so its ring plane
+is horizontal. Hands run along the palm and feet along the sole toward the toes;
+foot extents include weighted descendants when Humanoid Toes is unmapped.
+Native radius offset is enabled on cleavage, hands and feet (including pairs),
+with local +Y away from the surface. Local +Z points outward for openings or
+along the intended tangent path; paired poses average individual results.
+Existing manual poses and native radius offsets survive nonreplacement Apply.
+Use regeneration to adopt these automatic-placement changes on older setups.
 
 Mouth uses Jaw with Head fallback. Ears use Head; pelvis uses Hips; hands use
 Hand; feet use Toes with Foot fallback. Nipples prefer uniquely identified
@@ -135,14 +146,23 @@ not directly edited.
 | Auto Mode | OFF | Yes |
 | Legacy Compatibility | ON | Yes |
 | Instant button | OFF | No |
+| Local Only (native Stealth) | OFF | No |
 
-Japanese SPS2 menus group fixed/custom parts by category, with at most eight
-controls per page. The native SPS container is replaced by one SPS2 entry;
-remaining native options and existing sockets are nested under it. Common Auto
-and Legacy controls are moved, not duplicated, while existing individual
-Socket persistence is preserved. With only one eligible native Socket, native
-Auto has no useful selector and may be absent. More than 16 eligible Auto
-Sockets, including existing ones, stops authoring/build.
+The SPS2 menu preserves this order: 設定, 口, 胸の間, 膣, 肛門, 右手, 左手,
+両手, その他. Excluded sockets are omitted. With all parts, page 1 contains
+設定 through 左手 plus 次へ; page 2 contains 両手 and その他. Other generated
+fixed/custom sockets are under その他, paginated as needed (eight controls max).
+設定 contains Auto Mode, Legacy Compatibility and Instant when included.
+The authoring Local Only checkbox is unchecked by default. Checking it exposes
+the existing native Stealth control under 設定 as Local Only; unchecking removes
+that control. In either case its native parameter starts OFF and is unsaved.
+Native local-haptics/invisible-to-others behavior is reused without a new graph.
+
+The native SPS container becomes one SPS2 entry. Remaining native options and
+pre-existing sockets remain under 設定/標準設定・既存Socket. Common controls
+are moved, not duplicated; existing individual Socket persistence is preserved.
+With only one eligible native Socket, native Auto may be absent. More than 16
+eligible Auto Sockets, including existing ones, stops authoring/build.
 
 Instant has no duration/Exit Time hold:
 

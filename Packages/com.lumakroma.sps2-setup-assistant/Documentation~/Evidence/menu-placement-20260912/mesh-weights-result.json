@@ -1,0 +1,201 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        {
+          "name": "Body",
+          "vertices": 9690,
+          "bounds": "Center: (0.00, -0.01, 1.16), Extents: (0.09, 0.08, 0.10)",
+          "weights": [
+            {
+              "bone": "Head",
+              "weight": 8766.141
+            },
+            {
+              "bone": "LeftEye",
+              "weight": 272.0
+            },
+            {
+              "bone": "RightEye",
+              "weight": 272.0
+            },
+            {
+              "bone": "Tang.001",
+              "weight": 125.401649
+            },
+            {
+              "bone": "Cheek_L",
+              "weight": 92.5928345
+            },
+            {
+              "bone": "Cheek_R",
+              "weight": 87.95833
+            },
+            {
+              "bone": "Tang",
+              "weight": 73.90738
+            },
+            {
+              "bone": "Hips",
+              "weight": 0.0
+            },
+            {
+              "bone": "Spine",
+              "weight": 0.0
+            },
+            {
+              "bone": "Chest",
+              "weight": 0.0
+            },
+            {
+              "bone": "Neck",
+              "weight": 0.0
+            },
+            {
+              "bone": "Manuka_hair_root",
+              "weight": 0.0
+            },
+            {
+              "bone": "Manuka_hair_front_1",
+              "weight": 0.0
+            },
+            {
+              "bone": "Manuka_hair_front_1.001",
+              "weight": 0.0
+            }
+          ]
+        },
+        {
+          "name": "Manuka_atama",
+          "vertices": 1922,
+          "bounds": "Center: (0.00, 0.01, 1.17), Extents: (0.09, 0.09, 0.11)",
+          "weights": [
+            {
+              "bone": "Manuka_hair_root",
+              "weight": 1817.64185
+            },
+            {
+              "bone": "Neck",
+              "weight": 104.35836
+            },
+            {
+              "bone": "Hips",
+              "weight": 0.0
+            },
+            {
+              "bone": "Spine",
+              "weight": 0.0
+            },
+            {
+              "bone": "Chest",
+              "weight": 0.0
+            },
+            {
+              "bone": "Head",
+              "weight": 0.0
+            },
+            {
+              "bone": "LeftEye",
+              "weight": 0.0
+            },
+            {
+              "bone": "RightEye",
+              "weight": 0.0
+            },
+            {
+              "bone": "Manuka_hair_front_1",
+              "weight": 0.0
+            },
+            {
+              "bone": "Manuka_hair_front_1.001",
+              "weight": 0.0
+            },
+            {
+              "bone": "Manuka_hair_front_1.001_end",
+              "weight": 0.0
+            },
+            {
+              "bone": "Manuka_hair_front_2",
+              "weight": 0.0
+            },
+            {
+              "bone": "Manuka_hair_front_2_end",
+              "weight": 0.0
+            },
+            {
+              "bone": "Manuka_hair_ahoge",
+              "weight": 0.0
+            }
+          ]
+        },
+        {
+          "name": "Manuka_body",
+          "vertices": 17004,
+          "bounds": "Center: (0.00, -0.03, 0.55), Extents: (0.56, 0.10, 0.55)",
+          "weights": [
+            {
+              "bone": "Chest",
+              "weight": 1494.24109
+            },
+            {
+              "bone": "Hips",
+              "weight": 1142.36658
+            },
+            {
+              "bone": "Toe_L",
+              "weight": 1076.74036
+            },
+            {
+              "bone": "Toe_R",
+              "weight": 1076.74036
+            },
+            {
+              "bone": "UpperLeg_R",
+              "weight": 753.3727
+            },
+            {
+              "bone": "UpperLeg_L",
+              "weight": 753.3725
+            },
+            {
+              "bone": "Breast_R",
+              "weight": 621.9151
+            },
+            {
+              "bone": "Breast_L",
+              "weight": 621.915039
+            },
+            {
+              "bone": "Spine",
+              "weight": 543.8408
+            },
+            {
+              "bone": "Hand_R",
+              "weight": 355.823669
+            },
+            {
+              "bone": "Hand_L",
+              "weight": 354.871552
+            },
+            {
+              "bone": "Foot_L",
+              "weight": 349.282562
+            },
+            {
+              "bone": "Foot_R",
+              "weight": 349.282562
+            },
+            {
+              "bone": "LowerLeg_L",
+              "weight": 323.882782
+            }
+          ]
+        }
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

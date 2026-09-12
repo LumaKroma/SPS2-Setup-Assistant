@@ -77,6 +77,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 Toggle("Auto Mode", settings.autoMode, v => settings.autoMode = v);
                 Toggle("後方互換性", settings.legacy, v => settings.legacy = v);
                 Toggle("インスタント起動", settings.instant, v => settings.instant = v);
+                Toggle("Local Only", settings.localOnly, v => settings.localOnly = v);
                 GUILayout.Space(8);
                 Toggle("Modular Avatarで追従", settings.modularAvatar, v => settings.modularAvatar = v);
                 GUILayout.Space(12);

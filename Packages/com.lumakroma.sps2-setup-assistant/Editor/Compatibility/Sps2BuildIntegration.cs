@@ -29,6 +29,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
     {
         private const string AutoLabel = "<b>Auto Mode</b>\n<size=20>Activates hole nearest to a VRCFury plug";
         private const string LegacyLabel = "<b>Legacy Compatibility</b>\n<size=20>DPS / TPS / SPS1\nOne socket at a time";
+        private const string LocalOnlyLabel = "<b>Stealth Mode</b>\n<size=20>Only local haptics,\nInvisible to others";
 
         private static readonly Dictionary<int, Sps2SetupContext> Pending = new Dictionary<int, Sps2SetupContext>();
         internal static bool Run(GameObject avatar, bool before)
@@ -137,46 +138,52 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             }
             var auto = Unique(entries, AutoLabel, false);
             var legacy = Unique(entries, LegacyLabel, false);
+            var localOnly = Unique(entries, LocalOnlyLabel, true);
+            SetPersistence(avatar, fx, localOnly, false, 0);
             if (root.settings.legacy && legacy == null) throw new InvalidOperationException("後方互換性メニューがありません。");
             if (auto != null) SetPersistence(avatar, fx, auto, true, 0);
             if (legacy != null) SetPersistence(avatar, fx, legacy, true, 1);
             var requiredControls = owned.Values.Select(e => e.control).ToList();
             if (auto != null) requiredControls.Add(auto.control);
             if (legacy != null) requiredControls.Add(legacy.control);
+            requiredControls.Add(localOnly.control);
             var nativeContainer = entries.Where(e => e.control.subMenu != null)
                 .Select(e => new { entry = e, children = Entries(e.control.subMenu) })
                 .Where(e => requiredControls.All(c => e.children.Any(child => child.control == c)))
                 .OrderBy(e => e.children.Count).Select(e => e.entry).FirstOrDefault();
             var nativeMenu = nativeContainer?.control.subMenu;
             var menu = Menu("SPS2");
+            var settingsMenu = Menu("設定");
+            menu.controls.Add(Submenu("設定", settingsMenu));
             // Move the native controls themselves: one UI control per shared parameter.
             if (root.settings.autoMode && auto != null)
-            { auto.parent.controls.Remove(auto.control); auto.control.name = "Auto Mode"; menu.controls.Add(auto.control); }
+            { auto.parent.controls.Remove(auto.control); auto.control.name = "Auto Mode"; settingsMenu.controls.Add(auto.control); }
             if (root.settings.legacy && legacy != null)
-            { legacy.parent.controls.Remove(legacy.control); legacy.control.name = "後方互換性"; menu.controls.Add(legacy.control); }
+            { legacy.parent.controls.Remove(legacy.control); legacy.control.name = "後方互換性"; settingsMenu.controls.Add(legacy.control); }
             if (root.settings.instant && (owned.ContainsKey("mouth") || owned.ContainsKey("vagina")))
-                AddInstant(avatar, root, fx, menu, owned, legacy);
-            foreach (var group in root.settings.parts.Where(p => owned.ContainsKey(p.id)).GroupBy(p => p.category).OrderBy(g => g.Key))
+                AddInstant(avatar, root, fx, settingsMenu, owned, legacy);
+            localOnly.parent.controls.Remove(localOnly.control);
+            if (root.settings.localOnly)
+            { localOnly.control.name = "Local Only"; settingsMenu.controls.Add(localOnly.control); }
+            var direct = new[] { "mouth", "chest", "vagina", "anus", "handRight", "handLeft", "hands" };
+            void MoveSocket(string id, VRCExpressionsMenu destination)
             {
-                if (group.Key < 0 || group.Key >= FullSetupCatalog.Categories.Length) throw new InvalidOperationException("部位カテゴリーが不正です。");
-                var category = Menu(FullSetupCatalog.Categories[group.Key]); var page = category;
-                var members = group.ToArray();
-                for (int i = 0; i < members.Length; i++)
-                {
-                    if (page.controls.Count == 7 && i < members.Length - 1)
-                    { var next = Menu(category.name + " 続き"); page.controls.Add(Submenu("次へ", next)); page = next; }
-                    var part = members[i]; var entry = owned[part.id];
-                    entry.parent.controls.Remove(entry.control); entry.control.name = part.name; page.controls.Add(entry.control);
-                }
-                menu.controls.Add(Submenu(category.name, category));
+                if (!owned.TryGetValue(id, out var entry)) return;
+                entry.parent.controls.Remove(entry.control);
+                entry.control.name = root.settings.parts.Single(p => p.id == id).name;
+                destination.controls.Add(entry.control);
             }
+            foreach (var id in direct) MoveSocket(id, menu);
+            var other = Menu("その他");
+            foreach (var part in root.settings.parts.Where(p => !direct.Contains(p.id))) MoveSocket(part.id, other);
+            if (other.controls.Count != 0) { Paginate(other); menu.controls.Add(Submenu("その他", other)); }
             // Preserve native options and unrelated Socket controls inside the same entry.
             // Empty native pagination pages disappear after moving the owned controls.
             if (nativeMenu != null)
             {
                 PruneEmptyMenus(nativeMenu, new HashSet<VRCExpressionsMenu>());
                 if (nativeMenu.controls.Count != 0)
-                    menu.controls.Add(Submenu("標準設定・既存Socket", nativeMenu));
+                    settingsMenu.controls.Add(Submenu("標準設定・既存Socket", nativeMenu));
                 nativeContainer.control.name = "SPS2";
                 nativeContainer.control.subMenu = menu;
             }
@@ -187,6 +194,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 Paginate(avatar.expressionsMenu);
             }
             Paginate(menu);
+            Paginate(settingsMenu);
             // Final SDK validation runs after native parameter compression; do not reject its pre-compression cost here.
         }
 
