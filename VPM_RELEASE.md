@@ -1,9 +1,9 @@
 # VPM release handoff
 
-Preparation baseline: 40642de3108d603d668bf03eb405856321f88668, Issue121.
-This setup has not published a repository, release, or Pages site. Version remains
-0.2.0-dev.1; do not call it stable or final-VRC-validated. All product validation
-is scoped in package Documentation~/VALIDATION.md (excluded from ZIP).
+Version 1.0.0 is approved for publication by the owner on 2026-09-13, from
+implementation baseline 5ddff4837122d53526112f01d6f1c6732961cd65 (Issue121).
+The owner reported VRC PC PASS and accepted the final feature removals.
+Public VCC/ALCOM installation remains a distinct delivery check.
 
 ## Build and validate locally
 

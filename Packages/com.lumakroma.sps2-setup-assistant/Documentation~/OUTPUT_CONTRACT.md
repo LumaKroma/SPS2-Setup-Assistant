@@ -1,3 +1,10 @@
+# 1.0.0 promotion — 2026-09-13
+
+Owner approves current implementation as 1.0.0 and public VPM publication.
+Metadata and README publication notices change; product behavior is unchanged
+from 5ddff4837122d53526112f01d6f1c6732961cd65. Historical development version
+references below are retained as history.
+
 # Unpublished PoC removal — 2026-09-13
 
 Only Tools/LumaKroma/SPS2 Setup Assistant is available. The old window, generator,

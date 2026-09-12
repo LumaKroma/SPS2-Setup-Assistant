@@ -1,3 +1,9 @@
+# 1.0.0 publication approval (2026-09-13)
+
+The owner approved the current implementation as 1.0.0 and authorized publishing
+this repository, GitHub Release and VPM listing. This supersedes earlier private
+development-only version restrictions. Future releases still require approval.
+
 # Unpublished PoC removal (approved 2026-09-13)
 
 The user confirms no old assistant version was public. Remove the PoC window,
