@@ -1,23 +1,24 @@
 # IcePop display asset provenance
 
-Issue 121 comment 5644512003 records the owner's permission to reuse and include
-LumaToys IcePop display assets in this private implementation. This is an asset
-copy, not a Blender edit or a regenerated model.
+The owner explicitly authorized public distribution of these IcePop assets under
+MIT on 2026-09-13 in Issue 121's follow-up. This supersedes the earlier private-only
+inclusion permission in comment 5644512003. See `Assets/IcePop/LICENSE.txt`.
 
 | Included file | Source |
 | --- | --- |
 | `Assets/IcePop/IcePop.fbx` | LumaGimmics `Assets/LumaKroma/LumaToys/Models/IcePop.fbx` |
 | `Assets/IcePop/IcePop.mat` | LumaGimmics `Assets/LumaKroma/LumaToys/Materials/IcePop.mat` |
+| `Assets/IcePop/IcePopStick.mat` | Authored through Unity for this package; opaque wood brown |
 
-Model bytes and material bytes are copied unchanged. Model import settings are
-preserved. Copied assets use new stable .meta GUIDs to avoid collisions when the
-source LumaToys assets are installed in the same project.
+Model geometry, original material bytes and model import settings are unchanged.
+Copied model/material assets have stable distinct .meta GUIDs. The normal test
+Plug uses local scale (0.7, 0.7, 0.7); the Ice renderer uses IcePop.mat and the
+Stick renderer uses IcePopStick.mat. These defaults are reapplied when shown again.
+The long capsule is unaffected. Both materials require separately installed lilToon;
+no third-party shader is bundled.
 
-The material requires lilToon, which is a separate dependency and is not
-bundled. The generated Plug assigns the copied material to its display
-renderers. The original IcePop Prefab, menus, Modular Avatar integrations,
-Tracker assets and other gimmick components are excluded.
-
-Original package code/docs remain MIT licensed. This private inclusion does not
-transfer ownership or establish a public redistribution license for the display
-assets. No public release or publication is authorized by this record.
+The original LumaToys Prefab, menus, Modular Avatar integrations, Tracker assets
+and other gimmick components are excluded. Code, documentation and these included
+IcePop assets are MIT licensed; this permission does not relicense external
+VRCFury, VRChat SDK, Modular Avatar or lilToon dependencies. Actual repository/VPM
+publication is a separate action and was not performed by this change.

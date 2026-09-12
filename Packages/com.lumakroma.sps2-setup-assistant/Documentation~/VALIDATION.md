@@ -1,3 +1,34 @@
+# IcePop presentation and MIT permission — 2026-09-13
+
+Baseline 8cbd1cd4467817c11cecf8b7a16dcbcbd849787f. User requested normal IcePop
+spawn scale0.7 and a brown handle, and explicitly authorized MIT public asset
+redistribution. Contract impact: display defaults and asset license, no native
+path/Collapse/lifecycle change. Long capsule unchanged; geometry/import untouched.
+
+Owned Unity2022.3.22f1 / VRCFury1.1403.0 / SDK3.10.4 public MCP validation:
+- New normal Plug local scale(0.7,0.7,0.7), IcePop material on Ice,
+  IcePopStick on Stick with opaque brown RGBA(0.45,0.24,0.10,1).
+- Re-show reuses the same Plug and reapplies scale/material. Perturb both values,
+  re-show, Undo and Redo: all assertions passed. Long Plug scale remains(1,1,1).
+- Full15-socket fixture, regeneration and both Plugs pass native SDK preprocess;
+  zero captured Error/Exception/Assert during generation/build, one SPS2 menu root,
+  no custom generated MonoBehaviours. No additional historical matrix rerun.
+- Isolated native camera render visually inspected: original ice surface retained,
+  separate brown stick visible. Public Unity Material creation; no dependency edit.
+- Existing scene's IcePop updated via normal show operation; left unsaved for user.
+
+Native guided Collapse in1.1403 sets radius multiplier0 inside marked segments;
+there is no per-Socket shrink falloff control in the observed schema. Proposed
+mitigation only: noncollapsed entry segment to an internal path point, then
+collapsed interior. It hides the discontinuity rather than smoothing it and needs
+mouth/neck and reverse-exit visual validation. Allow Hole Overrun is a Plug-side
+option and already defaults true; it is not an equivalent path-segment fix.
+No speculative change to either path or shader was made.
+
+Evidence in Evidence/icepop-20260913. MIT permission is recorded in
+ASSET_PROVENANCE.md and bundled LICENSE.txt; external dependency licenses unchanged.
+No publication/repository visibility/VPM release operation. Other-avatar and exact
+VRC PC gates remain; package validator and diff checks required at completion.
 # Actual VRCFury release matrix — 2026-09-13
 
 Source baseline: `5cfdddfe9f9b6f10a0e691a05dfab0f864d4e13b`. Contract impact: none;

@@ -1,3 +1,12 @@
+# IcePop presentation amendment — 2026-09-13
+
+Normal IcePop show/re-show sets the owned Plug root localScale to (0.7, 0.7, 0.7).
+Ice uses the original material; Stick uses the package's opaque brown lilToon material.
+Undo restores previous scale/material assignments; object reuse and long capsule
+behavior are unchanged. Included IcePop assets may be publicly distributed under
+MIT per explicit owner permission; dependency licenses remain separate.
+Native path/Collapse behavior is unchanged in this amendment.
+
 # Issue 121 development output contract
 
 Applies to the approved `0.2.0-dev.1` implementation delta from baseline

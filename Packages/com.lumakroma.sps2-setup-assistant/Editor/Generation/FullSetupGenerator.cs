@@ -572,6 +572,18 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     if (longPlug) root.longTestPlug = plug; else root.testPlug = plug;
                 }
                 Undo.RecordObject(selectedPlug.transform, UndoName);
+                if (!longPlug)
+                {
+                    var ice = AssetDatabase.LoadAssetAtPath<Material>(PackagePath + "/Assets/IcePop/IcePop.mat");
+                    var stick = AssetDatabase.LoadAssetAtPath<Material>(PackagePath + "/Assets/IcePop/IcePopStick.mat");
+                    if (ice == null || stick == null) throw new InvalidOperationException("IcePop の表示用マテリアルが見つかりません。");
+                    selectedPlug.transform.localScale = Vector3.one * .7f;
+                    foreach (var renderer in selectedPlug.GetComponentsInChildren<Renderer>(true))
+                    {
+                        Undo.RecordObject(renderer, UndoName);
+                        renderer.sharedMaterials = Enumerable.Repeat(renderer.name == "Stick" ? stick : ice, renderer.sharedMaterials.Length).ToArray();
+                    }
+                }
                 var head = avatar.GetComponent<Animator>().GetBoneTransform(HumanBodyBones.Head);
                 selectedPlug.transform.SetPositionAndRotation((head != null ? head.position : avatar.transform.position + avatar.transform.up) + avatar.transform.forward * .35f, Quaternion.LookRotation(-avatar.transform.forward, avatar.transform.up));
                 if (longPlug)
