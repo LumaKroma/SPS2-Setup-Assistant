@@ -19,20 +19,24 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         private const string PathName = "Guided Paths";
         public const string PackagePath = "Packages/com.lumakroma.sps2-setup-assistant";
 
-        public static Sps2SetupRoot Find(VRCAvatarDescriptor avatar)
+        public const string RootName = "SPS2";
+        public static bool HasGeneratedRoot(VRCAvatarDescriptor avatar)
         {
-            if (avatar == null) return null;
-            var matches = avatar.GetComponentsInChildren<Sps2SetupRoot>(true)
-                .Where(r => r.transform.parent == avatar.transform).ToArray();
-            if (matches.Length > 1) throw new InvalidOperationException("SPS2 生成ルートが重複しています。");
-            var root = matches.SingleOrDefault();
-            if (root != null && (root.schema != Sps2SetupRoot.CurrentSchema || string.IsNullOrEmpty(root.identity)))
+            if (avatar == null) return false;
+            foreach (Transform child in avatar.transform)
+                if (child.name == RootName || child.name == SocketSetupGenerator.OwnedRootName || child.GetComponent<Sps2SetupRoot>() != null) return true;
+            return false;
+        }
+
+        public static Sps2SetupContext Find(VRCAvatarDescriptor avatar)
+        {
+            var root = Sps2SetupStorage.Find(avatar);
+            if (root != null && (root.schema != 1 || string.IsNullOrEmpty(root.identity)))
                 throw new InvalidOperationException("SPS2 生成データの形式が一致しません。");
             if (root != null) ValidateOwnership(root, true);
             return root;
         }
-
-        private static void ValidateOwnership(Sps2SetupRoot root, bool allowMissing)
+        private static void ValidateOwnership(Sps2SetupContext root, bool allowMissing)
         {
             if (root.settings == null || root.sockets == null) throw new InvalidOperationException("SPS2 生成データが欠けています。");
             if (root.testPlug != null && root.testPlug.transform.parent != root.transform)
@@ -70,7 +74,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             return matches.Length == 1 ? matches[0] : null;
         }
 
-        private static Placement Place(SocketSettings part, VRCAvatarDescriptor avatar, BodyBasis basis)
+        private static Placement Place(SocketSettings part, VRCAvatarDescriptor avatar, BodyBasis basis, AvatarSurface surface)
         {
             var animator = avatar.GetComponent<Animator>();
             Transform Bone(params HumanBodyBones[] candidates) => candidates.Select(animator.GetBoneTransform).FirstOrDefault(t => t != null);
@@ -149,6 +153,72 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             if (p.first == null || (middle && p.second == null)) return null;
             p.position = (p.second == null ? p.first.position : (p.first.position + p.second.position) * .5f) + offset;
             if (Vector3.Cross(inward, up).sqrMagnitude < .000001f) up = right;
+            Vector3 point;
+            if (part.id == "mouth" && surface.Mouth(out point)) p.position = point;
+            else if (part.id == "earLeft" || part.id == "earRight")
+            {
+                float side = part.id == "earLeft" ? -1 : 1;
+                if (surface.Extreme(p.first, right, side, out point, side)) p.position = point;
+            }
+            else if (part.id == "nippleLeft" || part.id == "nippleRight")
+            {
+                if (p.followTransform && surface.Extreme(p.first, forward, 1, out point)) p.position = point;
+                else if (surface.Ray(p.position, forward, h * .15f, out point)) p.position = point;
+            }
+            else if (part.id == "chest")
+            {
+                if (surface.Extreme(p.first, forward, 1, out var leftTip) && surface.Extreme(p.second, forward, 1, out var rightTip))
+                {
+                    var center = (leftTip + rightTip) * .5f;
+                    p.position = surface.Ray(center, forward, h * .15f, out point) ? point : center;
+                }
+            }
+            else if (part.id == "vagina" || part.id == "anus")
+            {
+                // Locate the crotch surface below the pelvis, not the hips' front/back at bone height.
+                var center = p.first.position + forward * h * (part.id == "vagina" ? .012f : -.014f);
+                if (surface.Ray(center, -up, h * .2f, out point)) p.position = point;
+                inward = part.id == "vagina" ? up : (up + forward * .15f).normalized;
+            }
+            else if (part.id == "handLeft" || part.id == "handRight")
+            {
+                var finger = Bone(part.id == "handLeft" ? HumanBodyBones.LeftMiddleProximal : HumanBodyBones.RightMiddleProximal);
+                if (finger != null)
+                {
+                    var center = Vector3.Lerp(p.first.position, finger.position, .75f);
+                    p.position = surface.Ray(center, forward, h * .08f, out point) ? point : center;
+                    inward = -forward;
+                }
+            }
+            else if (part.id == "footLeft" || part.id == "footRight")
+            {
+                bool left = part.id == "footLeft";
+                var ankle = Bone(left ? HumanBodyBones.LeftFoot : HumanBodyBones.RightFoot);
+                var toe = Bone(left ? HumanBodyBones.LeftToes : HumanBodyBones.RightToes);
+                var center = toe != null ? Vector3.Lerp(ankle.position, toe.position, .6f) : ankle.position;
+                if (surface.Ray(center, -up, h * .12f, out point)) p.position = point;
+                else p.position = center;
+                inward = up;
+            }
+            else if (part.id == "hands" || part.id == "feet")
+            {
+                string leftId = part.id == "hands" ? "handLeft" : "footLeft";
+                string rightId = part.id == "hands" ? "handRight" : "footRight";
+                var leftPose = Place(new SocketSettings { id = leftId }, avatar, basis, surface);
+                var rightPose = Place(new SocketSettings { id = rightId }, avatar, basis, surface);
+                if (leftPose != null && rightPose != null)
+                {
+                    p.position = (leftPose.position + rightPose.position) * .5f;
+                    inward = part.id == "hands" ? -forward : up;
+                }
+            }
+            else if (part.id == "thighs")
+            {
+                var leftKnee = Bone(HumanBodyBones.LeftLowerLeg); var rightKnee = Bone(HumanBodyBones.RightLowerLeg);
+                if (leftKnee != null && rightKnee != null)
+                    p.position = (Vector3.Lerp(p.first.position, leftKnee.position, .18f) + Vector3.Lerp(p.second.position, rightKnee.position, .18f)) * .5f;
+            }
+            if (Vector3.Cross(inward, up).sqrMagnitude < .000001f) up = forward;
             p.rotation = Quaternion.LookRotation(inward, up);
             return p;
         }
@@ -183,7 +253,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             constraint.constraintActive = true;
         }
 
-        private static GeneratedSocket CreatePart(Sps2SetupRoot root, SocketSettings part, Placement placement, SetupSettings setup, List<string> warnings)
+        private static GeneratedSocket CreatePart(Sps2SetupContext root, SocketSettings part, Placement placement, SetupSettings setup, List<string> warnings)
         {
             var anchor = Create(part.id, root.transform);
             anchor.transform.SetPositionAndRotation(
@@ -204,10 +274,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         }
 
         public static bool Apply(VRCAvatarDescriptor avatar, SetupSettings settings, bool regenerate,
-            out Sps2SetupRoot root, out string message)
+            out Sps2SetupContext root, out string message)
         {
             root = null; message = null;
             int group = -1;
+            Sps2SetupAsset createdAsset = null;
             try
             {
                 VrcFuryCompatibility.RequireVersion();
@@ -219,12 +290,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 var warnings = new List<string>();
                 if (settings.parts.GroupBy(p => p.id).Any(g => string.IsNullOrEmpty(g.Key) || g.Count() != 1))
                     throw new InvalidOperationException("部位の識別子が重複または欠落しています。");
+                using var surface = new AvatarSurface(avatar);
                 var placements = new Dictionary<string, Placement>();
                 foreach (var part in settings.parts.Where(p => p.included))
                 {
                     if (part.custom && old != null && part.target != null && part.target.IsChildOf(old.transform))
                         throw new InvalidOperationException("カスタム追従先に自分の生成物は指定できません。");
-                    var placement = Place(part, avatar, basis);
+                    var placement = Place(part, avatar, basis, surface);
                     if (placement == null) warnings.Add(part.name + ": 追従先が見つからないため省きました。");
                     else placements.Add(part.id, placement);
                 }
@@ -236,7 +308,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     throw new InvalidOperationException("追従方式の変更には再生成を使用してください。");
                 Undo.IncrementCurrentGroup(); group = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName(UndoName);
                 var previous = old != null ? old.settings.Copy() : null;
-                var identity = old != null ? old.identity : Guid.NewGuid().ToString("N");
+                // Preserve the settings referenced by saved scenes and Prefabs when edits are discarded.
+                var asset = createdAsset = Sps2SetupStorage.Create(avatar.name);
+                var identity = Sps2SetupStorage.Identity(asset);
                 GameObject existingPlug = old != null ? old.testPlug : null;
                 if (regenerate && existingPlug != null) Undo.SetTransformParent(existingPlug.transform, avatar.transform, UndoName);
                 if (regenerate && old != null) Undo.DestroyObjectImmediate(old.gameObject);
@@ -244,14 +318,21 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 root = regenerate ? null : old;
                 if (root == null)
                 {
-                    var obj = Create(SocketSetupGenerator.OwnedRootName, avatar.transform);
-                    root = Undo.AddComponent<Sps2SetupRoot>(obj); root.identity = identity;
+                    var obj = Create(RootName, avatar.transform);
+                    root = new Sps2SetupContext { gameObject = obj, avatar = avatar, asset = asset, identity = identity, settings = settings.Copy() };
                     if (existingPlug != null) { Undo.SetTransformParent(existingPlug.transform, root.transform, UndoName); root.testPlug = existingPlug; }
                 }
+                root.asset = asset; root.identity = identity;
                 // RegisterCreatedObjectUndo ends pending RecordObject tracking. The metadata
                 // list spans many subsequent creations, so keep a complete-object snapshot.
-                Undo.RegisterCompleteObjectUndo(root, UndoName);
-                string metadataBefore = JsonUtility.ToJson(root);
+                if (root.asset == null)
+                {
+                    root.asset = createdAsset ?? Sps2SetupStorage.Create(avatar.name);
+                    createdAsset = root.asset;
+                    root.identity = Sps2SetupStorage.Identity(root.asset);
+                }
+                Undo.RegisterCompleteObjectUndo(root.asset, UndoName);
+                string metadataBefore = root.asset.stateJson;
                 bool structureChanged = false;
                 foreach (var generated in root.sockets.ToArray())
                     if (!placements.ContainsKey(generated.id))
@@ -289,9 +370,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 root.settings = settings.Copy();
                 if (VrcFuryCompatibility.AutoSocketCount(avatar.gameObject) > 16)
                     throw new InvalidOperationException("既存分を含む Auto Mode 対象が16個を超えます。Auto Mode を外すか対象を減らしてください。");
+                if (root.legacy != null) { Undo.DestroyObjectImmediate(root.legacy); root.legacy = null; }
+                Undo.RecordObject(root.gameObject, UndoName); root.gameObject.name = RootName;
+                foreach (var generated in root.sockets) VrcFuryCompatibility.SetAuthoringIdentity(generated.socket, Sps2SetupStorage.Token(root, generated.id));
                 CommitMetadata(root, metadataBefore);
-                EditorUtility.SetDirty(root);
-                PrefabUtility.RecordPrefabInstancePropertyModifications(root);
                 EditorSceneManager.MarkSceneDirty(avatar.gameObject.scene);
                 Selection.activeGameObject = root.gameObject;
                 Undo.CollapseUndoOperations(group);
@@ -301,6 +383,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             catch (Exception e)
             {
                 if (group >= 0) Undo.RevertAllDownToGroup(group);
+                if (createdAsset != null) AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(createdAsset));
                 root = null; message = e.Message; return false;
             }
         }
@@ -316,18 +399,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             return true;
         }
 
-        private static void CommitMetadata(Sps2SetupRoot root, string before)
+        private static void CommitMetadata(Sps2SetupContext root, string before)
         {
-            // Component creation captures its initial state. Record the final metadata
-            // AFTER all object creation, or Redo recreates the component with empty lists.
-            string after = JsonUtility.ToJson(root);
-            JsonUtility.FromJsonOverwrite(before, root);
-            Undo.RecordObject(root, UndoName);
-            JsonUtility.FromJsonOverwrite(after, root);
+            string after = Sps2SetupStorage.Serialize(root);
+            root.asset.stateJson = before;
+            Undo.RecordObject(root.asset, UndoName);
+            root.asset.stateJson = after;
             Undo.FlushUndoRecordObjects();
+            EditorUtility.SetDirty(root.asset);
+            AssetDatabase.SaveAssetIfDirty(root.asset);
         }
-
-        private static void ConfigurePath(Sps2SetupRoot root, VRCAvatarDescriptor avatar, SetupSettings settings, List<string> warnings)
+        private static void ConfigurePath(Sps2SetupContext root, VRCAvatarDescriptor avatar, SetupSettings settings, List<string> warnings)
         {
             var old = root.transform.Find(PathName);
             if (old != null) Undo.DestroyObjectImmediate(old.gameObject);
@@ -356,21 +438,29 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         public static bool ShowTestPlug(VRCAvatarDescriptor avatar, out string error)
         {
             int group = -1;
+            Sps2SetupAsset createdAsset = null;
             try
             {
                 VrcFuryCompatibility.RequireVersion();
                 var root = Find(avatar);
                 if (root == null) throw new InvalidOperationException("先にセットアップを生成してください。");
                 Undo.IncrementCurrentGroup(); group = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName("SPS2 テストプラグ");
-                Undo.RegisterCompleteObjectUndo(root, UndoName);
-                string metadataBefore = JsonUtility.ToJson(root);
+                if (root.asset == null || root.testPlug == null)
+                {
+                    root.asset = createdAsset ?? Sps2SetupStorage.Create(avatar.name);
+                    createdAsset = root.asset;
+                    root.identity = Sps2SetupStorage.Identity(root.asset);
+                }
+                bool metadataChanged = createdAsset != null || root.legacy != null || root.testPlug == null;
+                if (metadataChanged) Undo.RegisterCompleteObjectUndo(root.asset, UndoName);
+                string metadataBefore = root.asset.stateJson;
                 if (root.testPlug == null)
                 {
                     var model = AssetDatabase.LoadAssetAtPath<GameObject>(PackagePath + "/Assets/IcePop/IcePop.fbx");
                     var material = AssetDatabase.LoadAssetAtPath<Material>(PackagePath + "/Assets/IcePop/IcePop.mat");
                     if (model == null || material == null || material.shader == null) throw new InvalidOperationException("IcePop の表示用アセットが見つかりません。");
                     var plug = Create("SPS2 Test Plug", root.transform);
-                    var mesh = (GameObject)PrefabUtility.InstantiatePrefab(model, plug.transform);
+                    var mesh = UnityEngine.Object.Instantiate(model, plug.transform, false);
                     Undo.RegisterCreatedObjectUndo(mesh, UndoName);
                     mesh.transform.localRotation = Quaternion.Euler(90, 0, 0);
                     foreach (var renderer in mesh.GetComponentsInChildren<Renderer>(true))
@@ -382,13 +472,18 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 var head = avatar.GetComponent<Animator>().GetBoneTransform(HumanBodyBones.Head);
                 root.testPlug.transform.SetPositionAndRotation((head != null ? head.position : avatar.transform.position + avatar.transform.up) + avatar.transform.forward * .35f, Quaternion.LookRotation(-avatar.transform.forward, avatar.transform.up));
                 Undo.RecordObject(root.testPlug, UndoName); root.testPlug.SetActive(true);
-                CommitMetadata(root, metadataBefore);
-                EditorUtility.SetDirty(root); PrefabUtility.RecordPrefabInstancePropertyModifications(root);
+                if (root.legacy != null) { Undo.DestroyObjectImmediate(root.legacy); root.legacy = null; }
+                Undo.RecordObject(root.gameObject, UndoName); root.gameObject.name = RootName;
+                if (metadataChanged)
+                {
+                    foreach (var generated in root.sockets) VrcFuryCompatibility.SetAuthoringIdentity(generated.socket, Sps2SetupStorage.Token(root, generated.id));
+                    CommitMetadata(root, metadataBefore);
+                }
                 EditorSceneManager.MarkSceneDirty(avatar.gameObject.scene);
                 Selection.activeGameObject = root.testPlug;
                 Undo.CollapseUndoOperations(group); error = null; return true;
             }
-            catch (Exception e) { if (group >= 0) Undo.RevertAllDownToGroup(group); error = e.Message; return false; }
+            catch (Exception e) { if (group >= 0) Undo.RevertAllDownToGroup(group); if (createdAsset != null) AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(createdAsset)); error = e.Message; return false; }
         }
     }
 }

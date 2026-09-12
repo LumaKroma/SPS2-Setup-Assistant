@@ -4,6 +4,7 @@ using System.Linq;
 using com.vrcfury.api;
 using com.vrcfury.api.Components;
 using LumaKroma.Sps2SetupAssistant.Editor.Model;
+using LumaKroma.Sps2SetupAssistant.Editor.Generation;
 using UnityEditor;
 using UnityEditor.PackageManager;
 using UnityEngine;
@@ -170,6 +171,21 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             PrefabUtility.RecordPrefabInstancePropertyModifications(socket);
         }
 
+        internal static string ReadIdentity(Component socket)
+        {
+            var property = new SerializedObject(socket).FindProperty("oscId");
+            return property != null && property.propertyType == SerializedPropertyType.String ? property.stringValue : null;
+        }
+        internal static void SetAuthoringIdentity(Component socket, string identity)
+        {
+            var data = SocketData(socket);
+            if (data.FindProperty("oscId").stringValue == identity) return;
+            Undo.RecordObject(socket, "SPS2 設定識別子");
+            data.FindProperty("oscId").stringValue = identity;
+            data.ApplyModifiedProperties();
+            PrefabUtility.RecordPrefabInstancePropertyModifications(socket);
+        }
+
         internal static void SetBuildToken(Component socket, string token)
         {
             var data = SocketData(socket);
@@ -178,12 +194,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             data.ApplyModifiedPropertiesWithoutUndo();
         }
 
-        internal static void ValidateBuildTokens(GameObject avatar, Sps2SetupRoot root)
+        internal static void ValidateBuildTokens(GameObject avatar, Sps2SetupContext root)
         {
             var tokens = new HashSet<string>(root.sockets.Select(s => "__SPS2_" + root.identity + "_" + s.id));
             if (tokens.Count != root.sockets.Count) throw new InvalidOperationException("SPS2 の部位識別子が重複しています。");
             foreach (var socket in AllSockets(avatar))
             {
+                if (root.sockets.Any(s => s.socket == socket)) continue;
                 var data = SocketData(socket);
                 if (tokens.Contains(data.FindProperty("name").stringValue) || tokens.Contains(data.FindProperty("oscId").stringValue))
                     throw new InvalidOperationException("SPS2 のビルド識別子と既存 Socket が衝突しています。");

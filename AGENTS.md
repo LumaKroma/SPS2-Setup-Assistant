@@ -9,8 +9,9 @@ label. Source baseline: 94596332f0245e131cbb83b092076835f691719f.
   version and required schema. Prefer its public API wherever available.
 - Public SDK build callbacks may adjust the generated avatar clone only.
   Never patch/copy dependency code or modify source avatar assets.
-- Persistent authoring metadata may implement VRC.SDKBase.IEditorOnly;
-  remove these components before upload. No custom runtime behavior is added.
+- User-approved repair: new generated objects contain no package component.
+  Editor settings snapshots use separate assets identified by native Socket IDs.
+  Retain old data-only IEditorOnly metadata solely to migrate existing setups.
 - Tool-owned menus, controllers, clips, prefab/configuration and approved
   IcePop display assets are permitted. The optional MA backend stays isolated.
 - The test Plug is included in uploaded avatars when present. Do not strip

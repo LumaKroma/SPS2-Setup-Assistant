@@ -1,3 +1,36 @@
+# User-requested repair validation — 2026-09-12
+
+Repair baseline: `71d891c6cedf44066dfbac6d1ff3fd420d127ef2`.
+Pragmatic Development in the same pinned Unity/SDK/VRCFury environment below.
+The source manifest in `Evidence/repair-20260912` identifies the repair source;
+the earlier section and evidence describe the previous implementation only.
+
+- 21 EditMode tests passed again, zero failed/skipped.
+- New 15-Socket generation has root name SPS2 and zero custom root components.
+- External settings reload, preserved edited poses, separate duplicate settings,
+  Undo/Redo and Prefab restoration passed. Changing an instance after saving a
+  Prefab left the saved Prefab's settings intact. Missing settings asset stopped
+  lookup. Legacy metadata migrated through Show Test Plug with its Plug retained.
+- Actual native and MA SDK preprocessing passed. The menu root is one SPS2 entry;
+  Auto and Legacy are not duplicated, and existing Socket/native options remain.
+- Actual generated FX evaluation with and without Instant followed OFF, ON, OFF,
+  ON, OFF for the mouth's BakedSpsSocket. The earlier empty WD OFF Instant clip
+  reproduced latching ON. The repaired policy restores OFF. This is Animator
+  evaluation, not direct Gesture Manager or VRC-client acceptance.
+- Plug reuse retained the same object and took 0–1 ms in the latest probes;
+  first generation took 93–130 ms. Earlier repeated unconditional metadata saves
+  took roughly 1.8–2.2 seconds. Measurements are local observations, not budgets.
+- Independent read-only review found and resolved scene-discard snapshot and
+  legacy Plug migration issues. No further concrete blocker was reported.
+
+The empty WD OFF source-controller fixture stalled in a native VRCFury dialog
+before this repair's final checks; that owned session was aborted, not passed.
+WD OFF source-avatar compatibility, visual placement across three avatars,
+Gesture Manager Contact/driver effects and exact-commit VRC PC remain unverified.
+No upload, release, or merge was performed. Existing handoff gates remain open.
+
+# Previous implementation evidence (before the repair)
+
 # Issue 121 development validation
 
 Development comparison: baseline

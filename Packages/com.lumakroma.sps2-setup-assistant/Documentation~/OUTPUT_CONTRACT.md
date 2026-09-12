@@ -7,15 +7,23 @@ It supersedes the eight-part PoC contract for the main setup window. The legacy
 
 ## Authoring ownership
 
-The owned root is a direct avatar child named
-`SPS2 Socket Setup [com.lumakroma.sps2-setup-assistant]`.
-A data-only `Sps2SetupRoot` component stores schema 1, a stable identity,
-applied settings and direct references to the generated objects.
+The owned root is a direct avatar child named `SPS2`. Newly generated roots
+contain no package-defined component. Editor-only settings snapshots live in
+`Assets/SPS2Settings/*.asset`; their asset GUID is recorded in native Socket
+identifiers. Avatar-relative paths restore scene references, and asset GUID/local
+IDs restore clip references. Ambiguous paths stop saving.
+
+Each settings change creates a new snapshot, preserving previous snapshots for
+Undo, saved Prefabs and discarded scene edits. Reusing the existing test Plug
+does not save settings. Move the current settings asset and its `.meta` together
+with the Prefab when transferring projects. A missing settings asset stops edits
+and builds; the tool does not guess ownership or overwrite unknown objects.
 
 Each part has an anchor and a child `Socket Pose` with a native VRCFury Socket.
 The root can also contain `Guided Paths` and one `SPS2 Test Plug`.
-No custom runtime script executes. The metadata implements
-`VRC.SDKBase.IEditorOnly` and is explicitly removed after native processing.
+No custom runtime script executes or is attached by generation. The old data-only
+`Sps2SetupRoot` type remains solely for migration: Apply or Show Test Plug moves
+its settings to an asset, removes it and renames its root in one Undo group.
 
 Before authoring changes, all existing non-null owned references must remain
 inside their expected root/anchor boundary. Duplicate identities, ambiguous
@@ -23,14 +31,15 @@ roots and external references fail without mutation. Missing owned objects can
 be reconstructed by regeneration. The eight-part PoC root requires regeneration
 to migrate; nonreplacement application does not migrate it.
 
-Generation uses one Undo group. Regeneration keeps the stable identity, applied
+Generation uses one Undo group. Regeneration keeps the selected applied
 settings chosen in the window and existing Plug, and rebuilds automatic poses.
 Nonreplacement application preserves surviving anchors/poses and manual
 positions/rotations, adds/removes selected parts, and applies changed settings.
 Changing the attachment backend requires regeneration. Changing a custom target
 preserves its current world pose while rebinding its anchor.
 
-Settings persist through normal scene/Prefab saving. The button wording does
+Settings snapshots are saved with the operation; the scene/Prefab stores which
+snapshot applies. The button wording does
 not imply an automatic standalone Prefab asset export.
 
 ## Parts and presets
@@ -49,9 +58,13 @@ Casual selects mouth, chest middle, both hands and their middle, vagina and anus
 and thigh middle (15). Presets change fixed-part inclusion only; custom parts,
 depth values and inactive action-type inputs survive switching.
 
-Automatic placement uses the existing avatar-aligned body basis and measured
-Humanoid height. The local +Z points inward. It is a first-placement heuristic,
-not surface fitting or an anatomical guarantee.
+Automatic placement uses avatar-aligned Humanoid measurements plus a temporary
+baked body mesh. A uniquely selected body supplies surface rays and weighted
+bone vertices; descriptor mouth viseme deltas locate the mouth center. Hand
+placement uses wrist/finger measurements and feet use the sole surface. Paired
+positions use the resulting individual poses. Missing or ambiguous surface
+data falls back to bone measurements. Local +Z points inward; inspect and adjust
+poses for each avatar. Surface estimates are not an anatomical guarantee.
 
 Mouth uses Jaw with Head fallback. Ears use Head; pelvis uses Hips; hands use
 Hand; feet use Toes with Foot fallback. Nipples prefer uniquely identified
@@ -124,13 +137,18 @@ not directly edited.
 | Instant button | OFF | No |
 
 Japanese SPS2 menus group fixed/custom parts by category, with at most eight
-controls per page. Existing native menu controls are retained. Common Auto and
-Legacy controls refer to the same native parameters, while existing individual
+controls per page. The native SPS container is replaced by one SPS2 entry;
+remaining native options and existing sockets are nested under it. Common Auto
+and Legacy controls are moved, not duplicated, while existing individual
 Socket persistence is preserved. With only one eligible native Socket, native
 Auto has no useful selector and may be absent. More than 16 eligible Auto
 Sockets, including existing ones, stops authoring/build.
 
 Instant has no duration/Exit Time hold:
+
+Its states match the native FX Write Defaults policy. WD OFF requires a nonempty
+constant animation on a build-only inactive marker; WD ON uses no empty WD OFF
+clip. This prevents the Instant layer from latching native Socket activation.
 
 | State | Entry/ownership | Exit |
 | --- | --- | --- |

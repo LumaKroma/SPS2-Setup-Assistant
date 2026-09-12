@@ -37,12 +37,15 @@ After generation:
 
 | Button | Result |
 | --- | --- |
-| `プレハブを再生成` | Rebuild from current settings and restore automatic placement; retain the setup identity and existing test Plug. |
+| `プレハブを再生成` | Rebuild from current settings and restore automatic placement; retain the existing test Plug. |
 | `置き換えずに変更を反映` | Keep surviving Socket objects and manual poses while applying settings and part additions/removals. |
 | `テストプラグ出現` | Create one test Plug or return that same Plug to the front of the avatar. |
 
-Settings are applied to the generated authoring component. Save the scene or
-Prefab normally to keep them. The tool does not automatically create a separate
+Settings are saved as Editor assets under `Assets/SPS2Settings`; the generated
+`SPS2` root contains no custom component. Save the scene or Prefab normally to
+keep its snapshot reference. Transfer its current settings asset and `.meta`
+alongside a Prefab when moving projects. Earlier snapshots are retained for
+Undo and saved scene/Prefab revisions. The tool does not automatically create a separate
 Prefab asset file. Remove the generated root to remove the authored setup and
 its test Plug; use Undo to reverse an operation.
 
@@ -54,8 +57,9 @@ doing so.
 
 ## Build and runtime boundary
 
-The package stores data-only authoring metadata and removes that component from
-the build. VRCFury supplies native SPS behavior; public SDK callbacks configure
+The package reads its separate settings asset through native Socket identifiers.
+Old attached metadata is supported for migration only. VRCFury supplies native
+SPS behavior; public SDK callbacks configure
 the generated menu, persistence and Instant Animator layer on the build clone.
 The test Plug stays in uploaded avatars when present.
 

@@ -12,7 +12,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
     {
         [SerializeField] private VRCAvatarDescriptor descriptor;
         [SerializeField] private SetupSettings settings;
-        [SerializeField] private int preset = 1;
         private Vector2 scroll;
         private string message;
         private MessageType messageType;
@@ -30,8 +29,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         {
             if (settings == null || settings.parts.Count == 0) settings = FullSetupCatalog.CreateDefault();
             Undo.undoRedoPerformed += Repaint;
+            EditorApplication.hierarchyChanged += Repaint;
         }
-        private void OnDisable() => Undo.undoRedoPerformed -= Repaint;
+        private void OnDisable() { Undo.undoRedoPerformed -= Repaint; EditorApplication.hierarchyChanged -= Repaint; }
         private void OnGUI()
         {
             if (title == null) title = new GUIStyle(EditorStyles.boldLabel) { fontSize = 20 };
@@ -47,7 +47,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     descriptor = next;
                     try { settings = FullSetupGenerator.Find(next)?.settings.Copy() ?? FullSetupCatalog.CreateDefault(); message = null; }
                     catch (Exception e) { settings = FullSetupCatalog.CreateDefault(); SetMessage(e.Message, false); }
-                    FullSetupCatalog.DetectMouth(settings, next); preset = -1;
+                    FullSetupCatalog.DetectMouth(settings, next);
                 });
                 scroll = EditorGUILayout.BeginScrollView(scroll);
                 GUILayout.Space(10);
@@ -58,10 +58,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     for (int i = 0; i < 3; i++)
                     {
                         int value = i;
-                        var color = GUI.backgroundColor;
-                        if (preset == value) GUI.backgroundColor = new Color(.45f, .82f, .72f);
-                        if (GUILayout.Button(labels[i], GUILayout.Height(28))) Change(() => { FullSetupCatalog.ApplyPreset(settings, value); preset = value; });
-                        GUI.backgroundColor = color;
+                        if (GUILayout.Button(labels[i], GUILayout.Height(28))) Change(() => FullSetupCatalog.ApplyPreset(settings, value));
                     }
                 }
                 for (int category = 0; category < FullSetupCatalog.Categories.Length; category++)
@@ -85,7 +82,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 GUILayout.Space(12);
                 EditorGUILayout.EndScrollView();
                 if (!string.IsNullOrEmpty(message)) EditorGUILayout.HelpBox(message, messageType);
-                bool generated = descriptor != null && descriptor.GetComponentsInChildren<Sps2SetupRoot>(true).Length != 0;
+                bool generated = FullSetupGenerator.HasGeneratedRoot(descriptor);
                 using (new EditorGUI.DisabledScope(descriptor == null || EditorApplication.isPlayingOrWillChangePlaymode))
                 {
                     if (!generated)
@@ -112,14 +109,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     bool included = EditorGUILayout.ToggleLeft(part.custom ? "使用" : part.name, part.included, GUILayout.Width(part.custom ? 48 : 130));
-                    if (included != part.included) Change(() => { part.included = included; preset = -1; });
+                    if (included != part.included) Change(() => part.included = included);
                     if (part.custom)
                     {
                         string name = EditorGUILayout.TextField(part.name);
                         if (name != part.name) Change(() => part.name = name);
                     }
+                    if (part.included)
+                    {
                     bool depth = EditorGUILayout.ToggleLeft("深度アクション", part.depth, GUILayout.MinWidth(114));
                     if (depth != part.depth) Change(() => { part.depth = depth; if (depth && part.actions.Count == 0) part.actions.Add(new DepthActionSettings()); });
+                    }
                     if (part.custom && GUILayout.Button("−", GUILayout.Width(24))) Change(() => settings.parts.Remove(part));
                 }
                 if (part.custom)
@@ -127,7 +127,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     var target = (Transform)EditorGUILayout.ObjectField("追従先", part.target, typeof(Transform), true);
                     if (target != part.target) Change(() => part.target = target);
                 }
-                if (!part.depth) return;
+                if (!part.included || !part.depth) return;
                 using (new EditorGUI.DisabledScope(!part.included))
                 {
                     DrawRange(part);
@@ -155,9 +155,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         private void DrawAction(SocketSettings part, DepthActionSettings action)
         {
+            using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
+            {
             using (new EditorGUILayout.HorizontalScope())
             {
-                int kind = EditorGUILayout.Popup((int)action.kind, new[] { "BlendShape", "Animation Clip", "オブジェクト ON / OFF" });
+                int kind = EditorGUILayout.Popup((int)action.kind, new[] { "BlendShape", "Animation Clip", "オブジェクト ON・OFF" });
                 if (kind != (int)action.kind) Change(() => action.kind = (DepthActionKind)kind);
                 if (GUILayout.Button("−", GUILayout.Width(24))) Change(() => part.actions.Remove(action));
             }
@@ -193,6 +195,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 }
             }
             GUILayout.Space(4);
+            }
         }
         private void Apply(bool regenerate)
         {

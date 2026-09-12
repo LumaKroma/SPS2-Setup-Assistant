@@ -69,7 +69,10 @@ $publicOnlySource = ($sourceFiles | Where-Object { $_.FullName -notlike '*\Edito
 $compatibility = ($compatibilityFiles | ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName }) -join "`n"
 Assert-Condition ($compatibility.Contains('SupportedVersion = "1.1403.0"')) 'Exact native version guard is missing.'
 Assert-Condition ($compatibility.Contains('RequireVersion()') -and $compatibility.Contains('SerializedPropertyType')) 'Version/schema validation is missing.'
-Assert-Condition ($compatibility.Contains('UnityEngine.Object.DestroyImmediate(root)')) 'Build metadata stripping is missing.'
+Assert-Condition ($compatibility.Contains('UnityEngine.Object.DestroyImmediate(root.legacy)')) 'Build metadata stripping is missing.'
+Assert-Condition (Test-Path -LiteralPath (Join-Path $packageRoot 'Editor/Generation/Sps2SetupAsset.cs')) 'Editor settings storage is missing.'
+$fullGenerator = Get-Content -Raw -LiteralPath (Join-Path $packageRoot 'Editor/Generation/FullSetupGenerator.cs')
+Assert-Condition (-not ($fullGenerator -match 'AddComponent<Sps2SetupRoot>')) 'New generated roots must not contain custom metadata components.'
 Assert-Condition (-not [regex]::IsMatch($source, 'System\.Reflection|\bBindingFlags\b|\bGetField\s*\(|\bGetProperty\s*\(')) 'Unapproved reflection is present.'
 $coreAssemblyPath = Join-Path $packageRoot 'Editor\LumaKroma.Sps2SetupAssistant.Editor.asmdef'
 $maAssemblyPath = Join-Path $packageRoot 'Editor\ModularAvatar\LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.asmdef'

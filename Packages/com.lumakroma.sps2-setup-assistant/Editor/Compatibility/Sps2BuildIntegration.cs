@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.Linq;
 using LumaKroma.Sps2SetupAssistant.Editor.Model;
+using LumaKroma.Sps2SetupAssistant.Editor.Generation;
 using UnityEditor;
 using UnityEditor.Animations;
 using UnityEngine;
@@ -29,18 +30,24 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         private const string AutoLabel = "<b>Auto Mode</b>\n<size=20>Activates hole nearest to a VRCFury plug";
         private const string LegacyLabel = "<b>Legacy Compatibility</b>\n<size=20>DPS / TPS / SPS1\nOne socket at a time";
 
+        private static readonly Dictionary<int, Sps2SetupContext> Pending = new Dictionary<int, Sps2SetupContext>();
         internal static bool Run(GameObject avatar, bool before)
         {
-            var roots = avatar.GetComponentsInChildren<Sps2SetupRoot>(true);
-            if (roots.Length == 0) return true;
+
             try
             {
+
+                Sps2SetupContext root;
+                if (before) { Pending.Remove(avatar.GetInstanceID()); root = Sps2SetupStorage.Find(avatar.GetComponent<VRCAvatarDescriptor>(), true); }
+                else { Pending.TryGetValue(avatar.GetInstanceID(), out root); Pending.Remove(avatar.GetInstanceID()); }
+                if (root == null) return true;
                 VrcFuryCompatibility.RequireVersion();
-                if (roots.Length != 1 || roots[0].schema != Sps2SetupRoot.CurrentSchema || string.IsNullOrEmpty(roots[0].identity))
+                if (root.schema != 1 || string.IsNullOrEmpty(root.identity))
                     throw new InvalidOperationException("SPS2 の所有ルートが不正です。");
-                var root = roots[0];
+
                 if (before)
                 {
+                    Pending.Add(avatar.GetInstanceID(), root);
                     VrcFuryCompatibility.ValidateBuildTokens(avatar, root);
                     if (VrcFuryCompatibility.AutoSocketCount(avatar) > 16) throw new InvalidOperationException("Auto Mode の対象が16個を超えています。");
                     var seenSockets = new HashSet<Component>();
@@ -57,11 +64,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 {
                     Complete(avatar.GetComponent<VRCAvatarDescriptor>(), root);
                     // Strip only metadata. In particular, the test Plug remains uploaded.
-                    UnityEngine.Object.DestroyImmediate(root);
+                    if (root.legacy != null) UnityEngine.Object.DestroyImmediate(root.legacy);
                 }
                 return true;
             }
-            catch (Exception e) { Debug.LogError("SPS2 ビルドを中止しました: " + e.Message, avatar); return false; }
+            catch (Exception e) { Pending.Remove(avatar.GetInstanceID()); Debug.LogError("SPS2 ビルドを中止しました: " + e.Message, avatar); return false; }
         }
 
         private sealed class MenuEntry
@@ -107,7 +114,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         private static VRCExpressionsMenu.Control Submenu(string name, VRCExpressionsMenu menu) => new VRCExpressionsMenu.Control
         { name = name, type = VRCExpressionsMenu.Control.ControlType.SubMenu, subMenu = menu };
 
-        private static void Complete(VRCAvatarDescriptor avatar, Sps2SetupRoot root)
+        private static void Complete(VRCAvatarDescriptor avatar, Sps2SetupContext root)
         {
             if (avatar == null || avatar.expressionsMenu == null || avatar.expressionParameters == null)
                 throw new InvalidOperationException("VRCFury のビルド結果がありません。");
@@ -133,12 +140,20 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             if (root.settings.legacy && legacy == null) throw new InvalidOperationException("後方互換性メニューがありません。");
             if (auto != null) SetPersistence(avatar, fx, auto, true, 0);
             if (legacy != null) SetPersistence(avatar, fx, legacy, true, 1);
+            var requiredControls = owned.Values.Select(e => e.control).ToList();
+            if (auto != null) requiredControls.Add(auto.control);
+            if (legacy != null) requiredControls.Add(legacy.control);
+            var nativeContainer = entries.Where(e => e.control.subMenu != null)
+                .Select(e => new { entry = e, children = Entries(e.control.subMenu) })
+                .Where(e => requiredControls.All(c => e.children.Any(child => child.control == c)))
+                .OrderBy(e => e.children.Count).Select(e => e.entry).FirstOrDefault();
+            var nativeMenu = nativeContainer?.control.subMenu;
             var menu = Menu("SPS2");
-            // Shared controls retain their native parameter. Existing individual sockets are not moved or patched.
-            if (root.settings.autoMode && auto != null) menu.controls.Add(new VRCExpressionsMenu.Control
-            { name = "Auto Mode", type = VRCExpressionsMenu.Control.ControlType.Toggle, parameter = new VRCExpressionsMenu.Control.Parameter { name = auto.control.parameter.name }, value = 1 });
-            if (root.settings.legacy && legacy != null) menu.controls.Add(new VRCExpressionsMenu.Control
-            { name = "後方互換性", type = VRCExpressionsMenu.Control.ControlType.Toggle, parameter = new VRCExpressionsMenu.Control.Parameter { name = legacy.control.parameter.name }, value = 1 });
+            // Move the native controls themselves: one UI control per shared parameter.
+            if (root.settings.autoMode && auto != null)
+            { auto.parent.controls.Remove(auto.control); auto.control.name = "Auto Mode"; menu.controls.Add(auto.control); }
+            if (root.settings.legacy && legacy != null)
+            { legacy.parent.controls.Remove(legacy.control); legacy.control.name = "後方互換性"; menu.controls.Add(legacy.control); }
             if (root.settings.instant && (owned.ContainsKey("mouth") || owned.ContainsKey("vagina")))
                 AddInstant(avatar, root, fx, menu, owned, legacy);
             foreach (var group in root.settings.parts.Where(p => owned.ContainsKey(p.id)).GroupBy(p => p.category).OrderBy(g => g.Key))
@@ -155,17 +170,53 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 }
                 menu.controls.Add(Submenu(category.name, category));
             }
-            // A full setup with custom parts may need a second page (SDK limit: 8).
-            Paginate(menu);
-            var parent = avatar.expressionsMenu;
-            if (parent.controls.Count < 8) parent.controls.Add(Submenu("SPS2", menu));
+            // Preserve native options and unrelated Socket controls inside the same entry.
+            // Empty native pagination pages disappear after moving the owned controls.
+            if (nativeMenu != null)
+            {
+                PruneEmptyMenus(nativeMenu, new HashSet<VRCExpressionsMenu>());
+                if (nativeMenu.controls.Count != 0)
+                    menu.controls.Add(Submenu("標準設定・既存Socket", nativeMenu));
+                nativeContainer.control.name = "SPS2";
+                nativeContainer.control.subMenu = menu;
+            }
             else
             {
-                var outer = Menu("Avatar Menu"); outer.controls.Add(Submenu("アバター", parent)); outer.controls.Add(Submenu("SPS2", menu)); avatar.expressionsMenu = outer;
+                PruneEmptyMenus(avatar.expressionsMenu, new HashSet<VRCExpressionsMenu>());
+                avatar.expressionsMenu.controls.Add(Submenu("SPS2", menu));
+                Paginate(avatar.expressionsMenu);
             }
+            Paginate(menu);
             // Final SDK validation runs after native parameter compression; do not reject its pre-compression cost here.
         }
 
+        private static void PruneEmptyMenus(VRCExpressionsMenu menu, HashSet<VRCExpressionsMenu> seen)
+        {
+            if (menu == null || !seen.Add(menu)) return;
+            foreach (var control in menu.controls.ToArray())
+            {
+                if (control.type != VRCExpressionsMenu.Control.ControlType.SubMenu || control.subMenu == null) continue;
+                PruneEmptyMenus(control.subMenu, seen);
+                if (control.subMenu.controls.Count == 0) menu.controls.Remove(control);
+            }
+        }
+
+        private static bool InstantWriteDefaults(AnimatorController fx)
+        {
+            var policies = new HashSet<bool>();
+            bool HasDirect(Motion motion) => motion is BlendTree tree &&
+                (tree.blendType == BlendTreeType.Direct || tree.children.Any(c => HasDirect(c.motion)));
+            void Read(AnimatorStateMachine machine)
+            {
+                foreach (var child in machine.states)
+                    if (!HasDirect(child.state.motion)) policies.Add(child.state.writeDefaultValues);
+                foreach (var child in machine.stateMachines) Read(child.stateMachine);
+            }
+            foreach (var layer in fx.layers)
+                if (layer.blendingMode != AnimatorLayerBlendingMode.Additive) Read(layer.stateMachine);
+            if (policies.Count > 1) throw new InvalidOperationException("FX の Write Defaults が混在しています。VRCFury で統一してから再ビルドしてください。");
+            return policies.Count == 0 || policies.Single();
+        }
         private static void Paginate(VRCExpressionsMenu menu)
         {
             if (menu.controls.Count <= 8) return;
@@ -184,7 +235,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             animatorMatches[0].defaultFloat = initial; animatorMatches[0].defaultBool = initial > .5f; fx.parameters = parameters;
         }
 
-        private static void AddInstant(VRCAvatarDescriptor avatar, Sps2SetupRoot root, AnimatorController fx, VRCExpressionsMenu menu,
+        private static void AddInstant(VRCAvatarDescriptor avatar, Sps2SetupContext root, AnimatorController fx, VRCExpressionsMenu menu,
             Dictionary<string, MenuEntry> owned, MenuEntry legacy)
         {
             string trigger = "SPS2_" + root.identity + "_Instant";
@@ -196,9 +247,18 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             menu.controls.Add(new VRCExpressionsMenu.Control { name = "インスタント起動", type = VRCExpressionsMenu.Control.ControlType.Button,
                 parameter = new VRCExpressionsMenu.Control.Parameter { name = trigger }, value = 1 });
             var machine = new AnimatorStateMachine { name = "SPS2 Instant" };
-            var clip = new AnimationClip { name = "SPS2 Empty" };
+            bool writeDefaults = InstantWriteDefaults(fx);
+            AnimationClip clip = null;
+            if (!writeDefaults)
+            {
+                var marker = new GameObject("__SPS2_Instant_" + root.identity);
+                marker.transform.SetParent(avatar.transform, false);
+                marker.SetActive(false);
+                clip = new AnimationClip { name = "SPS2 Instant Noop" };
+                AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve(marker.name, typeof(GameObject), "m_IsActive"), AnimationCurve.Constant(0, 1, 0));
+            }
             AnimatorState State(string name, float x)
-            { var s = machine.AddState(name, new Vector3(x, 0)); s.motion = clip; s.writeDefaultValues = false; return s; }
+            { var s = machine.AddState(name, new Vector3(x, 0)); s.motion = clip; s.writeDefaultValues = writeDefaults; return s; }
             var ready = State("Ready", 0); var fire = State("Fire", 220); var held = State("Held", 440); var denied = State("DeniedHeld", 220);
             machine.defaultState = ready;
             var driver = fire.AddStateMachineBehaviour<VRCAvatarParameterDriver>(); driver.localOnly = true;

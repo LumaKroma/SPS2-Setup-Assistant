@@ -1,0 +1,25 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        "generateMs=188;warnings=",
+        "name=SPS2;ownMono=0;sockets=15;asset=Assets/SPS2Settings/Issue121 storage probe SPS2 6.asset",
+        "reload=True",
+        "preservePose=True",
+        "plugFirstMs=96",
+        "ownerIdMs=1",
+        "allAvatarsMs=0;count=3",
+        "plugRepeatMs=0;same=True",
+        "findThreeMs=1",
+        "cloneIsolated=True",
+        "undoIdentity=True",
+        "redoIdentity=True",
+        "prefabRestore=True"
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}
