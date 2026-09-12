@@ -1,3 +1,27 @@
+# Diagnostic WD false-positive repair — 2026-09-13
+
+Baseline667bd3ea7ec2fa7ec28022ec41e6511464ce0b24. Source observation:
+VRCFury1.1403 CleanupEmptyLayersService adds a disconnected warning state after
+native WD adjustment when a non-upload build keeps an empty layer. This caused
+InstantWriteDefaults to reject an otherwise WD-OFF fixture. Contract amended.
+
+Owned Unity2022.3.22f1 / VRCFury1.1403 / SDK3.10.4 public MCP, disposable MANUKA
+clones with controlled playable controllers and Instant enabled:
+- Uniform ON input: SDK preprocess true, FX92 ON/0 OFF, Instant4 ON, errors empty.
+- Uniform OFF input (Additive ON): SDK preprocess true, FX4 ON/88 OFF, Instant4 OFF,
+  errors empty. Remaining ON consists of native Direct trees and diagnostic notices.
+  Probe's generic unexpected list contains exactly the deliberately retained
+  empty-fixture notice; it is not a failed build or rewritten state.
+- Eight targeted EditMode cases pass: ON/OFF diagnostic exclusion; ordinary name,
+  unmatched layer, actual motion, incoming/outgoing transition and default-state
+  near misses continue rejecting real mixed WD.
+- Package validator/diff check pass. No original controller rewrite, dependency
+  change, historical version matrix rerun or VRC-client validation. Base avatars'
+  original mixed-WD warning remains independent and is not suppressed by this fix.
+
+Evidence: Evidence/wd-diagnostic-20260913. Pragmatic Development only; existing
+VRC PC gate remains. No publication/push.
+
 # Adopted chest depth — 2026-09-13
 
 Baseline36dc12a8200195286965f49f04c4fb21cf44de77. User reported forward displacement

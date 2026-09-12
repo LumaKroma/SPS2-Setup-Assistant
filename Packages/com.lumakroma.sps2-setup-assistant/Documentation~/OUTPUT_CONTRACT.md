@@ -1,3 +1,13 @@
+# Native diagnostic Write Defaults amendment — 2026-09-13
+
+Instant-start WD policy ignores VRCFury's observed preview-only empty-layer notice.
+Recognition requires the (NO VALID ANIMATIONS) layer suffix, complete warning text
+with whitespace normalized, null motion, no behaviours/outgoing transitions, not
+being the default state, and no incoming state/AnyState/entry transition in its
+machine. Ordinary mixed states still reject the build; no WD value or diagnostic
+state is rewritten/deleted. Unknown diagnostic text remains conservatively counted.
+Runtime Instant flow and existing Direct/Additive exceptions are unchanged.
+
 # Chest depth amendment — 2026-09-13
 
 User approved the MANUKA/Milltina/rurune scene trial. For the chest socket, when

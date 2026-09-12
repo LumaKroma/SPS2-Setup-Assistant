@@ -210,21 +210,35 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             }
         }
 
-        private static bool InstantWriteDefaults(AnimatorController fx)
+        internal static bool InstantWriteDefaults(AnimatorController fx)
         {
             var policies = new HashSet<bool>();
             bool HasDirect(Motion motion) => motion is BlendTree tree &&
                 (tree.blendType == BlendTreeType.Direct || tree.children.Any(c => HasDirect(c.motion)));
-            void Read(AnimatorStateMachine machine)
+            void Read(AnimatorStateMachine machine, bool diagnosticLayer)
             {
                 foreach (var child in machine.states)
-                    if (!HasDirect(child.state.motion)) policies.Add(child.state.writeDefaultValues);
-                foreach (var child in machine.stateMachines) Read(child.stateMachine);
+                    if (!HasDirect(child.state.motion) && !(diagnosticLayer && IsEmptyLayerDiagnostic(machine, child.state)))
+                        policies.Add(child.state.writeDefaultValues);
+                foreach (var child in machine.stateMachines) Read(child.stateMachine, diagnosticLayer);
             }
             foreach (var layer in fx.layers)
-                if (layer.blendingMode != AnimatorLayerBlendingMode.Additive) Read(layer.stateMachine);
+                if (layer.blendingMode != AnimatorLayerBlendingMode.Additive)
+                    Read(layer.stateMachine, layer.name.EndsWith(" (NO VALID ANIMATIONS)", StringComparison.Ordinal));
             if (policies.Count > 1) throw new InvalidOperationException("FX の Write Defaults が混在しています。VRCFury で統一してから再ビルドしてください。");
             return policies.Count == 0 || policies.Single();
+        }
+        private static bool IsEmptyLayerDiagnostic(AnimatorStateMachine machine, AnimatorState state)
+        {
+            // VRCFury adds this disconnected notice after setting WD in preview builds.
+            // Match the full observed notice (its display wraps whitespace), not a prefix.
+            const string notice = "Warning from VRCFury! This layer contains no valid animations, and will be removed during a real upload, Make sure the animated objects / components actually exist at the paths used in the clips";
+            var name = string.Join(" ", state.name.Split((char[])null, StringSplitOptions.RemoveEmptyEntries));
+            return name == notice && state.motion == null && state.behaviours.Length == 0 &&
+                state.transitions.Length == 0 && machine.defaultState != state &&
+                !machine.anyStateTransitions.Any(t => t.destinationState == state) &&
+                !machine.entryTransitions.Any(t => t.destinationState == state) &&
+                !machine.states.Any(s => s.state.transitions.Any(t => t.destinationState == state));
         }
         private static void Paginate(VRCExpressionsMenu menu)
         {
