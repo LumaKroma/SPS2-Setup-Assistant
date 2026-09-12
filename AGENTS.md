@@ -1,3 +1,10 @@
+# Unpublished PoC removal (approved 2026-09-13)
+
+The user confirms no old assistant version was public. Remove the PoC window,
+generator, catalog/planner and component metadata migration. Current settings
+assets and native SPS1/Legacy Compatibility remain supported. This supersedes
+older PoC/migration retention requirements below.
+
 # Issue 121 capability compatibility amendment (2026-09-13)
 
 The user's compatibility expansion and explicit SPS1-basic-generation answer

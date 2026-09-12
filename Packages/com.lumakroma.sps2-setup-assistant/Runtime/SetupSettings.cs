@@ -1,23 +1,9 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
-using VRC.SDKBase;
 
 namespace LumaKroma.Sps2SetupAssistant
 {
-    // Serialized authoring data only. The build integration removes this component.
-    [DisallowMultipleComponent]
-    [AddComponentMenu("")]
-    public sealed class Sps2SetupRoot : MonoBehaviour, IEditorOnly
-    {
-        public const int CurrentSchema = 1;
-        public int schema = CurrentSchema;
-        public string identity;
-        public SetupSettings settings = new SetupSettings();
-        public List<GeneratedSocket> sockets = new List<GeneratedSocket>();
-        public GameObject testPlug;
-    }
-
     [Serializable]
     public sealed class GeneratedSocket
     {

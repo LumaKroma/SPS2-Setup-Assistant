@@ -1,3 +1,11 @@
+# Unpublished PoC removal — 2026-09-13
+
+Only Tools/LumaKroma/SPS2 Setup Assistant is available. The old window, generator,
+eight-part catalog/planner and old component metadata migration are removed.
+Current settings data and Editor asset storage are retained. This supersedes
+prior historical migration requirements. VRCFury SPS1/Legacy Compatibility is
+unchanged; it is unrelated to the unpublished assistant version.
+
 # Instant removal amendment — 2026-09-13
 
 User requested removal after reporting VRC PC PASS for the preceding handoff.
@@ -80,8 +88,7 @@ Native path/Collapse behavior is unchanged in this amendment.
 
 Applies to the approved `0.2.0-dev.1` implementation delta from baseline
 `94596332f0245e131cbb83b092076835f691719f`, branch `issue/121-private-poc`.
-It supersedes the eight-part PoC contract for the main setup window. The legacy
-`SPS2 Setup Assistant (0.1 PoC)` window remains available separately.
+The unpublished eight-part PoC and its migration support have been removed.
 
 ## Authoring ownership
 
@@ -101,15 +108,13 @@ and builds; the tool does not guess ownership or overwrite unknown objects.
 
 Each part has an anchor and a child `Socket Pose` with a native VRCFury Socket.
 The root can also contain `Guided Paths`, one `SPS2 Test Plug` and one independent `SPS2 Long Test Plug`.
-No custom runtime script executes or is attached by generation. The old data-only
-`Sps2SetupRoot` type remains solely for migration: Apply or Show Test Plug moves
-its settings to an asset, removes it and renames its root in one Undo group.
+No custom runtime script executes or is attached by generation. Only Editor asset
+settings are supported; old component metadata is not migrated.
 
 Before authoring changes, all existing non-null owned references must remain
 inside their expected root/anchor boundary. Duplicate identities, ambiguous
 roots and external references fail without mutation. Missing owned objects can
-be reconstructed by regeneration. The eight-part PoC root requires regeneration
-to migrate; nonreplacement application does not migrate it.
+be reconstructed by regeneration. No PoC migration is provided.
 
 Generation uses one Undo group. Regeneration keeps the selected applied
 settings chosen in the window and existing Plug, and rebuilds automatic poses.

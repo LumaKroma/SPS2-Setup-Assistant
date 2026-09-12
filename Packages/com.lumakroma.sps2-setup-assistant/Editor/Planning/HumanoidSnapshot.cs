@@ -75,20 +75,5 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Planning
             return bones.TryGetValue(bone, out pose);
         }
 
-        public bool TryResolveBone(SocketPreset preset, out HumanBodyBones bone, out BonePose pose)
-        {
-            foreach (var candidate in preset.BoneCandidates)
-            {
-                if (bones.TryGetValue(candidate, out pose))
-                {
-                    bone = candidate;
-                    return true;
-                }
-            }
-
-            bone = HumanBodyBones.LastBone;
-            pose = default;
-            return false;
-        }
     }
 }

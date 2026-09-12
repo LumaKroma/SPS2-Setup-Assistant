@@ -118,10 +118,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             {
                 var descriptor = avatar.AddComponent<VRCAvatarDescriptor>();
                 var obj = new GameObject("Owned"); obj.transform.SetParent(avatar.transform);
-                var root = obj.AddComponent<Sps2SetupRoot>(); root.identity = "test";
+                var root = new Sps2SetupContext { gameObject = obj, avatar = descriptor, identity = "test", settings = FullSetupCatalog.CreateDefault() };
                 if (plugReference) root.testPlug = foreign;
                 else root.sockets.Add(new GeneratedSocket { id = "mouth", anchor = foreign.transform });
-                Assert.Throws<InvalidOperationException>(() => FullSetupGenerator.Find(descriptor));
+                Assert.Throws<InvalidOperationException>(() => Sps2SetupStorage.Serialize(root));
                 Assert.That(foreign, Is.Not.Null);
                 Assert.That(foreign.transform.parent, Is.Null);
                 Assert.That(root.transform.parent, Is.SameAs(avatar.transform));

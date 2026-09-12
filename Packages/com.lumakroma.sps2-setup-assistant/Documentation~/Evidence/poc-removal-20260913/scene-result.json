@@ -1,0 +1,30 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        {
+          "name": "MANUKA_lilToon",
+          "asset": true,
+          "sockets": 12,
+          "missingScripts": 0
+        },
+        {
+          "name": "Milltina",
+          "asset": true,
+          "sockets": 15,
+          "missingScripts": 0
+        },
+        {
+          "name": "rurune_None",
+          "asset": true,
+          "sockets": 12,
+          "missingScripts": 0
+        }
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

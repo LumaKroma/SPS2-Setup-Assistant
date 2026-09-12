@@ -23,7 +23,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         {
             if (avatar == null) return false;
             foreach (Transform child in avatar.transform)
-                if (child.name == RootName || child.name == SocketSetupGenerator.OwnedRootName || child.GetComponent<Sps2SetupRoot>() != null) return true;
+                if (child.name == RootName) return true;
             return false;
         }
 
@@ -298,7 +298,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (!AttachmentBackendRegistry.TryApply(backend, anchor, placement.bone, out var error))
                     throw new InvalidOperationException(error);
             }
-            var pose = Create(SocketSetupGenerator.SocketPoseName, anchor.transform);
+            var pose = Create("Socket Pose", anchor.transform);
             pose.transform.SetPositionAndRotation(placement.position, placement.rotation);
             var socket = VrcFuryCompatibility.CreateSocket(pose, part, setup, warnings);
             return new GeneratedSocket { id = part.id, anchor = anchor.transform, pose = pose.transform, socket = socket };
@@ -334,9 +334,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     else placements.Add(part.id, placement);
                 }
                 if (placements.Count == 0) throw new InvalidOperationException("生成できる部位がありません。");
-                Transform legacy = null;
-                if (old == null && !SocketSetupGenerator.TryFindOwnedRoot(avatar.transform, out legacy, out error)) throw new InvalidOperationException(error);
-                if (legacy != null && !regenerate) throw new InvalidOperationException("旧PoCの生成物には「プレハブを再生成」を使用してください。");
                 if (old != null && old.settings.modularAvatar != settings.modularAvatar && !regenerate)
                     throw new InvalidOperationException("追従方式の変更には再生成を使用してください。");
                 Undo.IncrementCurrentGroup(); group = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName(UndoName);
@@ -349,7 +346,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (regenerate && existingLongPlug != null) Undo.SetTransformParent(existingLongPlug.transform, avatar.transform, UndoName);
                 if (regenerate && existingPlug != null) Undo.SetTransformParent(existingPlug.transform, avatar.transform, UndoName);
                 if (regenerate && old != null) Undo.DestroyObjectImmediate(old.gameObject);
-                if (legacy != null) Undo.DestroyObjectImmediate(legacy.gameObject);
                 root = regenerate ? null : old;
                 if (root == null)
                 {
@@ -410,7 +406,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 root.settings = settings.Copy();
                 if (VrcFuryCapabilities.Current.Legacy && VrcFuryCompatibility.AutoSocketCount(avatar.gameObject) > 16)
                     throw new InvalidOperationException("既存分を含む Auto Mode 対象が16個を超えます。Auto Mode を外すか対象を減らしてください。");
-                if (root.legacy != null) { Undo.DestroyObjectImmediate(root.legacy); root.legacy = null; }
                 Undo.RecordObject(root.gameObject, UndoName); root.gameObject.name = RootName;
                 UpdateAuthoringIdentities(root);
                 CommitMetadata(root, metadataBefore);
@@ -564,7 +559,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     createdAsset = root.asset;
                     root.identity = Sps2SetupStorage.Identity(root.asset);
                 }
-                bool metadataChanged = createdAsset != null || root.legacy != null || selectedPlug == null;
+                bool metadataChanged = createdAsset != null || selectedPlug == null;
                 if (metadataChanged) Undo.RegisterCompleteObjectUndo(root.asset, UndoName);
                 string metadataBefore = root.asset.stateJson;
                 if (selectedPlug == null)
@@ -611,7 +606,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     selectedPlug.transform.SetPositionAndRotation(mouth.position + mouth.forward * (length + .08f), Quaternion.LookRotation(-mouth.forward, mouth.up));
                 }
                 Undo.RecordObject(selectedPlug, UndoName); selectedPlug.SetActive(true);
-                if (root.legacy != null) { Undo.DestroyObjectImmediate(root.legacy); root.legacy = null; }
                 Undo.RecordObject(root.gameObject, UndoName); root.gameObject.name = RootName;
                 if (metadataChanged)
                 {

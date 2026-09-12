@@ -29,7 +29,7 @@ $requiredFiles = @(
     'Packages\com.lumakroma.sps2-setup-assistant\package.json',
     'Packages\com.lumakroma.sps2-setup-assistant\LICENSE.md',
     'Packages\com.lumakroma.sps2-setup-assistant\Documentation~\OUTPUT_CONTRACT.md',
-    'Packages\com.lumakroma.sps2-setup-assistant\Editor\Generation\SocketSetupGenerator.cs',
+    'Packages\com.lumakroma.sps2-setup-assistant\Editor\Generation\FullSetupGenerator.cs',
     'Packages\com.lumakroma.sps2-setup-assistant\Editor\Model\AttachmentBackendRegistry.cs',
     'Packages\com.lumakroma.sps2-setup-assistant\Editor\Model\UndoComponentRegistration.cs',
     'Packages\com.lumakroma.sps2-setup-assistant\Editor\ModularAvatar\LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.asmdef',
@@ -37,7 +37,7 @@ $requiredFiles = @(
     'Packages\com.lumakroma.sps2-setup-assistant\Tests\Editor\AttachmentBackendRegistryTests.cs',
     'Packages\com.lumakroma.sps2-setup-assistant\Tests\Editor\ModularAvatar\LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.Tests.asmdef',
     'Packages\com.lumakroma.sps2-setup-assistant\Tests\Editor\ModularAvatar\ModularAvatarAttachmentBackendTests.cs',
-    'Packages\com.lumakroma.sps2-setup-assistant\Tests\Editor\SocketPlacementPlannerTests.cs',
+    'Packages\com.lumakroma.sps2-setup-assistant\Tests\Editor\FullSetupSettingsTests.cs',
     'Packages\com.lumakroma.sps2-setup-assistant\Tests\Editor\UndoComponentRegistrationTests.cs'
 )
 
@@ -55,11 +55,11 @@ Assert-Condition ($manifest.vpmDependencies.'com.vrchat.avatars' -eq '>=3.10.4 <
 Assert-Condition ($manifest.vpmDependencies.'com.vrcfury.vrcfury' -eq '>=1.0.0') 'VRCFury installation must not force an exact version.'
 Assert-Condition (-not ($manifest.vpmDependencies.PSObject.Properties.Name -contains 'nadena.dev.modular-avatar')) 'Modular Avatar must remain an optional dependency.'
 
-Assert-Condition (Test-Path -LiteralPath (Join-Path $packageRoot 'Runtime/Sps2SetupRoot.cs')) 'Persistent authoring metadata is missing.'
+Assert-Condition (Test-Path -LiteralPath (Join-Path $packageRoot 'Runtime/SetupSettings.cs')) 'Persistent authoring metadata is missing.'
 $authoringFiles = @(Get-ChildItem -LiteralPath (Join-Path $packageRoot 'Runtime') -Recurse -File -Filter '*.cs')
-Assert-Condition ($authoringFiles.Count -eq 1 -and $authoringFiles[0].Name -eq 'Sps2SetupRoot.cs') 'Only the approved data-only authoring component may ship outside Editor.'
+Assert-Condition ($authoringFiles.Count -eq 1 -and $authoringFiles[0].Name -eq 'SetupSettings.cs') 'Only shared settings data may ship outside Editor.'
 $authoring = Get-Content -Raw -LiteralPath $authoringFiles[0].FullName
-Assert-Condition ($authoring.Contains('MonoBehaviour, IEditorOnly')) 'Authoring metadata must be Editor-only at build time.'
+Assert-Condition (-not $authoring.Contains('MonoBehaviour')) 'Shared settings must not define an authoring component.'
 Assert-Condition (-not [regex]::IsMatch($authoring, '\b(Awake|Start|Update|LateUpdate|FixedUpdate|OnEnable|OnDisable|OnAnimatorMove)\s*\(')) 'No custom runtime behavior is authorized.'
 
 $sourceFiles = @(Get-ChildItem -LiteralPath (Join-Path $packageRoot 'Editor') -Recurse -File -Filter '*.cs')
@@ -69,10 +69,9 @@ $publicOnlySource = ($sourceFiles | Where-Object { $_.FullName -notlike '*\Edito
 $compatibility = ($compatibilityFiles | ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName }) -join "`n"
 Assert-Condition ($compatibility.Contains('VrcFuryCapabilities.Current') -and $compatibility.Contains('CanGenerate')) 'Capability guard is missing.'
 Assert-Condition ($compatibility.Contains('RequireVersion()') -and $compatibility.Contains('SerializedPropertyType')) 'Version/schema validation is missing.'
-Assert-Condition ($compatibility.Contains('UnityEngine.Object.DestroyImmediate(root.legacy)')) 'Build metadata stripping is missing.'
 Assert-Condition (Test-Path -LiteralPath (Join-Path $packageRoot 'Editor/Generation/Sps2SetupAsset.cs')) 'Editor settings storage is missing.'
 $fullGenerator = Get-Content -Raw -LiteralPath (Join-Path $packageRoot 'Editor/Generation/FullSetupGenerator.cs')
-Assert-Condition (-not ($fullGenerator -match 'AddComponent<Sps2SetupRoot>')) 'New generated roots must not contain custom metadata components.'
+Assert-Condition (-not [regex]::IsMatch($source, '\b(Sps2LegacySetupWindow|SocketSetupGenerator|Sps2SetupRoot)\b')) 'Retired PoC or migration code is present.'
 Assert-Condition (-not [regex]::IsMatch($publicOnlySource, 'System\.Reflection|\bBindingFlags\b|\bGetField\s*\(|\bGetProperty\s*\(')) 'Unapproved reflection is present.'
 $coreAssemblyPath = Join-Path $packageRoot 'Editor\LumaKroma.Sps2SetupAssistant.Editor.asmdef'
 $maAssemblyPath = Join-Path $packageRoot 'Editor\ModularAvatar\LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.asmdef'
@@ -117,15 +116,11 @@ foreach ($pattern in $forbiddenPatterns) {
 Assert-Condition ($compatibility.Contains('CreateSocket') -and $compatibility.Contains('com.vrcfury.api.FuryComponents')) 'Public Socket API late binding is missing.'
 Assert-Condition ($compatibility.Contains('CreateArmatureLink') -and -not $compatibility.Contains('BindingFlags.NonPublic')) 'Public-only attachment API binding is missing.'
 Assert-Condition ($source.Contains('ModularAvatarBoneProxy')) 'Public Modular Avatar Bone Proxy integration is missing.'
-Assert-Condition ($source.Contains('AttachmentBackendRegistry.IsAvailable')) 'Backend availability guard is missing.'
+Assert-Condition (($source.Contains('AttachmentBackendRegistry.TryApply') -and $source.Contains('Adapters.TryGetValue(backend, out var adapter)'))) 'Backend availability guard is missing.'
 Assert-Condition ($source.Contains('Undo.RevertAllDownToGroup')) 'Atomic Undo rollback is missing.'
 Assert-Condition ($source.Contains('Undo.RegisterCreatedObjectUndo(component, undoName)')) 'External factory components must be registered with Undo.'
 Assert-Condition ($maSource.Contains('Undo.AddComponent<ModularAvatarBoneProxy>')) 'Modular Avatar components must be created through Undo.'
 
-$catalogPath = Join-Path $packageRoot 'Editor\Model\SocketCatalog.cs'
-$catalogText = Get-Content -Raw -LiteralPath $catalogPath
-$presetCount = ([regex]::Matches($catalogText, 'new SocketPreset\(')).Count
-Assert-Condition ($presetCount -eq 8) "Expected 8 Socket presets, found $presetCount."
 $fullCatalog = Get-Content -Raw -LiteralPath (Join-Path $packageRoot 'Editor/Model/FullSetupCatalog.cs')
 Assert-Condition (([regex]::Matches($fullCatalog, 'Add\(setup, "')).Count -eq 15) 'The approved full catalog must have 15 fixed parts.'
 foreach ($relative in @('Assets/IcePop/IcePop.fbx','Assets/IcePop/IcePop.mat','Documentation~/ASSET_PROVENANCE.md')) {
@@ -142,4 +137,4 @@ if ($LASTEXITCODE -ne 0) {
     throw 'git diff --cached --check failed.'
 }
 
-Write-Output "PASS development metadata, optional MA, data-only authoring, isolated capability adapter, 15-part plus legacy catalog, display asset provenance, Undo and diff whitespace"
+Write-Output "PASS development metadata, optional MA, data-only authoring, isolated capability adapter, 15-part catalog, display asset provenance, Undo and diff whitespace"

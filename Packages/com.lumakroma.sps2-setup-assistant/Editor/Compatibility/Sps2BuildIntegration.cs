@@ -64,8 +64,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 else
                 {
                     Complete(avatar.GetComponent<VRCAvatarDescriptor>(), root);
-                    // Strip only metadata. In particular, the test Plug remains uploaded.
-                    if (root.legacy != null) UnityEngine.Object.DestroyImmediate(root.legacy);
                 }
                 return true;
             }

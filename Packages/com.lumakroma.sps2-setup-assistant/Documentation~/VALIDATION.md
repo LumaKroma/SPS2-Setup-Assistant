@@ -1,3 +1,21 @@
+# Unpublished PoC removal — 2026-09-13
+
+Baseline a49a4d9953e9d30f3df7ba99737f96905bd91123. User authorizes deleting
+unpublished PoC menu/function and migration support. Removed old 8-part
+UI/generator/catalog/planner and component-metadata migration; shared current
+data renamed SetupSettings.cs with its meta preserved. Current native SPS1
+compatibility, 15-part generation and Editor settings assets unchanged.
+Unity 2022.3.22f1 / VRCFury 1.1403.0: 28/28 EditMode PASS after removing 9 old-only
+tests; foreign-reference guard tests now exercise current asset serialization.
+MANUKA/Milltina/rurune load current assets, 12/15/12 sockets, zero missing scripts.
+Native SDK builds pass after nonreplacement (poses unchanged) and regeneration;
+mouth OFF/ON/OFF/ON/OFF passes, captured errors empty. Native build protocol and
+runtime behavior were not changed. A one-time ExtensionOfNativeClass assertion
+occurred during old component removal in the warm Editor; subsequent domain
+reload has zero Console errors and zero compilation errors, with no scene cleanup.
+Evidence: Evidence/poc-removal-20260913. Existing historical probes referencing
+removed PoC/component APIs are revision-specific evidence, not current tools.
+
 # Instant removal — 2026-09-13
 
 User reports VRC PC PASS for the preceding df23622 handoff and requests removing

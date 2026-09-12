@@ -20,9 +20,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         public Transform transform => gameObject.transform;
         public VRCAvatarDescriptor avatar;
         public Sps2SetupAsset asset;
-        public Sps2SetupRoot legacy;
         public string identity;
-        public int schema => legacy != null ? legacy.schema : asset.schema;
+        public int schema => asset.schema;
         public SetupSettings settings;
         public bool oralBoundaryPath;
         public List<GeneratedSocket> sockets = new List<GeneratedSocket>();
@@ -151,15 +150,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         internal static Sps2SetupContext Find(VRCAvatarDescriptor avatar, bool build = false)
         {
             if (avatar == null) return null;
-            var legacyRoots = avatar.GetComponentsInChildren<Sps2SetupRoot>(true);
-            if (legacyRoots.Length > 1) throw new InvalidOperationException("SPS2 生成ルートが重複しています。");
-            if (legacyRoots.Length == 1)
-            {
-                var old = legacyRoots[0];
-                if (!build && old.transform.parent != avatar.transform) throw new InvalidOperationException("旧 SPS2 ルートの所有位置が変わっています。");
-                return new Sps2SetupContext { gameObject = old.gameObject, avatar = avatar, legacy = old, identity = old.identity,
-                    settings = old.settings.Copy(), sockets = old.sockets.Select(s => new GeneratedSocket { id=s.id, anchor=s.anchor, pose=s.pose, socket=s.socket, pathStops=s.pathStops.ToArray(), buildToken=s.buildToken }).ToList(), testPlug = old.testPlug };
-            }
             var owned = VrcFuryCompatibility.AllSockets(avatar.gameObject)
                 .Select(s => new { socket = s, token = VrcFuryCompatibility.ReadIdentity(s) })
                 .Where(s => TryToken(s.token, out _, out _)).ToArray();
