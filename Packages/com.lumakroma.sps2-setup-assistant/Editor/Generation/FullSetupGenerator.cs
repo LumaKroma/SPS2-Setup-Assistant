@@ -155,7 +155,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             p.position = (p.second == null ? p.first.position : (p.first.position + p.second.position) * .5f) + offset;
             if (Vector3.Cross(direction, up).sqrMagnitude < .000001f) up = right;
             Vector3 point;
-            if (part.id == "mouth" && surface.Mouth(out point)) p.position = point;
+            if (part.id == "mouth" && surface.Mouth(out point))
+            {
+                p.position = point;
+                if (surface.MouthDirection(point, h, out var mouthDirection)) direction = mouthDirection;
+            }
             else if (part.id == "earLeft" || part.id == "earRight")
             {
                 float side = part.id == "earLeft" ? -1 : 1;

@@ -1,3 +1,27 @@
+# Mouth face-profile angle — 2026-09-12
+
+Baseline cd3970a68ce46087fc84d2c3dfb95b6c2e179fe4. Known bounded placement delta,
+same owned warm Editor/session; source/host manifest and clone probe results in
+`Evidence/mouth-angle-20260912`. MANUKA mouth position remains
+(0,1.091941,.071624), outward direction becomes (0,-.551994,.833848), pitch
+33.50393 degrees downward. Opposing exit position error 0 and direction dot -1.
+Nonreplacement preserves manually adjusted rotation. Side render with a direction
+line inspected against the actual local avatar face; image remains local.
+EditMode job 0a451253818f4cbc81a270236f1153cf: 21/21 pass, no failed/skipped tests.
+No animator/runtime behavior changes or new VRC PC proof. Regenerate to adopt
+this angle; the existing user scene was not regenerated or saved automatically.
+
+Preflight scope note: management-root preflight passed identity/revision/project/
+credentials but cannot match a separate warm-host lock; host-root preflight
+cannot load the management-only dashboard module and reports expected warm-host
+residue. These are retained as non-passing tool results. The established
+Pragmatic Development split remains: clean independent source, package hash
+parity, full Project reread, official active Issue121/PID38260 lock and exact
+Coplay project/client selection were checked separately. No clean-release claim
+or Editor launch/lock bypass; rollback is the prior source package, and any
+ownership/identity conflict stops Editor work. Other avatars and actual SPS
+deformation/head motion remain Validation / VRC PC.
+
 # Centered oral curve and optional Collapse — 2026-09-12
 
 Baseline `ae9e21da37c9826fd7d546b5bfa61a769ef87bcb`; exact changed source is pinned

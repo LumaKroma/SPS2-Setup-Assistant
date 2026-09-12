@@ -80,7 +80,14 @@ along the intended tangent path; paired poses average individual results.
 Existing manual poses and native radius offsets survive nonreplacement Apply.
 Use regeneration to adopt these automatic-placement changes on older setups.
 
-Mouth uses Jaw with Head fallback. Ears use Head; pelvis uses Hips; hands use
+Mouth keeps its viseme-derived surface position. Its outward direction follows
+the sagittal face-profile normal from viseme-mesh surface samples at +/-0.012
+avatar height above/below the mouth. Pitch is bounded to +/-45 degrees; missing
+samples retain the prior forward direction. This avoids using an unstable
+single lip-triangle normal. Generation/regeneration adopts the angle, while
+nonreplacement preserves manual rotations. The reverse penetration exit keeps
+the same position and opposite direction. Mouth uses Jaw with Head fallback.
+Ears use Head; pelvis uses Hips; hands use
 Hand; feet use Toes with Foot fallback. Nipples prefer uniquely identified
 skinned-mesh breast bones and otherwise estimate from UpperChest/Chest/Spine.
 Breast identification normalizes punctuation/case in a bounded set of

@@ -107,6 +107,22 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Planning
             if (!Ray(center, avatar.transform.forward, .15f * Mathf.Abs(avatar.transform.lossyScale.y), out point, renderer)) point = center;
             return true;
         }
+        public bool MouthDirection(Vector3 mouth, float height, out Vector3 direction)
+        {
+            var forward = avatar.transform.forward;
+            var up = avatar.transform.up;
+            direction = forward;
+            float span = height * .012f;
+            if (!Ray(mouth + up * span, forward, height * .15f, out var upper, avatar.VisemeSkinnedMesh) ||
+                !Ray(mouth - up * span, forward, height * .15f, out var lower, avatar.VisemeSkinnedMesh)) return false;
+            // Use the side-profile slope, not a single lip triangle's unstable normal.
+            var line = upper - lower;
+            float rise = Vector3.Dot(line, up);
+            if (rise <= .000001f) return false;
+            float pitch = Mathf.Clamp(Mathf.Atan2(Vector3.Dot(line, forward), rise) * Mathf.Rad2Deg, -45f, 45f);
+            direction = Quaternion.AngleAxis(pitch, avatar.transform.right) * forward;
+            return true;
+        }
         public bool Extreme(Transform bone, Vector3 axis, float sign, out Vector3 point, float side = 0, SkinnedMeshRenderer renderer = null)
         {
             point = bone != null ? bone.position : Vector3.zero;
