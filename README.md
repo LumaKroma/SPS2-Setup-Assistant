@@ -1,101 +1,51 @@
 # SPS2 Setup Assistant
 
-Private development package `0.2.0-dev.1` for configuring VRCFury SPS2 on Humanoid
-VRChat avatars. The Japanese setup window now creates the setup, applies changes,
-regenerates it and places a reusable IcePop test Plug.
+VRChatアバターへのSPS2セットアップを補助するUnity Editorツール
 
-This is the Issue 121 implementation delta from baseline
-`94596332f0245e131cbb83b092076835f691719f`, on `issue/121-private-poc`.
-It is not a published release. See the [output contract](Packages/com.lumakroma.sps2-setup-assistant/Documentation~/OUTPUT_CONTRACT.md)
-and [validation record](Packages/com.lumakroma.sps2-setup-assistant/Documentation~/VALIDATION.md).
+使用する部位を選ぶだけでソケットの配置やメニューの生成をまとめて行えます。
 
-## Requirements
+## 導入
 
-- Unity `2022.3`; observed Editor version `2022.3.22f1`.
-- VRChat Avatars SDK `>=3.10.4 <4.0.0`; observed `3.10.4`.
-- VRCFury: capability/schema detection, with native integration currently validated on `1.1403.0`. SPS1 warns and allows supported basic sockets; no SPS blocks generation. Unsupported options show update guidance. Older/newer release runtime validation remains separate.
-- Optional Modular Avatar `>=1.18.1 <2.0.0` for the MA attachment route.
-- The bundled IcePop material uses lilToon. Test-Plug placement requires its shader.
+[こちらからリポジトリを追加](REPOSITORY_ADD_URL)し、VCCまたはALCOMで追加を承認してください。
 
-Add the local `Packages/com.lumakroma.sps2-setup-assistant` folder through your
-development project's existing local-package workflow. No public VPM listing is
-provided. A fresh VCC installation and additional dependency combinations still
-need their own validation.
+続いて導入先のアバタープロジェクトを開き、パッケージ一覧から **SPS2 Setup Assistant** を追加してください。
 
-## Create and adjust a setup
+手動で追加する場合のリポジトリURL：`REPOSITORY_INDEX_URL`
 
-1. Open `Tools > LumaKroma > SPS2 Setup Assistant`.
-2. Select the scene or Prefab Mode avatar in `アバター`.
-3. Choose `カジュアル`, `デフォルト` or `フル`, then change individual
-   parts and depth actions as needed. Custom parts use a `Transform` reference.
-4. Choose `貫通`, `Auto Mode`, `後方互換性` and `インスタント起動`.
-   Enable `Modular Avatarで追従` only when the optional package is installed.
-5. Click `プレハブを生成`. Inspect the generated root and adjust its ordinary
-   `Socket Pose` transforms to fit the avatar.
+## 使い方
 
-After generation:
+一番シンプルな方法は、上部メニュー欄から `Tools > LumaKroma > SPS2 Setup Assistant` を開いて対象アバターを指定 → `プレハブを生成`。
 
-| Button | Result |
-| --- | --- |
-| `プレハブを再生成` | Rebuild from current settings and restore automatic placement; retain the existing test Plug. |
-| `置き換えずに変更を反映` | Keep surviving Socket objects and manual poses while applying settings and part additions/removals. |
-| `テストプラグ出現` | Create one test Plug or return that same Plug to the front of the avatar. |
+生成前にプリセットや使用する部位、深度アクション、設定項目をカスタマイズできます。
 
-Settings are saved as Editor assets under `Assets/SPS2Settings`; the generated
-`SPS2` root contains no custom component. Save the scene or Prefab normally to
-keep its snapshot reference. Transfer its current settings asset and `.meta`
-alongside a Prefab when moving projects. Earlier snapshots are retained for
-Undo and saved scene/Prefab revisions. The tool does not automatically create a separate
-Prefab asset file. Remove the generated root to remove the authored setup and
-its test Plug; use Undo to reverse an operation.
+設定の変更・再生成、テストプラグの配置もできます。
 
-Missing bones, viseme inputs or custom references skip the affected item with a
-message. An invalid avatar, foreign ownership reference, unsupported native
-schema or Auto target count above 16 stops the transaction. A broken owned
-setup can be regenerated; move an externally relocated owned object back before
-doing so.
+対象はHumanoidアバターのみです。自動配置の結果はアバターによって異なるため、生成後に位置や向きを確認してください。
 
-## Build and runtime boundary
+## 機能
 
-The package reads its separate settings asset through native Socket identifiers.
-Old attached metadata is supported for migration only. VRCFury supplies native
-SPS behavior; public SDK callbacks configure
-the generated menu, persistence and Instant Animator layer on the build clone.
-`貫通` also works when only mouth or anus is enabled: the opposite standard
-position becomes a bone-following exit without an additional Socket/menu item.
-Under `貫通`, `体内で太さを0にする` defaults ON and controls native Collapse
-for internal sections; normal width resumes outside the opposing Socket exit.
-The oral curve enters the mouth before turning down through the measured neck
-center. Regenerate to adopt the new route. Changing only the child checkbox
-with nonreplacement apply preserves manual path positions and tangents.
-OFF retains normal thickness on the same route; plugs wider than the neck can
-still protrude. This setup option does not add a runtime menu control.
-The test Plugs stay in uploaded avatars when present. A separate 貫通テストプラグ出現
-button provides a long capsule in front of the mouth; move it with Unity transform
-tools to inspect native penetration. Transfer its referenced mesh/material asset dependencies with the Prefab.
+- プリセットを使ったセットアップ
+- 使用する部位に応じたソケットの自動配置
+- ソケットを操作するメニューの自動生成
+- 深度アクションの設定
+- 口と肛門をつなぐ貫通経路の生成
+- Auto Mode・後方互換性・インスタント起動・Local Onlyの設定
+- 手動調整した位置を維持した設定の反映
+- 設定に合わせた再生成
+- 通常のテストプラグと、貫通確認用の長いテストプラグの配置
 
-Owned Socket toggles start OFF and are unsaved. Auto starts OFF and is saved;
-Legacy Compatibility starts ON and is saved. Instant is an unsaved button that
-requests the generated mouth and vagina ON when Legacy is OFF or excluded.
-The menu follows 設定 → 口 → 胸 → 膣 → 肛門 → 右手 → 左手 → 両手, followed by remaining sockets directly,
-with 次へ pagination and no その他 submenu. Settings contains the three shared controls. Optional Local
-Only reuses native Stealth, starts OFF and is unsaved; its setup checkbox defaults
-to unchecked. Existing setups need regeneration to adopt corrected automatic
-placement and native surface radius offsets. Nonreplacement keeps manual poses.
-Existing individual Socket settings are preserved; shared native Auto/Legacy
-controls remain shared with them.
+## 依存
 
-[Validation](Packages/com.lumakroma.sps2-setup-assistant/Documentation~/VALIDATION.md)
-records 21 passing EditMode tests, native SDK build observations, authoring
-Undo/reload checks and Instant Animator transitions. These results do not replace
-Gesture Manager, three-avatar visual review or exact-commit VRC PC testing.
+- Unity 2022.3
+- VRChat Avatars SDK
+- VRCFury
+- lilToon（テストプラグの表示用）
+- Modular Avatar（任意・追従方式の追加）
 
-## License and affiliation
+## ライセンス
 
-Original code and documentation remain MIT licensed. VRCFury, Modular Avatar,
-VRChat SDK and lilToon are separate dependencies and are not redistributed.
-The owner-approved IcePop display assets have a separate
-[provenance and distribution scope](Packages/com.lumakroma.sps2-setup-assistant/Documentation~/ASSET_PROVENANCE.md);
-their inclusion does not grant a new public asset license.
+コード・ドキュメントはMITライセンスです。
 
-This unofficial tool is not affiliated with or supported by those projects.
+同梱アセットには別の利用条件が適用されます。
+
+本ツールは非公式の補助ツールです。
