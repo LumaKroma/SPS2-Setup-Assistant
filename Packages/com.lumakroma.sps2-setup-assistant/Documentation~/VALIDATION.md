@@ -1,3 +1,14 @@
+# User-provided tooltip copy — 2026-09-13
+
+Baselinebb414673b1dcdd782545efbba6ce62feb2c65216. Only three tooltip literals
+(penetration, Auto Mode, Instant) replaced with the user's exact text/newlines.
+Legacy tooltip and all layout/behavior unchanged. Contract impact: none; this
+is editorial copy, not a behavior or integration change. Source diff reviewed,
+changed Editor file matches the warm host byte-for-byte, compile/Editor readiness
+and Console0 verified. Snapshot/file hashes retained in
+`Evidence/tooltip-copy-20260913`. Original avatar not regenerated/saved;
+no redundant runtime tests. Existing VRC PC gates unchanged.
+
 # Help vertical alignment — 2026-09-13
 
 Baseline566b2ecca3c3bf66e56b9e703011cd4353158806. Help rectangle moved down2 GUI
