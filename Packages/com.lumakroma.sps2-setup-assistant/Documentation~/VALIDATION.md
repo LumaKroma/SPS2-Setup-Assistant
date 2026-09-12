@@ -1,3 +1,34 @@
+# Adopted oral Collapse boundary — 2026-09-13
+
+Source baseline: 18f414eeb270c8ff89fcce7a71cc19b5d2bb9a9a, issue/121-private-poc.
+Issue-local decision: user visually accepted the scene-only MANUKA experiment and
+requested adopting it into generation. Contract change is recorded above the
+previous amendments in OUTPUT_CONTRACT.md; earlier evidence remains historical.
+
+Pragmatic Development validation, owned Unity 2022.3.22f1, VRCFury 1.1403.0,
+SDK 3.10.4, MANUKA, MA/NDMF and lilToon via official CoplayDev MCP:
+- Regenerated waypoints match the accepted trial within 7.085e-9 m.
+- Native Collapse masks are mouth 0/1/1 and anus 1/1/0; disabled masks all zero.
+- Snapshot persistence, legacy missing-field false, Collapse off/on with manually
+  adjusted point and tangent preservation, and route removal flag reset pass.
+- Public SDK preprocess passes for the regenerated two-ended fixture; reversed
+  oral control-point error 1.491e-8 m, no missing constraint sources, zero captured
+  Error/Exception/Assert during generation/build.
+- MA single-ended mouth and anus generation/build pass: three stops each, excluded
+  Socket/menu absent, selected menu present, no missing constraint sources. Native
+  Hole markers are 0/1/1/0 (mouth) and 1/1/0/0 (anus).
+- Existing Editor and ModularAvatar EditMode suites: 30 passed, 0 failed/skipped.
+- Adopted scene saved as Assets/ZZZ_GeneratedAssets/Issue121/OralBoundaryAdopted.unity;
+  final read confirms adopted layout, clean scene, not playing/compiling. Setup
+  window bound to MANUKA and mouth selected for user inspection.
+
+Evidence: Evidence/oral-boundary-20260913 (public API probes and captured results).
+Console transport classified VRCFury Debug.Log progress as Exception entries;
+these are distinguishable by their Debug.Log stacks from real errors. Build probe
+captures actual Application log types. Other-avatar appearance, historical version
+matrix on this delta, and exact-commit VRC PC runtime remain unverified. No push,
+publication, upload or dependency modification. Project remains Validation/VRC PC.
+
 # IcePop presentation and MIT permission — 2026-09-13
 
 Baseline 8cbd1cd4467817c11cecf8b7a16dcbcbd849787f. User requested normal IcePop

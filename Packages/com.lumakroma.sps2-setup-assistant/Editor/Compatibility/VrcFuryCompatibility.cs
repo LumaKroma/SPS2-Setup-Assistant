@@ -210,14 +210,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             PrefabUtility.RecordPrefabInstancePropertyModifications(socket);
         }
 
-        public static void SetPathCollapse(Component socket, bool collapse)
+        public static void SetPathCollapse(Component socket, bool collapse, int uncollapsedSegment = -1)
         {
             if (!VrcFuryCapabilities.Current.Collapse) return;
             RequireVersion(); var data = SocketData(socket);
             Undo.RecordObject(socket, "SPS2 体内の太さ");
             var count = data.FindProperty("guidedPathStops").arraySize;
             for (int i = 0; i < count; i++)
-                Require(data, $"guidedPathStops.Array.data[{i}].shrink", SerializedPropertyType.Boolean).boolValue = collapse;
+                Require(data, $"guidedPathStops.Array.data[{i}].shrink", SerializedPropertyType.Boolean).boolValue = collapse && i != uncollapsedSegment;
             data.ApplyModifiedProperties(); PrefabUtility.RecordPrefabInstancePropertyModifications(socket);
         }
         public static void SetPathTangents(Component socket, int segment, Vector3 exit, Vector3 enter)

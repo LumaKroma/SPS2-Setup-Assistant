@@ -1,3 +1,21 @@
+# Oral Collapse boundary amendment — 2026-09-13
+
+The owner accepted the MANUKA scene trial and requested adoption into generation.
+The existing mouth-to-throat cubic is split at t=0.4 using de Casteljau subdivision.
+The internal oral boundary replaces the waist stop to retain the native three-stop
+limit: mouth → oral interior → throat → anus; reverse routing uses the same oral
+control points in reverse. With internal Collapse enabled, mouth segments use
+[false, true, true] and anus segments [true, true, false]. With Collapse disabled,
+all segments remain uncollapsed. This moves the abrupt width boundary inside the
+mouth; it does not add shader smoothing or guarantee concealment on every avatar.
+
+Editor settings snapshots persist oralBoundaryPath. Missing legacy metadata is
+false: Collapse-only edits retain legacy segment behavior until regeneration.
+For adopted layouts, Collapse-only edits preserve manual waypoint positions and
+tangents and the uncollapsed oral segment. Clearing the route resets this flag.
+Single-ended generation retains virtual opposite endpoints without adding an
+unselected Socket or menu entry. No dependency or custom runtime component change.
+
 # IcePop presentation amendment — 2026-09-13
 
 Normal IcePop show/re-show sets the owned Plug root localScale to (0.7, 0.7, 0.7).

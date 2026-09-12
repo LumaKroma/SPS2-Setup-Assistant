@@ -1,0 +1,19 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        "stops=3/3",
+        "collapse=mouth 0/1/1; anus 1/1/0",
+        "oralReverseControlError=1.490796E-08",
+        "preprocess=True",
+        "nativeMarkers=Armature/Hips/Spine/Chest/Neck/Head/[VF981] mouth/Original Object/Socket Pose/BakedSpsSocket/OneSpace/SpsScreenMarker=0|Armature/Hips/Spine/Chest/Neck/Head/[VF981] mouth/Original Object/Socket Pose/BakedSpsSocket/OneSpace/SPS Socket Path=1|Armature/Hips/Spine/Chest/Neck/Head/[VF981] mouth/Original Object/Socket Pose/BakedSpsSocket/OneSpace/SPS Socket Path (1)=1|Armature/Hips/Spine/Chest/Neck/Head/[VF981] mouth/Original Object/Socket Pose/BakedSpsSocket/OneSpace/SPS Socket Path (2)=0|Armature/Hips/[VF127] anus/Original Object/Socket Pose/BakedSpsSocket/OneSpace/SpsScreenMarker=1|Armature/Hips/[VF127] anus/Original Object/Socket Pose/BakedSpsSocket/OneSpace/SPS Socket Path=1|Armature/Hips/[VF127] anus/Original Object/Socket Pose/BakedSpsSocket/OneSpace/SPS Socket Path (1)=0|Armature/Hips/[VF127] anus/Original Object/Socket Pose/BakedSpsSocket/OneSpace/SPS Socket Path (2)=0",
+        "missingConstraintSources=0",
+        "actualErrors="
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

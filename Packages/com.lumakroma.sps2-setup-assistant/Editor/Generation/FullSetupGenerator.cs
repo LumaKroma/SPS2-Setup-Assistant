@@ -400,7 +400,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     ConfigurePath(root, avatar, settings, warnings, basis, surface);
                 else if (previous.showInternalThickness != settings.showInternalThickness)
                     foreach (var socket in root.sockets.Where(s => s.id == "mouth" || s.id == "anus"))
-                        VrcFuryCompatibility.SetPathCollapse(socket.socket, !settings.showInternalThickness);
+                        VrcFuryCompatibility.SetPathCollapse(socket.socket, !settings.showInternalThickness,
+                            root.oralBoundaryPath ? (socket.id == "mouth" ? 0 : 2) : -1);
                 root.settings = settings.Copy();
                 if (VrcFuryCapabilities.Current.Legacy && VrcFuryCompatibility.AutoSocketCount(avatar.gameObject) > 16)
                     throw new InvalidOperationException("既存分を含む Auto Mode 対象が16個を超えます。Auto Mode を外すか対象を減らしてください。");
@@ -450,6 +451,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         }
         private static void ClearPath(Sps2SetupContext root, VRCAvatarDescriptor avatar)
         {
+            root.oralBoundaryPath = false;
             var old = root.transform.Find(PathName);
             foreach (var socket in root.sockets.Where(s => s.id == "mouth" || s.id == "anus"))
             { VrcFuryCompatibility.SetPath(socket.socket, Array.Empty<Transform>(), avatar.transform); socket.pathStops = Array.Empty<Transform>(); }
@@ -498,34 +500,44 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 point.transform.rotation = Quaternion.LookRotation(direction.normalized, avatar.transform.right);
                 return point.transform;
             }
-            // Native path travel is -Z. Reverse routes need opposite waypoint frames;
-            // an exit therefore faces opposite to the destination entrance Socket.
-            if (mouth != null) mouth.pathStops = new[] {
-                Stop("Mouth Throat", throat, throatCenter - hips.position, throatCenter),
-                Stop("Mouth Lower", hips, throat.position - anusPose.position),
-                Stop("Anus Exit", anusPose, -anusPose.forward) };
-            if (anus != null) anus.pathStops = new[] {
-                Stop("Anus Lower", hips, anusPose.position - throat.position),
-                Stop("Anus Throat", throat, hips.position - throatCenter, throatCenter),
-                Stop("Mouth Exit", mouthPose, -mouthPose.forward) };
-            if (mouth != null) VrcFuryCompatibility.SetPath(mouth.socket, mouth.pathStops, avatar.transform, !settings.showInternalThickness);
-            if (anus != null) VrcFuryCompatibility.SetPath(anus.socket, anus.pathStops, avatar.transform, !settings.showInternalThickness);
-            ConfigureOralTangents(mouth, anus, mouthPose, throatCenter, avatar);
-        }
-
-        private static void ConfigureOralTangents(GeneratedSocket mouth, GeneratedSocket anus, Transform mouthPose,
-            Vector3 throatCenter, VRCAvatarDescriptor avatar)
-        {
-            // First enter the oral cavity, then turn down at the measured neck center.
+            // Split the accepted mouth-to-throat cubic without changing its shape.
+            // The interior split replaces the waist waypoint, keeping three stops.
             float bend = Vector3.Distance(mouthPose.position, throatCenter);
             var oralControl = mouthPose.position - avatar.transform.forward * (bend * .8f) + avatar.transform.up * (bend * .2f);
             var throatControl = throatCenter + avatar.transform.up * (bend * .8f) + avatar.transform.forward * (bend * .16f);
+            const float split = .4f;
+            var q0 = Vector3.Lerp(mouthPose.position, oralControl, split);
+            var q1 = Vector3.Lerp(oralControl, throatControl, split);
+            var q2 = Vector3.Lerp(throatControl, throatCenter, split);
+            var r0 = Vector3.Lerp(q0, q1, split);
+            var r1 = Vector3.Lerp(q1, q2, split);
+            var interior = Vector3.Lerp(r0, r1, split);
+            var head = animator.GetBoneTransform(HumanBodyBones.Head) ?? throat;
+            // Native path travel is -Z; reverse waypoints face the opposite direction.
+            if (mouth != null) mouth.pathStops = new[] {
+                Stop("Mouth Interior", head, r0 - r1, interior),
+                Stop("Mouth Throat", throat, throatCenter - hips.position, throatCenter),
+                Stop("Anus Exit", anusPose, -anusPose.forward) };
+            if (anus != null) anus.pathStops = new[] {
+                Stop("Anus Throat", throat, hips.position - throatCenter, throatCenter),
+                Stop("Anus Interior", head, r1 - r0, interior),
+                Stop("Mouth Exit", mouthPose, -mouthPose.forward) };
             Vector3 Local(Transform frame, Vector3 worldPoint) => Quaternion.Inverse(frame.rotation) * (worldPoint - frame.position);
-            if (mouth != null) VrcFuryCompatibility.SetPathTangents(mouth.socket, 0,
-                Local(mouth.pose, oralControl), Local(mouth.pathStops[0], throatControl));
-            // Reversed cubic uses the same world control points in reverse order.
-            if (anus != null) VrcFuryCompatibility.SetPathTangents(anus.socket, 2,
-                Local(anus.pathStops[1], throatControl), Local(anus.pathStops[2], oralControl));
+            if (mouth != null)
+            {
+                VrcFuryCompatibility.SetPath(mouth.socket, mouth.pathStops, avatar.transform);
+                VrcFuryCompatibility.SetPathCollapse(mouth.socket, !settings.showInternalThickness, 0);
+                VrcFuryCompatibility.SetPathTangents(mouth.socket, 0, Local(mouth.pose, q0), Local(mouth.pathStops[0], r0));
+                VrcFuryCompatibility.SetPathTangents(mouth.socket, 1, Local(mouth.pathStops[0], r1), Local(mouth.pathStops[1], q2));
+            }
+            if (anus != null)
+            {
+                VrcFuryCompatibility.SetPath(anus.socket, anus.pathStops, avatar.transform);
+                VrcFuryCompatibility.SetPathCollapse(anus.socket, !settings.showInternalThickness, 2);
+                VrcFuryCompatibility.SetPathTangents(anus.socket, 1, Local(anus.pathStops[0], q2), Local(anus.pathStops[1], r1));
+                VrcFuryCompatibility.SetPathTangents(anus.socket, 2, Local(anus.pathStops[1], r0), Local(anus.pathStops[2], q0));
+            }
+            root.oralBoundaryPath = true;
         }
 
         public static bool ShowTestPlug(VRCAvatarDescriptor avatar, out string error) => ShowTestPlug(avatar, false, out error);

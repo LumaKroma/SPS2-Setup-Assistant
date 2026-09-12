@@ -1,0 +1,16 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        "oldSnapshotLayout=False",
+        "acceptedTrialWaypointDelta=7.084927E-09",
+        "persistAndTogglePoseTangents=PASS",
+        "clearResetsLayout=PASS"
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}
