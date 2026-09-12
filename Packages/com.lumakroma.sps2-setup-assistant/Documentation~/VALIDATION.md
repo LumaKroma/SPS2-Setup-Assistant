@@ -1,3 +1,60 @@
+# Actual VRCFury release matrix — 2026-09-13
+
+Source baseline: `5cfdddfe9f9b6f10a0e691a05dfab0f864d4e13b`. Contract impact: none;
+this follow-up adds observed compatibility evidence without changing product code.
+User requested representative released-version generation tests and authorized
+discarding temporary avatar test edits. Official VCC release ZIPs were installed
+sequentially in the exclusively owned disposable Unity host. Each version reached
+MCP ready/noncompiling state before its fresh MANUKA fixture was generated.
+
+Environment: Unity 2022.3.22f1, VRChat SDK 3.10.4, installed MA/NDMF, CoplayDev
+10.2.0. The same 106 compiled package inputs matched the source baseline throughout.
+
+| VRCFury | Native capability era | 15 sockets / reapply / regenerate | Both test plugs | SDK preprocess |
+| --- | --- | --- | --- | --- |
+| 1.900.0 | SPS1, no public creation/attachment API | PASS | PASS | PASS |
+| 1.1200.0 | SPS1, public API and depth actions | PASS | PASS | PASS |
+| 1.1349.0 | SPS2, paths and Collapse | PASS | PASS | PASS |
+| 1.1409.0 | SPS2, local tangent units | PASS | PASS | PASS |
+| 1.1403.0 | Restored original dependency | PASS | PASS | PASS |
+
+All rows preserve a manually changed mouth position during nonreplacement, generate
+zero package-owned MonoBehaviours, and produce one SPS2 menu root, one mouth item,
+menus with at most eight controls, and Local Only default 0 / not saved. SPS1 rows
+warn about SPS1 and omit unsupported penetration/Instant settings. The pre-public-API
+row also omits automatic depth actions and uses the Unity ParentConstraint fallback.
+The later SPS1 row produces the expected mouth depth binding. SPS2 rows generate
+three mouth path stops and the expected depth binding. These are authoring/build
+observations, not visual path, Animator lifecycle, networking or VRChat-client tests.
+
+Official release ZIP hashes, post-test byte comparisons (651/1027/1336/1408 files,
+zero mismatches), exact probe sources, results and ready snapshots are retained in
+[the evidence directory](Evidence/version-matrix-20260913/results.json). No dependency
+source was patched. Restored 1.1403.0 has no Git difference from the host's recorded
+VRCFury package. Original avatar/model assets were not edited. The setup window was
+reopened on a fresh, ungenerated MANUKA instance in the saved VersionMatrix scene;
+final Editor state is ready, not compiling, with zero Console errors.
+
+Session limitations are retained rather than converted into a blanket PASS:
+- Two warm package swaps stalled the Editor. Bounded official File/Exit requests
+  failed; exact PID/start time/executable/project/official lock were checked before
+  authorized recovery. The 1.1200.0 post-test exit likewise stalled with the temporary
+  scene still dirty. These three session attempts remain aborted. Subsequent runs
+  used cold package swaps and explicit clean/saved temporary scenes; the 1.1349.0
+  and 1.1409.0 Editors exited before the next launch without forced termination.
+- MCP's Console reader classified native VRCFury Debug.Log progress entries as
+  exceptions. The initial 1.900.0 raw capture is retained; its native preprocess
+  returned true and finished menu construction. Later probes additionally subscribe
+  to public Application.logMessageReceived and observed no Error/Exception/Assert
+  during generation/build. No dependency logging or policy was changed.
+- This does not certify every release, early betas, absent-SPS installation, other
+  Unity/SDK combinations, other avatars, GUI warning appearance on historical
+  versions, Undo/Redo across versions, or VRC PC. Existing gates remain open.
+
+Local operational logs and aborted process identities remain in the task's
+version-matrix scratch directory. Issue #121 remains Validation / VRC PC; there was
+no upload, publication, merge or dependency upgrade of the canonical project.
+
 # Capability-based VRCFury compatibility — 2026-09-13
 
 Baseline `e8bf98f111517fa00f364561785ff84c4eebb980`. User requested broad version

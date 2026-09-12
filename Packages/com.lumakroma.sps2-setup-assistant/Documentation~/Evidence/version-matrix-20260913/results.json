@@ -1,0 +1,97 @@
+[
+  {
+    "version": "1.900.0",
+    "generation": "PASS",
+    "nonreplacementPose": "PASS",
+    "regeneration": "PASS",
+    "testPlugs": "PASS",
+    "nativeSdkPreprocess": "PASS",
+    "sockets": 15,
+    "pathStops": "mouthStops=0",
+    "capabilities": [
+      "sps2=False",
+      "path=False",
+      "collapse=False",
+      "localTangents=False",
+      "depth=False",
+      "publicAttachment=False"
+    ],
+    "actualErrorCapture": "not installed in initial probe; raw Console/progress retained"
+  },
+  {
+    "version": "1.1200.0",
+    "generation": "PASS",
+    "nonreplacementPose": "PASS",
+    "regeneration": "PASS",
+    "testPlugs": "PASS",
+    "nativeSdkPreprocess": "PASS",
+    "sockets": 15,
+    "pathStops": "mouthStops=0",
+    "capabilities": [
+      "sps2=False",
+      "path=False",
+      "collapse=False",
+      "localTangents=False",
+      "depth=True",
+      "publicAttachment=True"
+    ],
+    "actualErrorCapture": "actualErrors="
+  },
+  {
+    "version": "1.1349.0",
+    "generation": "PASS",
+    "nonreplacementPose": "PASS",
+    "regeneration": "PASS",
+    "testPlugs": "PASS",
+    "nativeSdkPreprocess": "PASS",
+    "sockets": 15,
+    "pathStops": "mouthStops=3",
+    "capabilities": [
+      "sps2=True",
+      "path=True",
+      "collapse=True",
+      "localTangents=False",
+      "depth=True",
+      "publicAttachment=True"
+    ],
+    "actualErrorCapture": "actualErrors="
+  },
+  {
+    "version": "1.1409.0",
+    "generation": "PASS",
+    "nonreplacementPose": "PASS",
+    "regeneration": "PASS",
+    "testPlugs": "PASS",
+    "nativeSdkPreprocess": "PASS",
+    "sockets": 15,
+    "pathStops": "mouthStops=3",
+    "capabilities": [
+      "sps2=True",
+      "path=True",
+      "collapse=True",
+      "localTangents=True",
+      "depth=True",
+      "publicAttachment=True"
+    ],
+    "actualErrorCapture": "actualErrors="
+  },
+  {
+    "version": "1.1403.0",
+    "generation": "PASS",
+    "nonreplacementPose": "PASS",
+    "regeneration": "PASS",
+    "testPlugs": "PASS",
+    "nativeSdkPreprocess": "PASS",
+    "sockets": 15,
+    "pathStops": "mouthStops=3",
+    "capabilities": [
+      "sps2=True",
+      "path=True",
+      "collapse=True",
+      "localTangents=False",
+      "depth=True",
+      "publicAttachment=True"
+    ],
+    "actualErrorCapture": "actualErrors="
+  }
+]
