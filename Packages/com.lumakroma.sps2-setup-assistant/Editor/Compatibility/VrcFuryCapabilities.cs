@@ -26,7 +26,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         public bool Collapse { get; private set; }
         public bool AutoMode { get; private set; }
         public bool Legacy { get; private set; }
-        public bool Instant => Legacy;
         public bool LocalOnly { get; private set; }
         public bool Depth { get; private set; }
         public bool RadiusOffset { get; private set; }
@@ -121,7 +120,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             void Missing(bool available, string feature) { if (!available) notes.Add(feature + " はこの版では利用できません（生成対象外）。"); }
             Missing(Path, "貫通");
             if (Path) { Missing(Collapse, "首付近で太さを0にする"); Missing(Tangents, "貫通経路の曲線調整（標準の経路補間を使用）"); }
-            Missing(AutoMode, "Auto Mode"); Missing(Legacy, "後方互換性の切り替え"); Missing(Instant, "インスタント起動");
+            Missing(AutoMode, "Auto Mode"); Missing(Legacy, "後方互換性の切り替え");
             Missing(LocalOnly, "Local Only"); Missing(Depth, "深度アクションの自動設定"); Missing(TestPlug, "テストプラグ");
             if (!RadiusOffset) notes.Add("Radius Offset 非対応のため、標準のソケット配置を使用します。");
             if (!PublicAttachment) notes.Add("追従の公開 API がないため Unity の Parent Constraint を使用します。");
@@ -134,7 +133,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             var result = requested.Copy();
             result.penetration &= Path;
             if (!Collapse) result.showInternalThickness = true;
-            result.autoMode &= AutoMode; result.legacy &= Legacy; result.instant &= Instant; result.localOnly &= LocalOnly;
+            result.autoMode &= AutoMode; result.legacy &= Legacy; result.localOnly &= LocalOnly;
             if (!Depth) foreach (var part in result.parts) part.depth = false;
             if (warnings != null) warnings.AddRange(Notices());
             return result;

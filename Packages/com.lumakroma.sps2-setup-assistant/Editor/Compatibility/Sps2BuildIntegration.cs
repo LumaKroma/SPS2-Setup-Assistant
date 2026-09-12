@@ -8,7 +8,6 @@ using UnityEditor.Animations;
 using UnityEngine;
 using VRC.SDK3.Avatars.Components;
 using VRC.SDK3.Avatars.ScriptableObjects;
-using VRC.SDKBase;
 using VRC.SDKBase.Editor.BuildPipeline;
 
 namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
@@ -161,8 +160,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             { auto.parent.controls.Remove(auto.control); auto.control.name = "Auto Mode"; settingsMenu.controls.Add(auto.control); }
             if (root.settings.legacy && legacy != null)
             { legacy.parent.controls.Remove(legacy.control); legacy.control.name = "後方互換性"; settingsMenu.controls.Add(legacy.control); }
-            if (root.settings.instant && (owned.ContainsKey("mouth") || owned.ContainsKey("vagina")))
-                AddInstant(avatar, root, fx, settingsMenu, owned, legacy);
             if (localOnly != null) localOnly.parent.controls.Remove(localOnly.control);
             if (root.settings.localOnly && localOnly != null)
             { localOnly.control.name = "Local Only"; settingsMenu.controls.Add(localOnly.control); }
@@ -210,36 +207,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             }
         }
 
-        internal static bool InstantWriteDefaults(AnimatorController fx)
-        {
-            var policies = new HashSet<bool>();
-            bool HasDirect(Motion motion) => motion is BlendTree tree &&
-                (tree.blendType == BlendTreeType.Direct || tree.children.Any(c => HasDirect(c.motion)));
-            void Read(AnimatorStateMachine machine, bool diagnosticLayer)
-            {
-                foreach (var child in machine.states)
-                    if (!HasDirect(child.state.motion) && !(diagnosticLayer && IsEmptyLayerDiagnostic(machine, child.state)))
-                        policies.Add(child.state.writeDefaultValues);
-                foreach (var child in machine.stateMachines) Read(child.stateMachine, diagnosticLayer);
-            }
-            foreach (var layer in fx.layers)
-                if (layer.blendingMode != AnimatorLayerBlendingMode.Additive)
-                    Read(layer.stateMachine, layer.name.EndsWith(" (NO VALID ANIMATIONS)", StringComparison.Ordinal));
-            if (policies.Count > 1) throw new InvalidOperationException("FX の Write Defaults が混在しています。VRCFury で統一してから再ビルドしてください。");
-            return policies.Count == 0 || policies.Single();
-        }
-        private static bool IsEmptyLayerDiagnostic(AnimatorStateMachine machine, AnimatorState state)
-        {
-            // VRCFury adds this disconnected notice after setting WD in preview builds.
-            // Match the full observed notice (its display wraps whitespace), not a prefix.
-            const string notice = "Warning from VRCFury! This layer contains no valid animations, and will be removed during a real upload, Make sure the animated objects / components actually exist at the paths used in the clips";
-            var name = string.Join(" ", state.name.Split((char[])null, StringSplitOptions.RemoveEmptyEntries));
-            return name == notice && state.motion == null && state.behaviours.Length == 0 &&
-                state.transitions.Length == 0 && machine.defaultState != state &&
-                !machine.anyStateTransitions.Any(t => t.destinationState == state) &&
-                !machine.entryTransitions.Any(t => t.destinationState == state) &&
-                !machine.states.Any(s => s.state.transitions.Any(t => t.destinationState == state));
-        }
         private static void Paginate(VRCExpressionsMenu menu)
         {
             if (menu.controls.Count <= 8) return;
@@ -258,53 +225,5 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             animatorMatches[0].defaultFloat = initial; animatorMatches[0].defaultBool = initial > .5f; fx.parameters = parameters;
         }
 
-        private static void AddInstant(VRCAvatarDescriptor avatar, Sps2SetupContext root, AnimatorController fx, VRCExpressionsMenu menu,
-            Dictionary<string, MenuEntry> owned, MenuEntry legacy)
-        {
-            string trigger = "SPS2_" + root.identity + "_Instant";
-            if (fx.parameters.Any(p => p.name == trigger) || avatar.expressionParameters.parameters.Any(p => p.name == trigger))
-                throw new InvalidOperationException("インスタント起動パラメーターが重複しています。");
-            fx.AddParameter(trigger, AnimatorControllerParameterType.Bool);
-            avatar.expressionParameters.parameters = avatar.expressionParameters.parameters.Concat(new[] { new VRCExpressionParameters.Parameter
-            { name = trigger, valueType = VRCExpressionParameters.ValueType.Bool, defaultValue = 0, saved = false } }).ToArray();
-            menu.controls.Add(new VRCExpressionsMenu.Control { name = "インスタント起動", type = VRCExpressionsMenu.Control.ControlType.Button,
-                parameter = new VRCExpressionsMenu.Control.Parameter { name = trigger }, value = 1 });
-            var machine = new AnimatorStateMachine { name = "SPS2 Instant" };
-            bool writeDefaults = InstantWriteDefaults(fx);
-            AnimationClip clip = null;
-            if (!writeDefaults)
-            {
-                var marker = new GameObject("__SPS2_Instant_" + root.identity);
-                marker.transform.SetParent(avatar.transform, false);
-                marker.SetActive(false);
-                clip = new AnimationClip { name = "SPS2 Instant Noop" };
-                AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve(marker.name, typeof(GameObject), "m_IsActive"), AnimationCurve.Constant(0, 1, 0));
-            }
-            AnimatorState State(string name, float x)
-            { var s = machine.AddState(name, new Vector3(x, 0)); s.motion = clip; s.writeDefaultValues = writeDefaults; return s; }
-            var ready = State("Ready", 0); var fire = State("Fire", 220); var held = State("Held", 440); var denied = State("DeniedHeld", 220);
-            machine.defaultState = ready;
-            var driver = fire.AddStateMachineBehaviour<VRCAvatarParameterDriver>(); driver.localOnly = true;
-            foreach (string id in new[] { "mouth", "vagina" }) if (owned.TryGetValue(id, out var socket))
-                driver.parameters.Add(new VRC_AvatarParameterDriver.Parameter { name = socket.control.parameter.name, value = 1, type = VRC_AvatarParameterDriver.ChangeType.Set });
-            AnimatorStateTransition Transition(AnimatorState from, AnimatorState to)
-            { var t = from.AddTransition(to); t.hasExitTime = false; t.duration = 0; t.canTransitionToSelf = false; t.interruptionSource = TransitionInterruptionSource.None; return t; }
-            void Button(AnimatorStateTransition t, bool pressed) => t.AddCondition(pressed ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot, 0, trigger);
-            // Check the real FX parameter type: native SPS booleans are often FX floats.
-            void Legacy(AnimatorStateTransition t, bool on)
-            {
-                string name = legacy.control.parameter.name; var type = fx.parameters.Single(p => p.name == name).type;
-                t.AddCondition(type == AnimatorControllerParameterType.Bool ? (on ? AnimatorConditionMode.If : AnimatorConditionMode.IfNot) :
-                    (on ? AnimatorConditionMode.Greater : AnimatorConditionMode.Less), .5f, name);
-            }
-            if (root.settings.legacy && legacy != null)
-            { var reject = Transition(ready, denied); Button(reject, true); Legacy(reject, true); }
-            var execute = Transition(ready, fire); Button(execute, true);
-            if (root.settings.legacy && legacy != null) Legacy(execute, false);
-            Button(Transition(fire, held), true);
-            Button(Transition(fire, ready), false);
-            Button(Transition(held, ready), false); Button(Transition(denied, ready), false);
-            fx.AddLayer(new AnimatorControllerLayer { name = "SPS2 Instant", defaultWeight = 1, stateMachine = machine });
-        }
     }
 }

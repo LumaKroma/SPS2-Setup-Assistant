@@ -10,6 +10,21 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
 {
     public class FullSetupSettingsTests
     {
+        [Test]
+        public void RetiredInstantSettingIsIgnoredWithoutLosingOtherSettings()
+        {
+            var settings = JsonUtility.FromJson<SetupSettings>("{\"instant\":true,\"autoMode\":false,\"legacy\":true,\"localOnly\":true,\"parts\":[{\"id\":\"mouth\",\"included\":true,\"depth\":true,\"actions\":[{\"shape\":\"vrc.v_oh\",\"weight\":63}]}]}");
+            var copy = settings.Copy();
+            Assert.That(JsonUtility.ToJson(copy), Does.Not.Contain("\"instant\""));
+            Assert.That(copy.autoMode, Is.False);
+            Assert.That(copy.legacy, Is.True);
+            Assert.That(copy.localOnly, Is.True);
+            var mouth = copy.parts.Single();
+            Assert.That(mouth.included && mouth.depth, Is.True);
+            Assert.That(mouth.actions.Single().shape, Is.EqualTo("vrc.v_oh"));
+            Assert.That(mouth.actions.Single().weight, Is.EqualTo(63));
+        }
+
         [TestCase("", DepthActionKind.BlendShape, false, true)]
         [TestCase("vrc.v_oh", DepthActionKind.BlendShape, false, true)]
         [TestCase("custom", DepthActionKind.BlendShape, false, false)]

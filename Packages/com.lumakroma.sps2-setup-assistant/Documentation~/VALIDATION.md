@@ -1,3 +1,23 @@
+# Instant removal — 2026-09-13
+
+User reports VRC PC PASS for the preceding df23622 handoff and requests removing
+Instant for usability. This user report is retained separately from the following
+changed-source validation; no post-removal VRC PC pass is claimed.
+
+Removed setting/UI/capability, menu creation, trigger/driver/state machine/marker
+and dedicated WD policy plus its 8 obsolete tests. Added obsolete JSON migration
+coverage. Existing saved instant:true is ignored without altering other settings.
+All 37 current EditMode tests pass on Unity 2022.3.22f1 / VRCFury 1.1403.0.
+Native SDK preprocess passes for a legacy enabled-settings clone without
+regeneration and a regenerated Editor-asset clone. Both contain no Instant menu,
+FX/expression parameter, layer or marker; native mouth activation follows
+OFF/ON/OFF/ON/OFF in AnimatorControllerPlayable, errors empty. Original scene and
+source avatar assets are preserved. First probe inherited inactive/disabled
+avatar state and could not evaluate activation; explicitly enabling only the
+disposable clone/Animator resolved the fixture, with no product change.
+Evidence: Evidence/instant-removal-20260913. Historical Instant evidence below
+is for retired behavior. Existing uploaded avatars require rebuild/reupload.
+
 # VPM readiness audit — 2026-09-13
 
 Baselinebf1d209ef196099d75b81483f2f6a07ffcb24963. Audit found and fixed a null/empty

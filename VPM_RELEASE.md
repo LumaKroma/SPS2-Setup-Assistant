@@ -18,7 +18,7 @@ repeat outputs must have identical SHA256 on the same PowerShell/.NET runtime.
 ## Remaining human gate
 
 Test this exact package in VRChat PC, particularly Socket ON/OFF, menu actions,
-Instant with Legacy off, guided-path Collapse and test Plugs. Existing avatar-base
+guided-path Collapse and test Plugs. Existing avatar-base
 mixed Write Defaults may still produce VRCFury's own warning. Record avatar,
 Unity/dependency versions, source SHA and results in Issue121. No passing release
 claim follows merely from Editor tests or SDK preprocessing.

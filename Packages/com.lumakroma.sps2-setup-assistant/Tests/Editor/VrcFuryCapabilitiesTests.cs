@@ -70,12 +70,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             var caps = VrcFuryCapabilities.Inspect(typeof(CompatibilityBasicSocket), typeof(CompatibilitySpsPlug), false);
             Assert.IsTrue(caps.CanGenerate); Assert.IsTrue(caps.HasSps); Assert.IsFalse(caps.Sps2);
             var requested = FullSetupCatalog.CreateDefault();
-            requested.penetration = requested.instant = requested.legacy = true;
+            requested.penetration = requested.legacy = true;
             requested.parts[0].depth = true;
             var warnings = new List<string>(); var effective = caps.Effective(requested, warnings);
-            Assert.IsFalse(effective.penetration); Assert.IsFalse(effective.instant); Assert.IsFalse(effective.legacy);
+            Assert.IsFalse(effective.penetration); Assert.IsFalse(effective.legacy);
             Assert.IsTrue(effective.autoMode); Assert.IsFalse(effective.parts[0].depth);
-            Assert.IsTrue(requested.penetration); Assert.IsTrue(requested.instant); Assert.IsTrue(requested.parts[0].depth);
+            Assert.IsTrue(requested.penetration); Assert.IsTrue(requested.parts[0].depth);
             Assert.AreEqual(requested.parts.Count, effective.parts.Count);
             Assert.IsTrue(warnings.Any(n => n.Contains("SPS1")));
         }
@@ -88,12 +88,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
         }
 
         [Test]
-        public void FirstSps2PathDoesNotImplyCollapseLegacyOrInstant()
+        public void FirstSps2PathDoesNotImplyCollapseOrLegacy()
         {
             var caps = VrcFuryCapabilities.Inspect(typeof(CompatibilityInitialSps2Socket), typeof(CompatibilitySpsPlug), false);
             Assert.IsTrue(caps.Sps2); Assert.IsTrue(caps.Path); Assert.IsFalse(caps.PathStops);
             Assert.IsFalse(caps.Collapse); Assert.IsFalse(caps.Tangents);
-            Assert.IsFalse(caps.Legacy); Assert.IsFalse(caps.Instant);
+            Assert.IsFalse(caps.Legacy);
             var requested = FullSetupCatalog.CreateDefault(); requested.penetration = true;
             var effective = caps.Effective(requested);
             Assert.IsTrue(effective.penetration); Assert.IsTrue(effective.showInternalThickness);
@@ -105,7 +105,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
         {
             var caps = VrcFuryCapabilities.Inspect(typeof(CompatibilityVectorPathSocket), typeof(CompatibilitySpsPlug), false);
             Assert.IsTrue(caps.PathStops); Assert.IsTrue(caps.Tangents); Assert.IsFalse(caps.LocalTangents);
-            Assert.IsTrue(caps.Legacy); Assert.IsTrue(caps.Instant); Assert.IsFalse(caps.Collapse);
+            Assert.IsTrue(caps.Legacy); Assert.IsFalse(caps.Collapse);
         }
 
         [Test]

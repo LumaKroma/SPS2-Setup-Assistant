@@ -145,8 +145,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 "プラグに最も近い対象ソケットを自動で有効にするメニューを追加します。");
             CompatibleToggle("後方互換性", settings.legacy, v => settings.legacy = v, VrcFuryCapabilities.Current.Legacy,
                 "SPS1・DPS・TPSのプラグにも対応させ、互換機能の切り替えメニューを追加します。\nSPS2同士だけで使う場合はオフにできます。");
-            CompatibleToggle("インスタント起動", settings.instant, v => settings.instant = v, VrcFuryCapabilities.Current.Instant,
-                "口と膣のソケットをまとめてオンにするボタンをメニューに追加します。\n後方互換性がオフのときに動作します。");
             CompatibleToggle("Local Only", settings.localOnly, v => settings.localOnly = v, VrcFuryCapabilities.Current.LocalOnly);
             GUILayout.Space(8);
             Toggle("Modular Avatarで追従", settings.modularAvatar, v => settings.modularAvatar = v);

@@ -1,3 +1,14 @@
+# Instant removal amendment — 2026-09-13
+
+User requested removal after reporting VRC PC PASS for the preceding handoff.
+Instant is no longer a setting or capability and creates no menu, parameter,
+Animator layer, driver, clip or marker. Its dedicated WD policy and diagnostic
+recognizer are removed. Older instant JSON fields are ignored, including true.
+Existing authoring setups need only rebuild; regeneration is not required for
+removal. Uploaded avatars require reupload. Other native menu controls, defaults,
+persistence and Socket lifecycles remain unchanged. Historical Instant UI/flow
+entries below and prior validation evidence are superseded, not current features.
+
 # Mouth reference recovery amendment — 2026-09-13
 
 On avatar binding, restore a missing mouth BlendShape renderer from the descriptor
@@ -15,7 +26,9 @@ Release creation is a manual draft step; listing publication requires a public
 repository and published, validated release. Version remains0.2.0-dev.1 pending
 runtime/publication gates. Public indexes preserve all prior versions and hashes.
 
-# Native diagnostic Write Defaults amendment — 2026-09-13
+# Historical native diagnostic Write Defaults amendment — 2026-09-13
+
+Superseded by removal of Instant and its WD-policy helper above.
 
 Instant-start WD policy ignores VRCFury's observed preview-only empty-layer notice.
 Recognition requires the (NO VALID ANIMATIONS) layer suffix, complete warning text
@@ -248,7 +261,7 @@ retain manually adjusted paths; structural changes rebuild the affected path
 configuration. Actual deformation and contact behavior still require runtime
 validation.
 
-## Menu, persistence and Instant flow
+## Menu and persistence
 
 Build callbacks at -10001 and -9999 surround observed VRCFury processing.
 Installed feature/schema checks and actual native build-output checks isolate
@@ -265,14 +278,13 @@ not directly edited.
 | Owned individual Socket | OFF | No |
 | Auto Mode | OFF | Yes |
 | Legacy Compatibility | ON | Yes |
-| Instant button | OFF | No |
 | Local Only (native Stealth) | OFF | No |
 
 The SPS2 menu begins in this order: 設定, 口, 胸, 膣, 肛門, 右手, 左手,
 両手. Remaining generated fixed/custom sockets follow directly in catalog order;
 there is no その他 submenu. Excluded sockets are omitted. Each page has at most
 eight controls including 次へ. Full selects 15 sockets and uses three pages.
-設定 contains Auto Mode, Legacy Compatibility and Instant when included.
+設定 contains Auto Mode and Legacy Compatibility when included.
 The authoring Local Only checkbox is unchecked by default. Checking it exposes
 the existing native Stealth control under 設定 as Local Only; unchecking removes
 that control. In either case its native parameter starts OFF and is unsaved.
@@ -284,23 +296,8 @@ are moved, not duplicated; existing individual Socket persistence is preserved.
 With only one eligible native Socket, native Auto may be absent. More than 16
 eligible Auto Sockets, including existing ones, stops authoring/build.
 
-Instant has no duration/Exit Time hold:
-
-Its states match the native FX Write Defaults policy. WD OFF requires a nonempty
-constant animation on a build-only inactive marker; WD ON uses no empty WD OFF
-clip. This prevents the Instant layer from latching native Socket activation.
-
-| State | Entry/ownership | Exit |
-| --- | --- | --- |
-| Ready (initial) | Does not write Socket values | Press with Legacy ON → DeniedHeld; press with Legacy OFF/excluded → Fire |
-| Fire | Local SDK parameter driver sets existing owned mouth/vagina parameters to 1 once | Still pressed → Held; released → Ready |
-| Held | Holds no Socket values and does not repeat the driver | Release → Ready |
-| DeniedHeld | Writes nothing; Legacy changing while held does not activate | Release → Ready |
-
-Transitions have duration 0, no Exit Time, and no transition interruption.
-Other Socket/Auto/Legacy parameters are unchanged. Native Auto scanning or
-competing expressions can subsequently change native outputs. Reload restores
-saved Auto/Legacy, starts owned Socket/Instant OFF and does not replay a press.
+Native Auto scanning and competing expressions retain control of native outputs.
+Reload restores saved Auto/Legacy and starts owned Sockets OFF.
 Final parameter-capacity validation belongs after native compression.
 
 ## Test Plug and validation
@@ -339,9 +336,9 @@ SPS1 (`configureSps` or `enableSps` on Plug without SPS2 tags) shows an upgrade
 warning but supports available basic sockets. Missing options are disabled and
 identified; generation copies requested settings and omits unsupported features
 from the effective saved setup. UI inputs are not modified merely by inspection.
-Path, Collapse, custom tangents, Auto, Legacy/Instant, Local Only, depth actions,
+Path, Collapse, custom tangents, Auto, Legacy, Local Only, depth actions,
 radius offset, test Plug and attachment API availability are checked separately.
-Pre-stops SPS2 retains native Dual Mode; Legacy and Instant are unavailable there.
+Pre-stops SPS2 retains native Dual Mode; Legacy is unavailable there.
 SPS1 has no imposed SPS2 Auto16 cap. Unrelated/native Dual Mode controls remain.
 
 Public API calls are late-bound only in Compatibility with exact public signatures.
