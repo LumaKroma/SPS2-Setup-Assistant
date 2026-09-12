@@ -1,3 +1,17 @@
+# Help rendering and spacing — 2026-09-13
+
+Baseline91b5c6548bce685dd1fc2deb749666c4658c7db9. Presentation-only change:
+label allocation shortened by4 GUI points; help bitmap replaced by an
+antialiased radius6 circle plus centered font question mark, inside a16-wide
+single-line rect with zero text padding/margin. Tooltip and toggle behavior
+unchanged. Compiled and repainted in the same owned warm Editor. Public Unity
+Editor ReadScreenPixel captured the actual SetupAssistant window (539x1028,
+pixelsPerPoint1); inspected all four visible markers, with full circles/text
+and no top/right clipping. Higher DPI not directly observed. Screenshot remains
+local, hash and capture probe retained in `Evidence/help-render-20260913`.
+No redundant runtime tests for this UI-only change; original avatar/scene not
+regenerated or saved. VRC PC gates from previous changes remain unchanged.
+
 # Single-ended paths and inline help icons — 2026-09-13
 
 Baseline fbffd3f84156bc655e469f724364b64c459238f7. Same owned warm session,

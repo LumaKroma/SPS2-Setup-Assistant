@@ -1,0 +1,16 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": {
+        "path": "C:\\Users\\konoh\\Desktop\\VRChat\\\u81ea\u5206\u7528\\LumaGimmics\\LumaGimmicsTest\\.codex-staging\\issue121-definition\\help-render-window.png",
+        "width": 539,
+        "height": 1028,
+        "pixelsPerPoint": 1.0
+      },
+      "compiler": "roslyn"
+    }
+  }
+}

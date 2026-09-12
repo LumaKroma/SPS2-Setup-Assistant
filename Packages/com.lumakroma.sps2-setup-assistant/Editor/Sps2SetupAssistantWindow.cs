@@ -17,6 +17,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         private string message;
         private MessageType messageType;
         private GUIStyle title;
+        private GUIStyle helpStyle;
 
         [MenuItem("Tools/LumaKroma/SPS2 Setup Assistant")]
         public static void Open()
@@ -265,17 +266,41 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 var content = new GUIContent(label, tooltip);
                 bool hasTooltip = !string.IsNullOrEmpty(tooltip);
                 bool next = hasTooltip
-                    ? EditorGUILayout.ToggleLeft(content, value, GUILayout.Width(EditorStyles.label.CalcSize(content).x + 20))
+                    ? EditorGUILayout.ToggleLeft(content, value, GUILayout.Width(EditorStyles.label.CalcSize(content).x + 16))
                     : EditorGUILayout.ToggleLeft(content, value);
                 if (!string.IsNullOrEmpty(tooltip))
                 {
-                    var icon = EditorGUIUtility.IconContent("_Help").image;
-                    var help = icon != null ? new GUIContent(icon, tooltip) : new GUIContent("?", tooltip);
-                    GUILayout.Label(help, GUILayout.Width(18), GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                    DrawHelp(tooltip);
                     GUILayout.FlexibleSpace();
                 }
                 if (next != value) Change(() => set(next));
             }
+        }
+        private void DrawHelp(string tooltip)
+        {
+            var rect = GUILayoutUtility.GetRect(16, EditorGUIUtility.singleLineHeight, GUILayout.ExpandWidth(false));
+            if (helpStyle == null) helpStyle = new GUIStyle(EditorStyles.miniLabel)
+            {
+                alignment = TextAnchor.MiddleCenter, fontSize = 11, fontStyle = FontStyle.Bold,
+                padding = new RectOffset(), margin = new RectOffset()
+            };
+            if (Event.current.type == EventType.Repaint)
+            {
+                var points = new Vector3[33];
+                for (int i = 0; i < points.Length; i++)
+                {
+                    float angle = i * Mathf.PI * 2 / (points.Length - 1);
+                    points[i] = rect.center + new Vector2(Mathf.Cos(angle), Mathf.Sin(angle)) * 6;
+                }
+                var previous = Handles.color;
+                try
+                {
+                    Handles.color = helpStyle.normal.textColor * new Color(1, 1, 1, GUI.enabled ? .8f : .4f);
+                    Handles.DrawAAPolyLine(1.5f, points);
+                }
+                finally { Handles.color = previous; }
+            }
+            GUI.Label(rect, new GUIContent("?", tooltip), helpStyle);
         }
         private void Change(Action change) { Undo.RecordObject(this, "SPS2 設定"); change(); EditorUtility.SetDirty(this); Repaint(); }
     }
