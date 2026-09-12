@@ -48,7 +48,3 @@ observations.Add("prefabRestore="+(restored.identity==redone.identity&&restored.
 } finally {UnityEditor.PrefabUtility.UnloadPrefabContents(contents);}
 return observations;
 } finally {if(duplicate!=null)UnityEngine.Object.DestroyImmediate(duplicate);UnityEngine.Object.DestroyImmediate(avatar);}
-
-
-
-

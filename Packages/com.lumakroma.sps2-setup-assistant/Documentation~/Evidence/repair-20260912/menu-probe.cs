@@ -74,4 +74,3 @@ var paths=new System.Collections.Generic.HashSet<string>();
  }
  return result;
 }finally{UnityEditor.Selection.activeObject=null;UnityEngine.Object.DestroyImmediate(avatar);}
-
