@@ -279,6 +279,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         private void DrawHelp(string tooltip)
         {
             var rect = GUILayoutUtility.GetRect(16, EditorGUIUtility.singleLineHeight, GUILayout.ExpandWidth(false));
+            rect.y += 2; // Match the adjacent ToggleLeft text's vertical inset.
             if (helpStyle == null) helpStyle = new GUIStyle(EditorStyles.miniLabel)
             {
                 alignment = TextAnchor.MiddleCenter, fontSize = 11, fontStyle = FontStyle.Bold,

@@ -130,7 +130,8 @@ The setup window provides hover tooltips for 貫通, Auto Mode, 後方互換性 
 a visible help/question icon immediately after its label; label and icon expose the
 same explanation. Help is an antialiased circle and font-rendered question mark
 inside an explicit inset rectangle, without a scaled bitmap or default label
-padding. The Instant authoring option defaults OFF for new setups;
+padding. The help rectangle is shifted down2 GUI points to align with adjacent
+toggle text. The Instant authoring option defaults OFF for new setups;
 saved explicit ON/OFF preferences remain unchanged. Loading settings
 upgrades only the built-in chest's former default label 胸の間 to 胸; custom
 parts/names and internal IDs remain unchanged. Apply persists the updated label

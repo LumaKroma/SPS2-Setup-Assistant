@@ -1,3 +1,14 @@
+# Help vertical alignment — 2026-09-13
+
+Baseline566b2ecca3c3bf66e56b9e703011cd4353158806. Help rectangle moved down2 GUI
+points, including circle/text/tooltip together. Actual SetupAssistant screenshot
+captured through public Editor ReadScreenPixel and inspected at pixelsPerPoint1:
+all four markers align with adjacent text and remain unclipped. Higher DPI not
+directly observed. Compiled, final owned Editor ready/Console0. No original
+avatar regeneration/save or runtime changes. Evidence/source parity in
+`Evidence/help-baseline-20260913`; image remains local with hash. Existing VRC
+PC gates unchanged; no redundant tests for this visual offset.
+
 # Help rendering and spacing — 2026-09-13
 
 Baseline91b5c6548bce685dd1fc2deb749666c4658c7db9. Presentation-only change:
