@@ -1,3 +1,7 @@
+Scope: This MIT license covers the original package code and documentation.
+The IcePop display assets in Assets/IcePop are excluded; see
+Documentation~/ASSET_PROVENANCE.md for the approved private inclusion scope.
+
 MIT License
 
 Copyright (c) 2026 LumaKroma

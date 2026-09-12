@@ -1,0 +1,197 @@
+[
+  {
+    "path": "Assets/IcePop/IcePop.fbx",
+    "sha256": "FC866A0F28876BF52345A5F932632791C6F4DE7CC1F0D2D574CCD5E2D47D664B",
+    "hostMatch": true
+  },
+  {
+    "path": "Assets/IcePop/IcePop.mat",
+    "sha256": "FAAFE775D0F163AC20D4FEECF2843CBF7243C740C453258AE00ECA4039A79781",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/AssemblyInfo.cs",
+    "sha256": "9174DD2248110D9BA5FBFD2B47970DF2A3BE049290E4DBD48FC4D773CD659C5E",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Compatibility/Sps2BuildIntegration.cs",
+    "sha256": "73889A9B98447EA516471E6C341712CF99EE017627C943F6CA46260FA1004770",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Compatibility/VrcFuryCompatibility.cs",
+    "sha256": "00F782A0E8386E92730EABBE1D974625ACBF722AB96921D532D89523B0303AC8",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Generation/FullSetupGenerator.cs",
+    "sha256": "EAC2328AB05251A016266E72F5173F432D8D504825E407E511235C46738F77A8",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Generation/SocketSetupGenerator.cs",
+    "sha256": "65E58BE9F84D2520A9F4EE4361DBAE27BAD2E8E8A3F0CFE6AB75080720FFC4F9",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/LumaKroma.Sps2SetupAssistant.Editor.asmdef",
+    "sha256": "4A01207058A0B46F42AD0FAD98909A817DEB86BB039FA470467AEB7A08A102FF",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Model/AttachmentBackend.cs",
+    "sha256": "C8005C1E4C6A97EC4C16FE3A027F31D795D052786C6BAE6136B9BA076715E7A4",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Model/AttachmentBackendRegistry.cs",
+    "sha256": "AB01018964F793220D4B4A4C7E29517E1A1A2C04B0C0FCA09FBB3AECDE7460D5",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Model/BodyBasis.cs",
+    "sha256": "EE1D289FD1DE3940B5638F8A13FE5A4C7FCE9EC33935B03BA423B85F999DC8BD",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Model/BonePose.cs",
+    "sha256": "00176A7B2C3511DA5E21FE11883C3172D3AE59D71702FE81F7132DA0F1B2DF42",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Model/FullSetupCatalog.cs",
+    "sha256": "EE1D41D27B8B9FDFA3B218F626E21704B2B2E6D63F9951B24916D3E8929741D4",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Model/SocketCatalog.cs",
+    "sha256": "EBD9338A2B7B10BADA3C0B01BA022D40D78621F57254C85106174C847C816A8E",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Model/SocketPlacement.cs",
+    "sha256": "C7AFB552A8ADA0640400AC96A6AA964FD1D020BF59C198B96073A174F9670A53",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Model/SocketPreset.cs",
+    "sha256": "091A1752FF30CFB12DC3A3FEB0BF2CD1FC8A40D15E270F49076899DDAF6B807A",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Model/SocketPresetId.cs",
+    "sha256": "AE583086E789671374C2A788356DD785C13F5478EF7009CB1A789243AE9990FA",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Model/SocketSetupPlan.cs",
+    "sha256": "4D1B19CC4F823CAE8E11A5EBD6F40E6D22D48433B66F63716777BC5C9119252C",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Model/UndoComponentRegistration.cs",
+    "sha256": "88B73AA96215CC4AF93C5B52D48AC3261222F741785F8B1E2F79E2AA8560A5F7",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/ModularAvatar/LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.asmdef",
+    "sha256": "CDA77A277898BD51143E1550D60DA2072C9543C04925F085F43C9FA5F9609689",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/ModularAvatar/ModularAvatarAttachmentBackend.cs",
+    "sha256": "7CB955D8A13E37B2A0266DA279D00C38823ABAD0BF78935662BB656F66A3E256",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Planning/BodyBasisBuilder.cs",
+    "sha256": "2305E3C3BB1C16C5596DEF51122AE487D6A4F68D9086BFEEC8F1896E40937CDC",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Planning/HumanoidSnapshot.cs",
+    "sha256": "3B97925AAEC24886620FB76E06A7140878E9ECFB95F353B8C3AF8BFEB8B48650",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Planning/SocketPlacementPlanner.cs",
+    "sha256": "B0B06EB322AD855537B542B97EB8F8ACBD4978C342A35F26CFBD5804CAE962B6",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Sps2LegacySetupWindow.cs",
+    "sha256": "2DCD30EFCE50F380E83B7E40DCB9AC2443E2D8D89AEEAA6614CCD8423A647E4A",
+    "hostMatch": true
+  },
+  {
+    "path": "Editor/Sps2SetupAssistantWindow.cs",
+    "sha256": "9C0DC445C0824F18E733577A0BB1D3DD34C96038D148A894AECC675BC03C7C23",
+    "hostMatch": true
+  },
+  {
+    "path": "package.json",
+    "sha256": "C6CF7E5A4F98E962F6CF6BD4854AE58C47726C80FADDD6FF1C233B5C0E0A44BB",
+    "hostMatch": true
+  },
+  {
+    "path": "Runtime/LumaKroma.Sps2SetupAssistant.Authoring.asmdef",
+    "sha256": "B37C26122301B86EA6AD23273EAA55FD8BA33C595FB8343D3A1C582C1B10D924",
+    "hostMatch": true
+  },
+  {
+    "path": "Runtime/Sps2SetupRoot.cs",
+    "sha256": "2085CB1CD5E63AB60B69AE7F1BFECAFBA1ACEEDD4133BCC2E35E1AA8EF27BDBE",
+    "hostMatch": true
+  },
+  {
+    "path": "Tests/Editor/AttachmentBackendRegistryTests.cs",
+    "sha256": "4C1F727D8DDA06AF27E768803EFC2130B903B7A1BE0EF7FDF5B99569C4C81639",
+    "hostMatch": true
+  },
+  {
+    "path": "Tests/Editor/BodyBasisBuilderTests.cs",
+    "sha256": "09DFCACCD32D0262BAB00845C32C799B51606AF3A159189D362B2A0B234B1B08",
+    "hostMatch": true
+  },
+  {
+    "path": "Tests/Editor/FullSetupSettingsTests.cs",
+    "sha256": "A42812C08EE913C546D149DDB5090FAA09DAEE72936A4F8734BAAF5A4A67E734",
+    "hostMatch": true
+  },
+  {
+    "path": "Tests/Editor/LumaKroma.Sps2SetupAssistant.Editor.Tests.asmdef",
+    "sha256": "5370EBDDC02DD55BD5A01ECE50E3C6C98094C338E4C4210E7CF1F50338C759F1",
+    "hostMatch": true
+  },
+  {
+    "path": "Tests/Editor/ModularAvatar/LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.Tests.asmdef",
+    "sha256": "0129EFB0357F5F6EC504A345812A91B7A24AFFCBD2B8D458631554111D9DEA9F",
+    "hostMatch": true
+  },
+  {
+    "path": "Tests/Editor/ModularAvatar/ModularAvatarAttachmentBackendTests.cs",
+    "sha256": "05A561C16D1D7C730CD9AF5B7788ED38F7B42FCCBDF197B795D7713505CFDEF9",
+    "hostMatch": true
+  },
+  {
+    "path": "Tests/Editor/OwnedRootTests.cs",
+    "sha256": "E74027BD04CAA04AB9A0FA11DEF0CF3C29B383F6025184C10925588D3ABE2BA2",
+    "hostMatch": true
+  },
+  {
+    "path": "Tests/Editor/SocketCatalogTests.cs",
+    "sha256": "E0F329DC1DCBA7115217E14BCA0BC5ACC58F4D9E2932BB65583F5A638586E9BF",
+    "hostMatch": true
+  },
+  {
+    "path": "Tests/Editor/SocketPlacementPlannerTests.cs",
+    "sha256": "9B94AA29E5E9756170CEDB6B6A8F03C2106EC4002924ED7AEDC5C33E6C2DDA08",
+    "hostMatch": true
+  },
+  {
+    "path": "Tests/Editor/UndoComponentRegistrationTests.cs",
+    "sha256": "C4658E72231C456142439A678AB6130CF6AC99BE551BEAD0087BC74B6293CE27",
+    "hostMatch": true
+  }
+]

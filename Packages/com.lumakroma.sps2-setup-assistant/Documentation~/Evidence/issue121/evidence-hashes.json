@@ -1,0 +1,38 @@
+[
+  {
+    "path": "authoring-probe-result-4.json",
+    "sha256": "7DED9A4CB0B4833BA12FF73FCA1AAC92E2B655E1C9E8D981DE856032B7E2D75A"
+  },
+  {
+    "path": "authoring-probe.cs",
+    "sha256": "C4CAB164B26DDAACD1519AF9BF0D50217631C17D3DEAC22880930A7AFFB6716B"
+  },
+  {
+    "path": "editmode-results.json",
+    "sha256": "744874BC9AE631AA95FD1CA8C73D5BD06945118BBCB46153AE951CD1168FF80D"
+  },
+  {
+    "path": "final-ma-saved-build-result.json",
+    "sha256": "4B558EA4A8F380B3CE6571058B6E2F4FDB7849392EC721C85125944B6B70C939"
+  },
+  {
+    "path": "full-build-probe-result.json",
+    "sha256": "49AE5C70A2B74366E54F685DA7B9A1E7A34D8D7F5BA9C8EF9530982468AAA6AD"
+  },
+  {
+    "path": "full-build-probe.cs",
+    "sha256": "578A91939A04A6AFF24900B124A50C8C85FDB14D23CA83321A89A9830A8AF7F4"
+  },
+  {
+    "path": "gesture-manager-status.json",
+    "sha256": "2B988B1A965D46CBD4A8C6C8F90E0B19BFFF1B74AFC5D10DDC2276C27835A928"
+  },
+  {
+    "path": "ma-saved-build-probe.cs",
+    "sha256": "E43CA85A69A7086C8E88C248B009A713EEB78D3683A44E64106DB0CE393C1D38"
+  },
+  {
+    "path": "validated-source-hashes.json",
+    "sha256": "B48FC580FC79FF3700A4C361CB2F5D0F479AE68FA9D6E38DA2FBEFC025B0C0C6"
+  }
+]

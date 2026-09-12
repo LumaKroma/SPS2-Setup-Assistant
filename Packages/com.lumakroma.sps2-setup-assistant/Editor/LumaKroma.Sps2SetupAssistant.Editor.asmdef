@@ -2,6 +2,7 @@
   "name": "LumaKroma.Sps2SetupAssistant.Editor",
   "rootNamespace": "LumaKroma.Sps2SetupAssistant.Editor",
   "references": [
+    "LumaKroma.Sps2SetupAssistant.Authoring",
     "VRC.SDK3A",
     "com.vrcfury.api"
   ],

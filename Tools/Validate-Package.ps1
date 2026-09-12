@@ -48,17 +48,29 @@ foreach ($relativePath in $requiredFiles) {
 
 $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
 Assert-Condition ($manifest.name -eq 'com.lumakroma.sps2-setup-assistant') 'Unexpected package ID.'
-Assert-Condition ($manifest.version -eq '0.1.0') 'Unexpected private PoC version.'
+Assert-Condition ($manifest.version -eq '0.2.0-dev.1') 'Unexpected development version.'
 Assert-Condition ($manifest.unity -eq '2022.3') 'Unexpected Unity version.'
 Assert-Condition ($manifest.license -eq 'MIT') 'Package license must be MIT.'
 Assert-Condition ($manifest.vpmDependencies.'com.vrchat.avatars' -eq '>=3.10.4 <4.0.0') 'Unexpected VRChat SDK range.'
-Assert-Condition ($manifest.vpmDependencies.'com.vrcfury.vrcfury' -eq '>=1.1401.0 <2.0.0') 'Unexpected VRCFury range.'
+Assert-Condition ($manifest.vpmDependencies.'com.vrcfury.vrcfury' -eq '1.1403.0') 'The compatibility adapter requires exact VRCFury 1.1403.0.'
 Assert-Condition (-not ($manifest.vpmDependencies.PSObject.Properties.Name -contains 'nadena.dev.modular-avatar')) 'Modular Avatar must remain an optional dependency.'
 
-Assert-Condition (-not (Test-Path -LiteralPath (Join-Path $packageRoot 'Runtime'))) 'The 0.1.0 package must remain Editor-only.'
+Assert-Condition (Test-Path -LiteralPath (Join-Path $packageRoot 'Runtime/Sps2SetupRoot.cs')) 'Persistent authoring metadata is missing.'
+$authoringFiles = @(Get-ChildItem -LiteralPath (Join-Path $packageRoot 'Runtime') -Recurse -File -Filter '*.cs')
+Assert-Condition ($authoringFiles.Count -eq 1 -and $authoringFiles[0].Name -eq 'Sps2SetupRoot.cs') 'Only the approved data-only authoring component may ship outside Editor.'
+$authoring = Get-Content -Raw -LiteralPath $authoringFiles[0].FullName
+Assert-Condition ($authoring.Contains('MonoBehaviour, IEditorOnly')) 'Authoring metadata must be Editor-only at build time.'
+Assert-Condition (-not [regex]::IsMatch($authoring, '\b(Awake|Start|Update|LateUpdate|FixedUpdate|OnEnable|OnDisable|OnAnimatorMove)\s*\(')) 'No custom runtime behavior is authorized.'
 
 $sourceFiles = @(Get-ChildItem -LiteralPath (Join-Path $packageRoot 'Editor') -Recurse -File -Filter '*.cs')
 $source = ($sourceFiles | ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName }) -join "`n"
+$compatibilityFiles = @($sourceFiles | Where-Object { $_.FullName -like '*\Editor\Compatibility\*' })
+$publicOnlySource = ($sourceFiles | Where-Object { $_.FullName -notlike '*\Editor\Compatibility\*' } | ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName }) -join "`n"
+$compatibility = ($compatibilityFiles | ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName }) -join "`n"
+Assert-Condition ($compatibility.Contains('SupportedVersion = "1.1403.0"')) 'Exact native version guard is missing.'
+Assert-Condition ($compatibility.Contains('RequireVersion()') -and $compatibility.Contains('SerializedPropertyType')) 'Version/schema validation is missing.'
+Assert-Condition ($compatibility.Contains('UnityEngine.Object.DestroyImmediate(root)')) 'Build metadata stripping is missing.'
+Assert-Condition (-not [regex]::IsMatch($source, 'System\.Reflection|\bBindingFlags\b|\bGetField\s*\(|\bGetProperty\s*\(')) 'Unapproved reflection is present.'
 $coreAssemblyPath = Join-Path $packageRoot 'Editor\LumaKroma.Sps2SetupAssistant.Editor.asmdef'
 $maAssemblyPath = Join-Path $packageRoot 'Editor\ModularAvatar\LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.asmdef'
 $maTestsAssemblyPath = Join-Path $packageRoot 'Tests\Editor\ModularAvatar\LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.Tests.asmdef'
@@ -96,7 +108,7 @@ $forbiddenPatterns = @(
 )
 
 foreach ($pattern in $forbiddenPatterns) {
-    Assert-Condition (-not [regex]::IsMatch($source, $pattern)) "Forbidden dependency integration pattern found: $pattern"
+    Assert-Condition (-not [regex]::IsMatch($publicOnlySource, $pattern)) "Dependency-private integration escaped Editor/Compatibility: $pattern"
 }
 
 Assert-Condition ($source.Contains('FuryComponents.CreateSocket')) 'Public VRCFury Socket creation call is missing.'
@@ -111,6 +123,11 @@ $catalogPath = Join-Path $packageRoot 'Editor\Model\SocketCatalog.cs'
 $catalogText = Get-Content -Raw -LiteralPath $catalogPath
 $presetCount = ([regex]::Matches($catalogText, 'new SocketPreset\(')).Count
 Assert-Condition ($presetCount -eq 8) "Expected 8 Socket presets, found $presetCount."
+$fullCatalog = Get-Content -Raw -LiteralPath (Join-Path $packageRoot 'Editor/Model/FullSetupCatalog.cs')
+Assert-Condition (([regex]::Matches($fullCatalog, 'Add\(setup, "')).Count -eq 15) 'The approved full catalog must have 15 fixed parts.'
+foreach ($relative in @('Assets/IcePop/IcePop.fbx','Assets/IcePop/IcePop.mat','Documentation~/ASSET_PROVENANCE.md')) {
+    Assert-Condition (Test-Path -LiteralPath (Join-Path $packageRoot $relative)) "Missing approved display asset/provenance: $relative"
+}
 
 & git -C $repoRoot diff --check
 if ($LASTEXITCODE -ne 0) {
@@ -122,4 +139,4 @@ if ($LASTEXITCODE -ne 0) {
     throw 'git diff --cached --check failed.'
 }
 
-Write-Output "PASS package metadata, optional-MA boundary, Editor-only boundary, 8-preset catalog, public-API guard, Undo guard, and diff whitespace"
+Write-Output "PASS development metadata, optional MA, data-only authoring, isolated exact-version adapter, 15-part plus legacy catalog, display asset provenance, Undo and diff whitespace"

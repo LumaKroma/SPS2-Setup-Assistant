@@ -2,6 +2,8 @@
   "name": "LumaKroma.Sps2SetupAssistant.Editor.Tests",
   "rootNamespace": "LumaKroma.Sps2SetupAssistant.Editor.Tests",
   "references": [
+    "LumaKroma.Sps2SetupAssistant.Authoring",
+    "VRC.SDK3A",
     "LumaKroma.Sps2SetupAssistant.Editor"
   ],
   "includePlatforms": [
@@ -9,8 +11,8 @@
   ],
   "excludePlatforms": [],
   "allowUnsafeCode": false,
-  "overrideReferences": false,
-  "precompiledReferences": [],
+  "overrideReferences": true,
+  "precompiledReferences": ["nunit.framework.dll", "VRCSDK3A.dll", "VRCSDKBase.dll"],
   "autoReferenced": false,
   "defineConstraints": [
     "UNITY_INCLUDE_TESTS"

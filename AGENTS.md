@@ -1,3 +1,22 @@
+# Issue 121 full-version exception (approved 2026-09-12)
+
+The active Issue body and comment 5644512003 supersede conflicting PoC-only
+rules below. Use Project canonical fields, not the historical ready-for-agent
+label. Source baseline: 94596332f0245e131cbb83b092076835f691719f.
+
+- VRCFury 1.1403.0 internal serialization and generated SPS menu/parameter
+  integration are permitted only in Editor/Compatibility, guarded by package
+  version and required schema. Prefer its public API wherever available.
+- Public SDK build callbacks may adjust the generated avatar clone only.
+  Never patch/copy dependency code or modify source avatar assets.
+- Persistent authoring metadata may implement VRC.SDKBase.IEditorOnly;
+  remove these components before upload. No custom runtime behavior is added.
+- Tool-owned menus, controllers, clips, prefab/configuration and approved
+  IcePop display assets are permitted. The optional MA backend stays isolated.
+- The test Plug is included in uploaded avatars when present. Do not strip
+  its GameObject. Removing the setup root removes the entire tool setup.
+- Keep this exception, package validation and product contract synchronized.
+
 # Repository agent contract
 
 Follow `CONTRIBUTING.md` for every change.

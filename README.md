@@ -1,93 +1,81 @@
 # SPS2 Setup Assistant
 
-SPS2 Setup Assistant is an Editor-only helper for adding a practical set of
-VRCFury SPS2 Sockets to a Humanoid VRChat avatar. Select a
-`VRCAvatarDescriptor`, choose the locations and attachment profile, then run
-one setup command.
+Private development package `0.2.0-dev.1` for configuring VRCFury SPS2 on Humanoid
+VRChat avatars. The Japanese setup window now creates the setup, applies changes,
+regenerates it and places a reusable IcePop test Plug.
 
-This repository is currently a **private 0.1.0 proof of concept**. It is not a
-published VPM listing or a runtime-compatibility claim.
+This is the Issue 121 implementation delta from baseline
+`94596332f0245e131cbb83b092076835f691719f`, on `issue/121-private-poc`.
+It is not a published release. See the [output contract](Packages/com.lumakroma.sps2-setup-assistant/Documentation~/OUTPUT_CONTRACT.md)
+and [validation record](Packages/com.lumakroma.sps2-setup-assistant/Documentation~/VALIDATION.md).
 
-## Setup screen preview
+## Requirements
 
-`Tools > LumaKroma > SPS2 Setup Assistant` opens the Japanese setup-screen
-preview for Issue #121. It includes the 15-location catalog, 7/12/15-location
-profiles, custom locations, pose/depth fields, path settings, and an in-game
-menu outline. Its serialized settings belong to the Editor window only;
-Apply and test-Plug placement are disabled. It does not modify an avatar or
-implement the proposed runtime behavior.
+- Unity `2022.3`; observed Editor version `2022.3.22f1`.
+- VRChat Avatars SDK `>=3.10.4 <4.0.0`; observed `3.10.4`.
+- **VRCFury `1.1403.0` exactly.** The compatibility layer stops on other versions.
+- Optional Modular Avatar `>=1.18.1 <2.0.0` for the MA attachment route.
+- The bundled IcePop material uses lilToon. Test-Plug placement requires its shader.
 
-The existing functional eight-location PoC is available separately under
-`Tools > LumaKroma > SPS2 Setup Assistant (0.1 PoC)`. The output and generation
-contract below applies to that PoC. The screen preview does not expand that
-contract. See [screen review status](Packages/com.lumakroma.sps2-setup-assistant/Documentation~/UI_PREVIEW.md).
+Add the local `Packages/com.lumakroma.sps2-setup-assistant` folder through your
+development project's existing local-package workflow. No public VPM listing is
+provided. A fresh VCC installation and additional dependency combinations still
+need their own validation.
 
-## Output
+## Create and adjust a setup
 
-The assistant creates one removable root directly beneath the selected avatar.
-Each enabled location gets its own bone anchor and editable Socket pose:
+1. Open `Tools > LumaKroma > SPS2 Setup Assistant`.
+2. Select the scene or Prefab Mode avatar in `アバター`.
+3. Choose `カジュアル`, `デフォルト` or `フル`, then change individual
+   parts and depth actions as needed. Custom parts use a `Transform` reference.
+4. Choose `貫通`, `Auto Mode`, `後方互換性` and `インスタント起動`.
+   Enable `Modular Avatarで追従` only when the optional package is installed.
+5. Click `プレハブを生成`. Inspect the generated root and adjust its ordinary
+   `Socket Pose` transforms to fit the avatar.
 
-```text
-SPS2 Socket Setup [com.lumakroma.sps2-setup-assistant]
-├─ 01 Head Mouth
-│  └─ Socket Pose
-└─ ...
-```
+After generation:
 
-Each numbered location node is the attachment system's `Bone Anchor`; its
-child is the editable `Socket Pose`.
+| Button | Result |
+| --- | --- |
+| `プレハブを再生成` | Rebuild from current settings and restore automatic placement; retain the setup identity and existing test Plug. |
+| `置き換えずに変更を反映` | Keep surviving Socket objects and manual poses while applying settings and part additions/removals. |
+| `テストプラグ出現` | Create one test Plug or return that same Plug to the front of the avatar. |
 
-The VRCFury profile is always available. A second profile appears when a
-supported Modular Avatar version is installed:
+Settings are applied to the generated authoring component. Save the scene or
+Prefab normally to keep them. The tool does not automatically create a separate
+Prefab asset file. Remove the generated root to remove the authored setup and
+its test Plug; use Undo to reverse an operation.
 
-- **VRCFury** — public VRCFury Armature Link plus public VRCFury Socket API.
-- **VRCFury + Modular Avatar** — public MA Bone Proxy plus public VRCFury
-  Socket API.
+Missing bones, viseme inputs or custom references skip the affected item with a
+message. An invalid avatar, foreign ownership reference, unsupported native
+schema or Auto target count above 16 stops the transaction. A broken owned
+setup can be regenerated; move an externally relocated owned object back before
+doing so.
 
-The generated local `+Z` direction is the Socket entry direction. Transforms
-remain ordinary editable GameObjects. Re-running replaces only the exact,
-tool-owned setup root; unrelated Sockets are never inspected or modified.
+## Build and runtime boundary
 
-## Scope and safety
+The package stores data-only authoring metadata and removes that component from
+the build. VRCFury supplies native SPS behavior; public SDK callbacks configure
+the generated menu, persistence and Instant Animator layer on the build clone.
+The test Plug stays in uploaded avatars when present.
 
-- Socket-only and Humanoid-only.
-- No Plug setup, runtime scripts, Animator/menu/material changes, reflection,
-  private serialized fields, build preprocessors, or generated-output edits.
-- All Socket fields stay at VRCFury-native defaults except the public name and
-  explicit `Auto` mode. Advanced options remain owned by the VRCFury Inspector.
-- One Undo group owns the whole setup transaction.
-- Initial placement is a deterministic first placement, not a fit guarantee.
+Owned Socket toggles start OFF and are unsaved. Auto starts OFF and is saved;
+Legacy Compatibility starts ON and is saved. Instant is an unsaved button that
+requests the generated mouth and vagina ON when Legacy is OFF or excluded.
+Existing individual Socket settings are preserved; shared native Auto/Legacy
+controls remain shared with them.
 
-See [the output contract](Packages/com.lumakroma.sps2-setup-assistant/Documentation~/OUTPUT_CONTRACT.md)
-for the exact hierarchy and current heuristic boundary.
-
-## Dependencies
-
-The private PoC targets Unity `2022.3` and declares these required VPM
-dependency floors:
-
-- VRChat Avatars SDK `3.10.4`
-- VRCFury `1.1401.0`
-
-Modular Avatar is optional. When Modular Avatar `1.18.1` or newer in the
-supported `1.x` range is present, a conditional Editor integration assembly
-adds the **VRCFury + Modular Avatar** profile. Without MA, that assembly and
-its tests are excluded and the VRCFury-only profile remains available.
-
-The required floors, optional MA range, and latest stable versions still
-require the Issue #121 Unity compile matrix before any release claim.
-
-## Validation status
-
-Static package/source checks and EditMode test sources are included. Unity,
-fresh VCC installation, native VRCFury serialization comparison, three-avatar
-placement review, Gesture Manager and VRC PC checks remain exact-commit gates.
+[Validation](Packages/com.lumakroma.sps2-setup-assistant/Documentation~/VALIDATION.md)
+records 21 passing EditMode tests, native SDK build observations, authoring
+Undo/reload checks and Instant Animator transitions. These results do not replace
+Gesture Manager, three-avatar visual review or exact-commit VRC PC testing.
 
 ## License and affiliation
 
-Original code and documentation in this repository are MIT licensed. VRCFury,
-Modular Avatar and the VRChat SDK are separate dependencies and are not copied
-or redistributed here.
+Original code and documentation remain MIT licensed. VRCFury, Modular Avatar,
+VRChat SDK and lilToon are separate dependencies and are not redistributed.
+The owner-approved IcePop display assets have a separate
+[provenance and distribution scope](Packages/com.lumakroma.sps2-setup-assistant/Documentation~/ASSET_PROVENANCE.md);
+their inclusion does not grant a new public asset license.
 
-SPS2 Setup Assistant is an unofficial tool and is not affiliated with or
-supported by VRCFury, Modular Avatar, or VRChat.
+This unofficial tool is not affiliated with or supported by those projects.

@@ -1,0 +1,44 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Gesture Manager MCP status retrieved.",
+    "data": {
+      "action": "status",
+      "tool": {
+        "name": "manage_gesture_manager",
+        "package": "com.lumakroma.devtools.gesture-manager-mcp",
+        "version": "0.1.0"
+      },
+      "editor": {
+        "is_playing": false,
+        "is_paused": false,
+        "is_compiling": false
+      },
+      "compatibility": {
+        "supported": false,
+        "dependencies": [
+          {
+            "package": "vrchat.blackstartx.gesture-manager",
+            "installed": "3.9.9",
+            "verified": "3.9.9",
+            "supported": true
+          },
+          {
+            "package": "com.coplaydev.unity-mcp",
+            "installed": "10.2.0",
+            "verified": "10.1.2",
+            "supported": false
+          }
+        ],
+        "warnings": [
+          "MCP for Unity version 10.2.0 is not verified; expected 10.1.2."
+        ]
+      },
+      "available": false,
+      "manager_selection_required": false,
+      "selected_manager": null,
+      "managers": []
+    }
+  }
+}

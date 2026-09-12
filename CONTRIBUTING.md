@@ -1,3 +1,11 @@
+# Active full-version scope
+
+Issue #121 comment 5644512003 and the approved exception in AGENTS.md override
+the 0.1.0-only source and output restrictions below. Unknown compatibility
+behavior requires a disposable real Unity observation and independent review
+before promotion. The package version is private development 0.2.0-dev.1; no
+release claim follows from expanding this implementation.
+
 # Contributing
 
 ## Intake
