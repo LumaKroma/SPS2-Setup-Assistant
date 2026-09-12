@@ -61,6 +61,8 @@ The package reads its separate settings asset through native Socket identifiers.
 Old attached metadata is supported for migration only. VRCFury supplies native
 SPS behavior; public SDK callbacks configure
 the generated menu, persistence and Instant Animator layer on the build clone.
+Generated through-paths use the native Collapse setting for internal sections
+and a Neck waypoint; normal width resumes outside the opposing Socket exit.
 The test Plugs stay in uploaded avatars when present. A separate 貫通テストプラグ出現
 button provides a long capsule in front of the mouth; move it with Unity transform
 tools to inspect native penetration. Transfer its referenced mesh/material asset dependencies with the Prefab.

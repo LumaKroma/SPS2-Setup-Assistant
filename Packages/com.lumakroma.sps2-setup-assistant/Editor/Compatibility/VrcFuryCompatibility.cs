@@ -175,7 +175,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             PrefabUtility.RecordPrefabInstancePropertyModifications(component);
         }
 
-        public static void SetPath(Component socket, Transform[] stops, Transform avatar)
+        public static void SetPath(Component socket, Transform[] stops, Transform avatar, bool collapseInternal = false)
         {
             if (stops.Length > 3) throw new InvalidOperationException("Guided Path は最大3通過点です。");
             foreach (var stop in stops)
@@ -189,7 +189,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             {
                 var prefix = $"guidedPathStops.Array.data[{i}].";
                 Require(data, prefix + "transform", SerializedPropertyType.ObjectReference).objectReferenceValue = stops[i];
-                Require(data, prefix + "shrink", SerializedPropertyType.Boolean).boolValue = false;
+                Require(data, prefix + "shrink", SerializedPropertyType.Boolean).boolValue = collapseInternal;
                 Require(data, prefix + "customizeTangentIn", SerializedPropertyType.Boolean).boolValue = false;
                 Require(data, prefix + "customizeTangentOut", SerializedPropertyType.Boolean).boolValue = false;
                 Require(data, prefix + "tangentIn", SerializedPropertyType.Vector3).vector3Value = Vector3.zero;

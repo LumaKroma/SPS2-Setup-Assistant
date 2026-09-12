@@ -1,3 +1,35 @@
+# Native path collapse for throat concealment — 2026-09-12
+
+Baseline6081e75178ff0a8edc49d4bbf73b0df3974807a6, same owned session6.
+Evidence/source manifest: `Evidence/throat-20260912`.
+User clarified that adjustment belongs to SPS Socket path options. No test Plug
+diameter/UI change is included. Native1.1403.0 GuidedPathList exposes Collapse
+per segment; native baker writes Hole on the previous marker, and installed
+`sps_deform_curve.cginc` sets internal radius multiplier0 for that segment.
+Terminal RingOneWay retains external width. No shader or dependency edit.
+
+- First upper waypoint moved from Chest(.89915m high) to Neck(1.04755m high)
+  on MANUKA; Neck waypoint distance0, both opposing exit position errors0.
+- Native and MA full SDK preprocessing pass. Both authored paths have shrink
+  `[true,true,true]`; actual baked shader-property animations are Hole
+  `[1,1,1,0]` for entrance/three stops in both directions. The final0 prevents
+  terminal collapse beyond the exit. This is build/graph evidence, not a render.
+- Penetration OFF clears both arrays; ON restores collapsed paths. Undo returns
+  OFF, Redo returns ON. Unchanged nonreplacement preserves hand-adjusted stops.
+- Test capsule remains .05m wide/1.5m long. Native mouth OFF/ON/OFF/ON/OFF with
+  Instant present/removed still passes. Menu structure/Local Only unchanged.
+- Independent read-only review found no required correction in the two source
+  files; native collapse and preserved exits matched the observed SDK output.
+
+All21 EditMode tests pass. A native Plug inspector callback accessed a destroyed
+temporary fixture; its MissingReferenceException stack is retained. Final target
+restoration and Console audit distinguish teardown from product compilation.
+
+Actual throat concealment in Gesture Manager/VRChat, other avatars and inherited
+runtime/visual acceptance gates remain open. User scene is not regenerated or
+saved; regenerate to adopt Neck/Collapse settings. Editor is left open for that
+manual check. No push, upload, merge or release.
+
 # Authoring recovery and penetration follow-up — 2026-09-12
 
 Baseline2511eb4063129e0318c177ebbeebe24aff66d2c3, same session6/environment.

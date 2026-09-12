@@ -445,9 +445,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             var mouth = root.sockets.Find(s => s.id == "mouth"); var anus = root.sockets.Find(s => s.id == "anus");
             if (!settings.penetration || mouth == null || anus == null) return;
             var animator = avatar.GetComponent<Animator>();
-            var chest = animator.GetBoneTransform(HumanBodyBones.Chest) ?? animator.GetBoneTransform(HumanBodyBones.Spine);
+            var throat = animator.GetBoneTransform(HumanBodyBones.Neck);
+            if (throat == null) { throat = animator.GetBoneTransform(HumanBodyBones.Head); warnings.Add("貫通: Neck がないため Head を使用しました。喉の通過点を確認してください。"); }
             var hips = animator.GetBoneTransform(HumanBodyBones.Hips);
-            if (chest == null || hips == null) { warnings.Add("貫通: 胴体の参照が不足しています。"); return; }
+            if (throat == null || hips == null) { warnings.Add("貫通: 胴体の参照が不足しています。"); return; }
             var path = Create(PathName, root.transform);
             Transform Stop(string name, Transform target, Vector3 direction)
             {
@@ -460,15 +461,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             // Native path travel is -Z. Reverse routes need opposite waypoint frames;
             // an exit therefore faces opposite to the destination entrance Socket.
             mouth.pathStops = new[] {
-                Stop("Mouth Upper", chest, mouth.pose.position - hips.position),
-                Stop("Mouth Lower", hips, chest.position - anus.pose.position),
+                Stop("Mouth Throat", throat, throat.position - hips.position),
+                Stop("Mouth Lower", hips, throat.position - anus.pose.position),
                 Stop("Anus Exit", anus.pose, -anus.pose.forward) };
             anus.pathStops = new[] {
-                Stop("Anus Lower", hips, anus.pose.position - chest.position),
-                Stop("Anus Upper", chest, hips.position - mouth.pose.position),
+                Stop("Anus Lower", hips, anus.pose.position - throat.position),
+                Stop("Anus Throat", throat, hips.position - throat.position),
                 Stop("Mouth Exit", mouth.pose, -mouth.pose.forward) };
-            VrcFuryCompatibility.SetPath(mouth.socket, mouth.pathStops, avatar.transform);
-            VrcFuryCompatibility.SetPath(anus.socket, anus.pathStops, avatar.transform);
+            VrcFuryCompatibility.SetPath(mouth.socket, mouth.pathStops, avatar.transform, true);
+            VrcFuryCompatibility.SetPath(anus.socket, anus.pathStops, avatar.transform, true);
         }
 
         public static bool ShowTestPlug(VRCAvatarDescriptor avatar, out string error) => ShowTestPlug(avatar, false, out error);

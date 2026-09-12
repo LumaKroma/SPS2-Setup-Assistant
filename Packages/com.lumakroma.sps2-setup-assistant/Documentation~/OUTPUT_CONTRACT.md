@@ -120,11 +120,16 @@ stops instead of deleting the extra groups.
 
 ## Penetration path
 
-When enabled and both mouth/anus exist, each direction has its own Chest/Spine
-and Hips waypoint frames. Mouth uses Upper → Lower → Anus Exit; anus uses
-Lower → Upper → Mouth Exit. Each direction has three stops, no shrink and
+When enabled and both mouth/anus exist, each direction has its own Neck (Head fallback with warning)
+and Hips waypoint frames. Mouth uses Throat → Lower → Anus Exit; anus uses
+Lower → Throat → Mouth Exit. Each direction has three stops, native segment collapse and
 native automatic tangents. Native path travel is -Z, so waypoint frames point
 opposite the local route direction instead of inheriting bone rotations.
+The native `Collapse plug between ...` setting is enabled on each internal
+segment in both directions. Native SPS collapses the internal cross-section to
+zero radius, while the terminal RingOneWay preserves normal width outside the
+opposing exit. This affects the Socket path, not a test Plug diameter setting.
+The standard/long Plug geometry and UI remain unchanged.
 Exit positions follow the opposing Socket pose exactly; their +Z is reversed
 from that entrance so the plug travels outwards. These changes require path
 rebuilding/regeneration; unchanged nonreplacement keeps manually adjusted paths.
