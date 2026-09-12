@@ -55,7 +55,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
             if (mesh == null || names == null || index >= names.Length || string.IsNullOrEmpty(names[index]) || mesh.GetBlendShapeIndex(names[index]) < 0) return;
             if (mouth.actions.Count == 0) mouth.actions.Add(new DepthActionSettings());
             var action = mouth.actions[0];
-            if (action.renderer != null || !string.IsNullOrEmpty(action.shape)) return;
+            if (action.kind != DepthActionKind.BlendShape || action.renderer != null) return;
+            // A saved default shape can outlive its renderer reference. Only repair
+            // that known default; never replace a manually chosen expression.
+            if (!string.IsNullOrEmpty(action.shape) && action.shape != names[index]) return;
             action.renderer = descriptor.VisemeSkinnedMesh;
             action.shape = names[index];
         }

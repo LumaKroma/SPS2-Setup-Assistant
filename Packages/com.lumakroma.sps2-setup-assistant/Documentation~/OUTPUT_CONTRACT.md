@@ -1,3 +1,11 @@
+# Mouth reference recovery amendment — 2026-09-13
+
+On avatar binding, restore a missing mouth BlendShape renderer from the descriptor
+when the retained shape is empty or matches its valid oh viseme. Preserve explicit
+renderers, custom expressions, non-BlendShape actions, weights and depth toggles.
+This repairs incomplete saved defaults without changing generated placement or
+native depth action behavior. Existing generated actions require settings Apply.
+
 # VPM packaging amendment — 2026-09-13
 
 Distribution contains Assets/Editor/Runtime, their metadata, root package.json,

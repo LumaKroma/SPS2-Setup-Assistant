@@ -10,6 +10,41 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
 {
     public class FullSetupSettingsTests
     {
+        [TestCase("", DepthActionKind.BlendShape, false, true)]
+        [TestCase("vrc.v_oh", DepthActionKind.BlendShape, false, true)]
+        [TestCase("custom", DepthActionKind.BlendShape, false, false)]
+        [TestCase("vrc.v_oh", DepthActionKind.Object, false, false)]
+        [TestCase("vrc.v_oh", DepthActionKind.AnimationClip, false, false)]
+        [TestCase("vrc.v_oh", DepthActionKind.BlendShape, true, false)]
+        public void MouthDetectionRepairsOnlyMissingDefaultRenderer(string shape, DepthActionKind kind, bool explicitRenderer, bool repaired)
+        {
+            var avatar = new GameObject("Avatar");
+            var mesh = new Mesh { vertices = new[] { Vector3.zero } };
+            try
+            {
+                mesh.AddBlendShapeFrame("vrc.v_oh", 100, new[] { Vector3.up }, null, null);
+                var descriptor = avatar.AddComponent<VRCAvatarDescriptor>();
+                var body = new GameObject("Body"); body.transform.SetParent(avatar.transform);
+                var renderer = body.AddComponent<SkinnedMeshRenderer>(); renderer.sharedMesh = mesh;
+                descriptor.VisemeSkinnedMesh = renderer;
+                descriptor.VisemeBlendShapes = new string[15];
+                descriptor.VisemeBlendShapes[(int)VRC.SDKBase.VRC_AvatarDescriptor.Viseme.oh] = "vrc.v_oh";
+                var setup = FullSetupCatalog.CreateDefault();
+                var mouth = setup.parts.Single(p => p.id == "mouth"); mouth.depth = false;
+                var action = mouth.actions[0]; action.shape = shape; action.kind = kind; action.weight = 63;
+                var original = explicitRenderer ? avatar.AddComponent<SkinnedMeshRenderer>() : null;
+                action.renderer = original;
+                FullSetupCatalog.DetectMouth(setup, descriptor);
+                Assert.That(action.renderer, Is.SameAs(repaired ? renderer : original));
+                Assert.That(action.shape, Is.EqualTo(repaired ? "vrc.v_oh" : shape));
+                Assert.That(action.kind, Is.EqualTo(kind));
+                Assert.That(action.weight, Is.EqualTo(63));
+                Assert.That(mouth.depth, Is.False);
+                Assert.That(mouth.actions.Count, Is.EqualTo(1));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(avatar); UnityEngine.Object.DestroyImmediate(mesh); }
+        }
+
         [Test]
         public void PresetRoundTripPreservesCustomAndDisabledActionInputs()
         {
