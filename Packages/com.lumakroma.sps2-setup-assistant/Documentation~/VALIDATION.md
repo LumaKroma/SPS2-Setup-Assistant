@@ -3,7 +3,7 @@
 Development comparison: baseline
 `94596332f0245e131cbb83b092076835f691719f` on `issue/121-private-poc`
 to the approved `0.2.0-dev.1` delta. This is not a formal release.
-The [validated source manifest](Evidence/issue121/validated-source-hashes.json) pins all compiled source, assembly definitions, the package manifest and display assets; every hash matched the package in the validation host. The PR records the containing commit.
+The [validated source manifest](Evidence/issue121/validated-source-hashes.json) pins all compiled source, assembly definitions, the package manifest and display assets; every hash matched the package in the validation host. The PR records the containing commit. `sha256` records observed source/host bytes; `repositoryLfSha256` records the repository LF form. Evidence text is stored with LF line endings before hashing.
 
 ## Observed Editor results
 
