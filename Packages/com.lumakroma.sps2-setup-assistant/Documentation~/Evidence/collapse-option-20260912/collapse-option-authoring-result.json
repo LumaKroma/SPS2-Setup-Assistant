@@ -1,0 +1,22 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        "newDefaultOn=True;oldJsonDefaultOn=True",
+        "mouthCurve=(0.00000, 1.09194, 0.07162)|(0.00000, 1.10950, 0.00138)|(0.00000, 1.11779, 0.00992)|(0.00000, 1.04755, -0.00413)",
+        "reverseControlErrors=3.009496E-08,2.092875E-08",
+        "collapse=False;flags=False,False,False;saved=True;manualPreserved=True",
+        "collapse=True;flags=True,True,True;saved=True;manualPreserved=True",
+        "collapse=False;flags=False,False,False;saved=True;manualPreserved=True",
+        "undoCollapseOn=True",
+        "redoCollapseOff=True",
+        "parentOffRetainsPreference=True",
+        "parentOnCollapseStillOff=True"
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

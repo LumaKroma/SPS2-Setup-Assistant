@@ -104,6 +104,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 }
                 GUILayout.Space(12);
                 Toggle("貫通", settings.penetration, v => settings.penetration = v);
+                if (settings.penetration)
+                {
+                    using (new EditorGUILayout.HorizontalScope())
+                    {
+                        GUILayout.Space(18);
+                        Toggle("体内で太さを0にする", !settings.showInternalThickness, v => settings.showInternalThickness = !v);
+                    }
+                }
                 Toggle("Auto Mode", settings.autoMode, v => settings.autoMode = v);
                 Toggle("後方互換性", settings.legacy, v => settings.legacy = v);
                 Toggle("インスタント起動", settings.instant, v => settings.instant = v);

@@ -122,14 +122,28 @@ stops instead of deleting the extra groups.
 
 When enabled and both mouth/anus exist, each direction has its own Neck (Head fallback with warning)
 and Hips waypoint frames. Mouth uses Throat → Lower → Anus Exit; anus uses
-Lower → Throat → Mouth Exit. Each direction has three stops, native segment collapse and
-native automatic tangents. Native path travel is -Z, so waypoint frames point
+Lower → Throat → Mouth Exit. Each direction has three stops. The throat point
+uses the midpoint of the body's front/back intersections at Neck height, falling
+back to the bone position if either intersection is unavailable. The oral cubic
+enters inward and slightly upward before turning down through that point.
+For mouth-to-throat distance d, its world controls are mouth - forward*0.8d +
+up*0.2d and throat + up*0.8d + forward*0.16d. The reverse path uses the same controls
+in reverse order. Other segments retain native automatic tangents.
+Native path travel is -Z, so waypoint frames point
 opposite the local route direction instead of inheriting bone rotations.
-The native `Collapse plug between ...` setting is enabled on each internal
-segment in both directions. Native SPS collapses the internal cross-section to
+The setup checkbox `体内で太さを0にする` is nested under `貫通`, visible only
+while penetration is enabled, and defaults ON (including older settings assets).
+It controls native `Collapse plug between ...` on every internal segment in both
+directions. This is an authoring option, not an added runtime menu control.
+Its preference persists while the parent is OFF. Changing only this checkbox
+updates native collapse flags without replacing manually adjusted points or
+custom tangents; Undo/Redo includes the external settings snapshot.
+When ON, native SPS collapses the internal cross-section to
 zero radius, while the terminal RingOneWay preserves normal width outside the
 opposing exit. This affects the Socket path, not a test Plug diameter setting.
-The standard/long Plug geometry and UI remain unchanged.
+When OFF, the same centered path keeps normal width; a plug wider than the neck
+cannot be fully concealed by changing the path alone. The standard/long Plug
+geometry and UI remain unchanged.
 Exit positions follow the opposing Socket pose exactly; their +Z is reversed
 from that entrance so the plug travels outwards. These changes require path
 rebuilding/regeneration; unchanged nonreplacement keeps manually adjusted paths.

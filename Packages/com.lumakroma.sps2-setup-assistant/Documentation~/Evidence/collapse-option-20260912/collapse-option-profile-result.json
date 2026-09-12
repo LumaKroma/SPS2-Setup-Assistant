@@ -1,0 +1,18 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        "1.035;front=0.02620953;back=-0.03555992",
+        "1.04755;front=0.02214367;back=-0.0304053",
+        "1.06;front=0.02408892;back=-0.02489831",
+        "1.075;front=0.06225599,0.02708958;back=0.03068616,-0.02149956",
+        "1.085;front=0.06822231,0.0275608;back=0.06553644,-0.02154824",
+        "1.1;front=0.07879922;back=-0.02389129,-0.0239776"
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

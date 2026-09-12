@@ -1,4 +1,49 @@
-# Native path collapse for throat concealment — 2026-09-12
+# Centered oral curve and optional Collapse — 2026-09-12
+
+Baseline `ae9e21da37c9826fd7d546b5bfa61a769ef87bcb`; exact changed source is pinned
+by `Evidence/collapse-option-20260912/validated-source-hashes.json`. Same owned
+warm Unity 2022.3.22f1 session, VRC SDK 3.10.4, VRCFury 1.1403.0 and CoplayDev
+10.2.0. Pragmatic Development evidence; no release or VRC PC pass.
+
+- Setup child checkbox defaults ON for new settings and older JSON. OFF/ON/OFF
+  updates all three native segment flags in both directions, persists to the
+  external asset, and preserves manual positions and custom tangents. Undo/Redo
+  restores the preference; disabling/re-enabling penetration retains it.
+- Current MANUKA oral cubic world points: (0,1.09194,.07162),
+  (0,1.10950,.00138), (0,1.11779,.00992), (0,1.04755,-.00413).
+  Reverse control-point differences are below 0.00000004 m. The throat point
+  is centered between the body intersections at Neck height.
+- Full 15-Socket SDK build with native attachment and Collapse OFF passes;
+  native material `_SPS_SocketHole` values are [0,0,0,0]. Modular Avatar build
+  with Collapse ON passes with [1,1,1,0] in both directions. Both test Plugs,
+  nonreplacement pose preservation, menu ordering/no Other group, unsaved
+  Local Only default 0 and FX OFF/ON/OFF/ON/OFF with/without Instant pass.
+- EditMode job `6d1ff62f668a4681afc2025dfab1f647`: 21/21 passed, 0 failed/skipped.
+- Independent read-only review of the final four implementation files found
+  no must-fix regression. Native tangents use rotation-relative meters; native
+  marker scale .001 is animated to 1 by SpsSocketMarkerProperties. No 1000x
+  correction is needed. This conclusion is dependency source inspection,
+  not an additional live marker-scale measurement.
+- A static tube generated from the native cubic formula was rendered against
+  the local avatar as a geometry check, not as SPS/GPU deformation evidence.
+  The current body has neck sections about 4.9 cm deep, so a 5 cm plug cannot
+  be assumed concealed when Collapse is OFF. The preview still shows exposed
+  tube at parts of the neck; no complete concealment claim is made. Avatar
+  imagery is kept locally, with its hash recorded rather than redistributed.
+- Console evidence retains one native VRCFury Inspector MissingReferenceException
+  after destroying a temporary Plug probe, plus 151 normal Debug.Log messages
+  misclassified as exceptions by MCP. Final selection/window restored to
+  MANUKA_lilToon; after retaining/clearing logs, Editor ready, compilation errors
+  false and Console errors 0. Original scene was neither saved nor regenerated.
+
+Remaining: regenerate to adopt the new oral curve, then inspect native SPS
+deformation with Collapse ON/OFF in Gesture Manager and VRChat PC, including
+head/neck movement and both entry directions. A collapse-only nonreplacement
+apply intentionally preserves the current manually edited route. Other avatars,
+large plugs and nonuniform inherited scale remain unverified. Keep the task at
+Validation / VRC PC and the owned Editor open for manual validation.
+
+# Native path collapse for throat concealment — 2026-09-12 (prior revision)
 
 Baseline6081e75178ff0a8edc49d4bbf73b0df3974807a6, same owned session6.
 Evidence/source manifest: `Evidence/throat-20260912`.

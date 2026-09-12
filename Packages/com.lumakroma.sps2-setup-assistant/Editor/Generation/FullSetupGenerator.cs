@@ -394,6 +394,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (regenerate || structureChanged || previous == null || previous.penetration != settings.penetration ||
                     previous.parts.Any(p => (p.id == "mouth" || p.id == "anus") && p.included != settings.parts.Find(n => n.id == p.id)?.included))
                     ConfigurePath(root, avatar, settings, warnings);
+                else if (previous.showInternalThickness != settings.showInternalThickness)
+                    foreach (var socket in root.sockets.Where(s => s.id == "mouth" || s.id == "anus"))
+                        VrcFuryCompatibility.SetPathCollapse(socket.socket, !settings.showInternalThickness);
                 root.settings = settings.Copy();
                 if (VrcFuryCompatibility.AutoSocketCount(avatar.gameObject) > 16)
                     throw new InvalidOperationException("既存分を含む Auto Mode 対象が16個を超えます。Auto Mode を外すか対象を減らしてください。");
@@ -449,27 +452,46 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             if (throat == null) { throat = animator.GetBoneTransform(HumanBodyBones.Head); warnings.Add("貫通: Neck がないため Head を使用しました。喉の通過点を確認してください。"); }
             var hips = animator.GetBoneTransform(HumanBodyBones.Hips);
             if (throat == null || hips == null) { warnings.Add("貫通: 胴体の参照が不足しています。"); return; }
+            var throatCenter = throat.position;
+            using (var surface = new AvatarSurface(avatar))
+            {
+                float reach = Vector3.Distance(throat.position, hips.position);
+                if (surface.Ray(throat.position, avatar.transform.forward, reach, out var front) &&
+                    surface.Ray(throat.position, -avatar.transform.forward, reach, out var back))
+                    throatCenter = (front + back) * .5f;
+            }
             var path = Create(PathName, root.transform);
-            Transform Stop(string name, Transform target, Vector3 direction)
+            Transform Stop(string name, Transform target, Vector3 direction, Vector3? position = null)
             {
                 var anchor = Create(name + " Follow", path.transform);
                 anchor.transform.SetPositionAndRotation(target.position, target.rotation); Constrain(anchor, target);
                 var point = Create(name, anchor.transform);
+                if (position.HasValue) point.transform.position = position.Value;
                 point.transform.rotation = Quaternion.LookRotation(direction.normalized, avatar.transform.right);
                 return point.transform;
             }
             // Native path travel is -Z. Reverse routes need opposite waypoint frames;
             // an exit therefore faces opposite to the destination entrance Socket.
             mouth.pathStops = new[] {
-                Stop("Mouth Throat", throat, throat.position - hips.position),
+                Stop("Mouth Throat", throat, throatCenter - hips.position, throatCenter),
                 Stop("Mouth Lower", hips, throat.position - anus.pose.position),
                 Stop("Anus Exit", anus.pose, -anus.pose.forward) };
             anus.pathStops = new[] {
                 Stop("Anus Lower", hips, anus.pose.position - throat.position),
-                Stop("Anus Throat", throat, hips.position - throat.position),
+                Stop("Anus Throat", throat, hips.position - throatCenter, throatCenter),
                 Stop("Mouth Exit", mouth.pose, -mouth.pose.forward) };
-            VrcFuryCompatibility.SetPath(mouth.socket, mouth.pathStops, avatar.transform, true);
-            VrcFuryCompatibility.SetPath(anus.socket, anus.pathStops, avatar.transform, true);
+            VrcFuryCompatibility.SetPath(mouth.socket, mouth.pathStops, avatar.transform, !settings.showInternalThickness);
+            VrcFuryCompatibility.SetPath(anus.socket, anus.pathStops, avatar.transform, !settings.showInternalThickness);
+            // First enter the oral cavity, then turn down at the measured neck center.
+            float bend = Vector3.Distance(mouth.pose.position, throatCenter);
+            var oralControl = mouth.pose.position - avatar.transform.forward * (bend * .8f) + avatar.transform.up * (bend * .2f);
+            var throatControl = throatCenter + avatar.transform.up * (bend * .8f) + avatar.transform.forward * (bend * .16f);
+            Vector3 Local(Transform frame, Vector3 worldPoint) => Quaternion.Inverse(frame.rotation) * (worldPoint - frame.position);
+            VrcFuryCompatibility.SetPathTangents(mouth.socket, 0,
+                Local(mouth.pose, oralControl), Local(mouth.pathStops[0], throatControl));
+            // Reversed cubic uses the same world control points in reverse order.
+            VrcFuryCompatibility.SetPathTangents(anus.socket, 2,
+                Local(anus.pathStops[1], throatControl), Local(anus.pathStops[2], oralControl));
         }
 
         public static bool ShowTestPlug(VRCAvatarDescriptor avatar, out string error) => ShowTestPlug(avatar, false, out error);

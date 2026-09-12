@@ -199,6 +199,29 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             PrefabUtility.RecordPrefabInstancePropertyModifications(socket);
         }
 
+        public static void SetPathCollapse(Component socket, bool collapse)
+        {
+            RequireVersion(); var data = SocketData(socket);
+            Undo.RecordObject(socket, "SPS2 体内の太さ");
+            var count = data.FindProperty("guidedPathStops").arraySize;
+            for (int i = 0; i < count; i++)
+                Require(data, $"guidedPathStops.Array.data[{i}].shrink", SerializedPropertyType.Boolean).boolValue = collapse;
+            data.ApplyModifiedProperties(); PrefabUtility.RecordPrefabInstancePropertyModifications(socket);
+        }
+        public static void SetPathTangents(Component socket, int segment, Vector3 exit, Vector3 enter)
+        {
+            RequireVersion(); var data = SocketData(socket);
+            if (segment < 0 || segment >= data.FindProperty("guidedPathStops").arraySize)
+                throw new InvalidOperationException("貫通経路の区間がありません。");
+            Undo.RecordObject(socket, "SPS2 貫通経路の接線");
+            string prefix = $"guidedPathStops.Array.data[{segment}].";
+            Require(data, prefix + "customizeTangentOut", SerializedPropertyType.Boolean).boolValue = true;
+            Require(data, prefix + "customizeTangentIn", SerializedPropertyType.Boolean).boolValue = true;
+            Require(data, prefix + "tangentOut", SerializedPropertyType.Vector3).vector3Value = exit;
+            Require(data, prefix + "tangentIn", SerializedPropertyType.Vector3).vector3Value = enter;
+            data.ApplyModifiedProperties(); PrefabUtility.RecordPrefabInstancePropertyModifications(socket);
+        }
+
         internal static string ReadIdentity(Component socket)
         {
             var property = new SerializedObject(socket).FindProperty("oscId");
