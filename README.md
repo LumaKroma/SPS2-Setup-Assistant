@@ -61,6 +61,8 @@ The package reads its separate settings asset through native Socket identifiers.
 Old attached metadata is supported for migration only. VRCFury supplies native
 SPS behavior; public SDK callbacks configure
 the generated menu, persistence and Instant Animator layer on the build clone.
+`貫通` also works when only mouth or anus is enabled: the opposite standard
+position becomes a bone-following exit without an additional Socket/menu item.
 Under `貫通`, `体内で太さを0にする` defaults ON and controls native Collapse
 for internal sections; normal width resumes outside the opposing Socket exit.
 The oral curve enters the mouth before turning down through the measured neck

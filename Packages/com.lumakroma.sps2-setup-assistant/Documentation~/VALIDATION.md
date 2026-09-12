@@ -1,3 +1,39 @@
+# Single-ended paths and inline help icons — 2026-09-13
+
+Baseline fbffd3f84156bc655e469f724364b64c459238f7. Same owned warm session,
+Unity 2022.3.22f1 / SDK 3.10.4 / VRCFury 1.1403.0. Evidence and source-host
+manifest: `Evidence/virtual-path-20260913`.
+
+- Clone generation for mouth-only and anus-only retains exactly three stops.
+  All stop positions and rotations match the both-included reference (reported
+  errors 0). Native Socket count matches included parts; all authoring parent
+  constraints have valid sources. The missing side is a virtual Transform only.
+- Collapse-only apply preserves a manually adjusted stop; penetration OFF
+  clears paths, ON restores them. Neither endpoint included clears paths.
+  Undo restores the anus-only path, Redo returns to no path.
+- Full-preset native mouth-only and MA anus-only SDK preprocessing pass with
+  14 owned Sockets, no excluded menu entry and the included entry present.
+  Native Hole marker values [1,1,1,0] preserve internal Collapse and normal-width
+  exit. Remaining Unity ParentConstraints report no missing sources. This is
+  build evidence, not proof of VRC runtime animation/deformation.
+- Help layout now bounds the toggle to label width plus checkbox padding,
+  places the existing help texture next, then consumes remaining row width.
+  The tooltip explains single-ended behavior. Source/layout review, not a
+  claimed automated pointer-hover screenshot test.
+- EditMode job 59a91807ffe544ef830c8d1881e59732: 21/21 passed, 0 failed/skipped.
+  Independent read-only review of both changed implementation files found no
+  must-fix references, persistence or layout regression. Runtime following and
+  visual GUI appearance were explicitly not observed by the reviewer.
+- Console raw capture retained 140 ordinary Debug.Log entries misclassified as
+  exceptions by MCP; no actual exceptions. After retaining/clearing these logs,
+  the final selected client 35188a0e-45ff-4747-93c1-fb1b33f12c0b was ready with
+  no compilation errors and Console0. Original MANUKA window binding restored.
+
+Original avatar is not regenerated or saved automatically. Apply inclusion/
+penetration changes or regenerate to adopt the path; existing unchanged manual
+paths stay intact. Runtime following of virtual exits during head/hip movement,
+SPS deformation and other avatars remain Validation / VRC PC. No upload/release.
+
 # Help icons and Instant authoring default — 2026-09-12
 
 Baseline 49d95e9839194d4f54a7beab95e17982fef231af. Visible native help icons

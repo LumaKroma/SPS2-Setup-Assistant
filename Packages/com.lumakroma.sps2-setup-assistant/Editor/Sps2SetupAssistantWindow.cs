@@ -106,7 +106,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 }
                 GUILayout.Space(12);
                 Toggle("貫通", settings.penetration, v => settings.penetration = v,
-                    "口と肛門をつなぐ体内の経路を生成します。両方のソケットが必要です。\n「体内で太さを0にする」をオンにすると、体内のプラグの太さを0にし、出口の外では元の太さに戻します。");
+                    "口と肛門をつなぐ体内の経路を生成します。片方だけを使用する場合も、もう片方の位置を出口として自動配置します。\n使用しない側のソケットやメニューは追加しません。「体内で太さを0にする」をオンにすると、体内の太さを0にし、出口の外では元の太さに戻します。");
                 if (settings.penetration)
                 {
                     using (new EditorGUILayout.HorizontalScope())
@@ -262,12 +262,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         {
             using (new EditorGUILayout.HorizontalScope())
             {
-                bool next = EditorGUILayout.ToggleLeft(new GUIContent(label, tooltip), value);
+                var content = new GUIContent(label, tooltip);
+                bool hasTooltip = !string.IsNullOrEmpty(tooltip);
+                bool next = hasTooltip
+                    ? EditorGUILayout.ToggleLeft(content, value, GUILayout.Width(EditorStyles.label.CalcSize(content).x + 20))
+                    : EditorGUILayout.ToggleLeft(content, value);
                 if (!string.IsNullOrEmpty(tooltip))
                 {
                     var icon = EditorGUIUtility.IconContent("_Help").image;
                     var help = icon != null ? new GUIContent(icon, tooltip) : new GUIContent("?", tooltip);
                     GUILayout.Label(help, GUILayout.Width(18), GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                    GUILayout.FlexibleSpace();
                 }
                 if (next != value) Change(() => set(next));
             }

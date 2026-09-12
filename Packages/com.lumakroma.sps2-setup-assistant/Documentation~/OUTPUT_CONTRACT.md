@@ -127,7 +127,7 @@ stops instead of deleting the extra groups.
 
 The setup window provides hover tooltips for 貫通, Auto Mode, 後方互換性 and
 インスタント起動, describing their effects and use conditions. Each tooltip has
-a visible help/question icon at the right of its row; label and icon expose the
+a visible help/question icon immediately after its label; label and icon expose the
 same explanation. The Instant authoring option defaults OFF for new setups;
 saved explicit ON/OFF preferences remain unchanged. Loading settings
 upgrades only the built-in chest's former default label 胸の間 to 胸; custom
@@ -136,9 +136,20 @@ to generated menus; changing this label does not require pose regeneration.
 
 ## Penetration path
 
-When enabled and both mouth/anus exist, each direction has its own Neck (Head fallback with warning)
+When enabled and at least one mouth/anus Socket exists, each included direction
+has its own Neck (Head fallback with warning)
 and Hips waypoint frames. Mouth uses Throat → Lower → Anus Exit; anus uses
-Lower → Throat → Mouth Exit. Each direction has three stops. The throat point
+Lower → Throat → Mouth Exit. Each direction has three stops. If the opposing
+Socket is excluded, its pose is calculated by the same standard placement logic
+and retained only as a bone-following Transform under Guided Paths. No native
+Socket, depth action, menu item or standalone interaction target is created for
+that virtual endpoint. The endpoint/exit remain necessary to define the path;
+the excluded Socket component is never instantiated. With both included, the
+existing real Socket poses are used. With neither included, or penetration OFF,
+there is no path. Inclusion changes rebuild the owned path; native references
+are cleared before removing it. Unchanged settings and Collapse-only changes
+preserve manual path adjustments; Undo/Redo restores the prior path/settings.
+The throat point
 uses the midpoint of the body's front/back intersections at Neck height, falling
 back to the bone position if either intersection is unavailable. The oral cubic
 enters inward and slightly upward before turning down through that point.
