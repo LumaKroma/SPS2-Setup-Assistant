@@ -12,12 +12,18 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
         {
             var setup = new SetupSettings();
             Add(setup, "mouth", "口", 0); Add(setup, "earLeft", "左耳", 0); Add(setup, "earRight", "右耳", 0);
-            Add(setup, "nippleLeft", "左乳首", 1); Add(setup, "nippleRight", "右乳首", 1); Add(setup, "chest", "胸の間", 1);
+            Add(setup, "nippleLeft", "左乳首", 1); Add(setup, "nippleRight", "右乳首", 1); Add(setup, "chest", "胸", 1);
             Add(setup, "handLeft", "左手", 2); Add(setup, "handRight", "右手", 2); Add(setup, "hands", "両手", 2);
             Add(setup, "vagina", "膣", 3); Add(setup, "anus", "肛門", 3); Add(setup, "thighs", "ふとももの間", 3);
             Add(setup, "footLeft", "左足", 4); Add(setup, "footRight", "右足", 4); Add(setup, "feet", "両足", 4);
             ApplyPreset(setup, 1);
             return setup;
+        }
+
+        public static void UpgradeDisplayNames(SetupSettings setup)
+        {
+            foreach (var part in setup.parts)
+                if (!part.custom && part.id == "chest" && part.name == "胸の間") part.name = "胸";
         }
 
         private static void Add(SetupSettings setup, string id, string name, int category)

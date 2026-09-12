@@ -29,6 +29,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         private void OnEnable()
         {
             if (settings == null || settings.parts.Count == 0) settings = FullSetupCatalog.CreateDefault();
+            FullSetupCatalog.UpgradeDisplayNames(settings);
             Undo.undoRedoPerformed += Repaint;
             EditorApplication.hierarchyChanged += RecoverAvatar;
             EditorApplication.playModeStateChanged += PlayModeChanged;
@@ -66,6 +67,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             descriptor = next; avatarId = null;
             try { settings = FullSetupGenerator.Find(next)?.settings.Copy() ?? FullSetupCatalog.CreateDefault(); message = null; }
             catch (Exception e) { settings = FullSetupCatalog.CreateDefault(); SetMessage(e.Message, false); }
+            FullSetupCatalog.UpgradeDisplayNames(settings);
             FullSetupCatalog.DetectMouth(settings, next); RememberAvatar();
         }
         private void OnGUI()
@@ -103,7 +105,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     }));
                 }
                 GUILayout.Space(12);
-                Toggle("貫通", settings.penetration, v => settings.penetration = v);
+                Toggle("貫通", settings.penetration, v => settings.penetration = v,
+                    "口と肛門をつなぐ体内の経路を生成します。両方のソケットが必要です。\n「体内で太さを0にする」をオンにすると、体内のプラグの太さを0にし、出口の外では元の太さに戻します。");
                 if (settings.penetration)
                 {
                     using (new EditorGUILayout.HorizontalScope())
@@ -112,9 +115,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                         Toggle("体内で太さを0にする", !settings.showInternalThickness, v => settings.showInternalThickness = !v);
                     }
                 }
-                Toggle("Auto Mode", settings.autoMode, v => settings.autoMode = v);
-                Toggle("後方互換性", settings.legacy, v => settings.legacy = v);
-                Toggle("インスタント起動", settings.instant, v => settings.instant = v);
+                Toggle("Auto Mode", settings.autoMode, v => settings.autoMode = v,
+                    "プラグに最も近い対象ソケットを自動で有効にするメニューを追加します。\n使用時にメニューのAuto Modeをオンにしてください。");
+                Toggle("後方互換性", settings.legacy, v => settings.legacy = v,
+                    "SPS1・DPS・TPSのプラグにも対応させ、互換機能の切り替えメニューを追加します。\nSPS2同士だけで使う場合はオフにできます。");
+                Toggle("インスタント起動", settings.instant, v => settings.instant = v,
+                    "生成済みの口と膣のソケットをまとめてオンにするボタンをメニューに追加します。\n後方互換性がオフのときに動作します。押した後もソケットはオンのままで、各メニューからオフにできます。");
                 Toggle("Local Only", settings.localOnly, v => settings.localOnly = v);
                 GUILayout.Space(8);
                 Toggle("Modular Avatarで追従", settings.modularAvatar, v => settings.modularAvatar = v);
@@ -252,9 +258,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             bool ok = FullSetupGenerator.Apply(descriptor, settings, regenerate, out _, out var result); SetMessage(result, ok);
         }
         private void SetMessage(string text, bool success) { message = text; messageType = success ? MessageType.Warning : MessageType.Error; Repaint(); }
-        private void Toggle(string label, bool value, Action<bool> set)
+        private void Toggle(string label, bool value, Action<bool> set, string tooltip = null)
         {
-            bool next = EditorGUILayout.ToggleLeft(label, value);
+            bool next = EditorGUILayout.ToggleLeft(new GUIContent(label, tooltip), value);
             if (next != value) Change(() => set(next));
         }
         private void Change(Action change) { Undo.RecordObject(this, "SPS2 設定"); change(); EditorUtility.SetDirty(this); Repaint(); }

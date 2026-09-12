@@ -1,3 +1,16 @@
+# Chest label and setup tooltips — 2026-09-12
+
+Baseline d378bd63a5cf24a6758819733950c2a5be7d7848. UI-only delta: default chest
+name 胸, exact former built-in label migration on window load, and four standard
+GUIContent hover tooltips. New/old defaults, custom names/custom parts and live
+MANUKA window binding checked via public authoring API/serialized window data.
+Compilation and final Editor readiness/Console verified in the same owned warm
+host. Evidence: `Evidence/tooltips-20260912`. Tooltip text/GUIContent wiring
+reviewed against the current behavior contract; no automated pointer-hover
+visual test and no redundant runtime suite for this presentation-only change.
+Original avatar was not regenerated or scene saved. Apply without replacement
+to persist the new menu label. Prior VRC PC limitations remain unchanged.
+
 # Mouth face-profile angle — 2026-09-12
 
 Baseline cd3970a68ce46087fc84d2c3dfb95b6c2e179fe4. Known bounded placement delta,

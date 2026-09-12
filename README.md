@@ -75,7 +75,7 @@ tools to inspect native penetration. Transfer its referenced mesh/material asset
 Owned Socket toggles start OFF and are unsaved. Auto starts OFF and is saved;
 Legacy Compatibility starts ON and is saved. Instant is an unsaved button that
 requests the generated mouth and vagina ON when Legacy is OFF or excluded.
-The menu follows 設定 → 口 → 胸の間 → 膣 → 肛門 → 右手 → 左手 → 両手, followed by remaining sockets directly,
+The menu follows 設定 → 口 → 胸 → 膣 → 肛門 → 右手 → 左手 → 両手, followed by remaining sockets directly,
 with 次へ pagination and no その他 submenu. Settings contains the three shared controls. Optional Local
 Only reuses native Stealth, starts OFF and is unsaved; its setup checkbox defaults
 to unchecked. Existing setups need regeneration to adopt corrected automatic

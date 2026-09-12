@@ -49,7 +49,7 @@ not imply an automatic standalone Prefab asset export.
 | Category | Fixed parts |
 | --- | --- |
 | 顔 | 口, 左耳, 右耳 |
-| 上半身 | 左乳首, 右乳首, 胸の間 |
+| 上半身 | 左乳首, 右乳首, 胸 |
 | 手 | 左手, 右手, 両手 |
 | 下半身 | 膣, 肛門, ふとももの間 |
 | 足 | 左足, 右足, 両足 |
@@ -125,6 +125,12 @@ Unchanged depth settings do not rewrite the native group. If multiple depth
 groups were added manually, changing that part's managed depth configuration
 stops instead of deleting the extra groups.
 
+The setup window provides hover tooltips for 貫通, Auto Mode, 後方互換性 and
+インスタント起動, describing their effects and use conditions. Loading settings
+upgrades only the built-in chest's former default label 胸の間 to 胸; custom
+parts/names and internal IDs remain unchanged. Apply persists the updated label
+to generated menus; changing this label does not require pose regeneration.
+
 ## Penetration path
 
 When enabled and both mouth/anus exist, each direction has its own Neck (Head fallback with warning)
@@ -180,7 +186,7 @@ not directly edited.
 | Instant button | OFF | No |
 | Local Only (native Stealth) | OFF | No |
 
-The SPS2 menu begins in this order: 設定, 口, 胸の間, 膣, 肛門, 右手, 左手,
+The SPS2 menu begins in this order: 設定, 口, 胸, 膣, 肛門, 右手, 左手,
 両手. Remaining generated fixed/custom sockets follow directly in catalog order;
 there is no その他 submenu. Excluded sockets are omitted. Each page has at most
 eight controls including 次へ. Full selects 15 sockets and uses three pages.
