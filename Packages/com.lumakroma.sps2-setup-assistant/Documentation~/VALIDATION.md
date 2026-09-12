@@ -1,3 +1,22 @@
+# Adopted chest depth — 2026-09-13
+
+Baseline36dc12a8200195286965f49f04c4fb21cf44de77. User reported forward displacement
+on larger breasts and accepted the three-avatar scene-only midpoint-depth trial.
+Contract change: OUTPUT_CONTRACT.md chest depth amendment (ratio0.5).
+Owned Unity2022.3.22f1 / VRCFury1.1403.0, official MCP, Pragmatic Development:
+- Three disposable avatar clones regenerated with current source. Chest positions
+  match approved MANUKA/Milltina/rurune trial within 3.58e-7 m; angle delta0.
+- Generated local positions: MANUKA(0,0.95566,0.06115),
+  Milltina(0,0.83532,0.07065), rurune(0,1.02553,0.10128).
+- Perturb each clone's chest position, apply nonreplacement settings: all retained.
+- Original avatar chest poses remain unchanged. User scene was not saved over.
+- Compilation completed with zero Console errors before the probes. Package
+  validation and whitespace checks pass. No Animator/dependency change; no new
+  VRC runtime or historical-version matrix run for this placement-only delta.
+- Evidence in Evidence/chest-depth-20260913. Source avatars/meshes are not bundled.
+
+Existing VRC PC gate remains. Three observed avatars are not an all-avatar claim.
+
 # Adopted oral Collapse boundary — 2026-09-13
 
 Source baseline: 18f414eeb270c8ff89fcce7a71cc19b5d2bb9a9a, issue/121-private-poc.

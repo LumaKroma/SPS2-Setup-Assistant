@@ -175,6 +175,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 {
                     var center = (leftTip + rightTip) * .5f;
                     p.position = surface.Ray(center, forward, h * .15f, out point) ? point : center;
+                    // Keep the socket between the breasts instead of on their front contour.
+                    // Change depth only; retain the measured height and centerline.
+                    var roots = (p.first.position + p.second.position) * .5f;
+                    var interior = Vector3.Lerp(roots, center, .5f);
+                    p.position += forward * Mathf.Min(0, Vector3.Dot(interior - p.position, forward));
                 }
                 direction = -up; up = forward;
             }

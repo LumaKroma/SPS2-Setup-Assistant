@@ -1,3 +1,14 @@
+# Chest depth amendment — 2026-09-13
+
+User approved the MANUKA/Milltina/rurune scene trial. For the chest socket, when
+both breast-tip surface measurements succeed, use the halfway forward depth
+between the bilateral breast root midpoint and tip midpoint. Clamp this depth
+not to move forward of the original centerline surface result. Preserve measured
+height, horizontal position, orientation and following. Missing surface evidence
+retains the previous fallback. Other socket placement is unchanged. Normal
+nonreplacement settings changes retain manual placement; regeneration uses this
+new default. This replaces front-contour depth with an interior breast depth.
+
 # Oral Collapse boundary amendment — 2026-09-13
 
 The owner accepted the MANUKA scene trial and requested adoption into generation.
