@@ -1,3 +1,15 @@
+# Issue 121 capability compatibility amendment (2026-09-13)
+
+The user's compatibility expansion and explicit SPS1-basic-generation answer
+supersede the exact-1.1403.0 guard below. Native schema access remains isolated
+in Editor/Compatibility. Public API late binding with exact public signatures
+is permitted there so pre-API/absent versions still compile and show guidance.
+Native basic Socket creation and public Unity ParentConstraint fallback are
+allowed when public factories are absent. Do not patch/vendor dependency code.
+SPS absence blocks generation; SPS1 warns and allows supported basics; missing
+features warn and are omitted from effective generated settings. Current schema
+recognition is not an all-version runtime certification. Update output contract,
+validation and package checks together; other-avatar/VRC PC gates remain open.
 # Issue 121 full-version exception (approved 2026-09-12)
 
 The active Issue body and comment 5644512003 supersede conflicting PoC-only

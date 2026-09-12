@@ -52,7 +52,7 @@ Assert-Condition ($manifest.version -eq '0.2.0-dev.1') 'Unexpected development v
 Assert-Condition ($manifest.unity -eq '2022.3') 'Unexpected Unity version.'
 Assert-Condition ($manifest.license -eq 'MIT') 'Package license must be MIT.'
 Assert-Condition ($manifest.vpmDependencies.'com.vrchat.avatars' -eq '>=3.10.4 <4.0.0') 'Unexpected VRChat SDK range.'
-Assert-Condition ($manifest.vpmDependencies.'com.vrcfury.vrcfury' -eq '1.1403.0') 'The compatibility adapter requires exact VRCFury 1.1403.0.'
+Assert-Condition ($manifest.vpmDependencies.'com.vrcfury.vrcfury' -eq '>=1.0.0') 'VRCFury installation must not force an exact version.'
 Assert-Condition (-not ($manifest.vpmDependencies.PSObject.Properties.Name -contains 'nadena.dev.modular-avatar')) 'Modular Avatar must remain an optional dependency.'
 
 Assert-Condition (Test-Path -LiteralPath (Join-Path $packageRoot 'Runtime/Sps2SetupRoot.cs')) 'Persistent authoring metadata is missing.'
@@ -67,13 +67,13 @@ $source = ($sourceFiles | ForEach-Object { Get-Content -Raw -LiteralPath $_.Full
 $compatibilityFiles = @($sourceFiles | Where-Object { $_.FullName -like '*\Editor\Compatibility\*' })
 $publicOnlySource = ($sourceFiles | Where-Object { $_.FullName -notlike '*\Editor\Compatibility\*' } | ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName }) -join "`n"
 $compatibility = ($compatibilityFiles | ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName }) -join "`n"
-Assert-Condition ($compatibility.Contains('SupportedVersion = "1.1403.0"')) 'Exact native version guard is missing.'
+Assert-Condition ($compatibility.Contains('VrcFuryCapabilities.Current') -and $compatibility.Contains('CanGenerate')) 'Capability guard is missing.'
 Assert-Condition ($compatibility.Contains('RequireVersion()') -and $compatibility.Contains('SerializedPropertyType')) 'Version/schema validation is missing.'
 Assert-Condition ($compatibility.Contains('UnityEngine.Object.DestroyImmediate(root.legacy)')) 'Build metadata stripping is missing.'
 Assert-Condition (Test-Path -LiteralPath (Join-Path $packageRoot 'Editor/Generation/Sps2SetupAsset.cs')) 'Editor settings storage is missing.'
 $fullGenerator = Get-Content -Raw -LiteralPath (Join-Path $packageRoot 'Editor/Generation/FullSetupGenerator.cs')
 Assert-Condition (-not ($fullGenerator -match 'AddComponent<Sps2SetupRoot>')) 'New generated roots must not contain custom metadata components.'
-Assert-Condition (-not [regex]::IsMatch($source, 'System\.Reflection|\bBindingFlags\b|\bGetField\s*\(|\bGetProperty\s*\(')) 'Unapproved reflection is present.'
+Assert-Condition (-not [regex]::IsMatch($publicOnlySource, 'System\.Reflection|\bBindingFlags\b|\bGetField\s*\(|\bGetProperty\s*\(')) 'Unapproved reflection is present.'
 $coreAssemblyPath = Join-Path $packageRoot 'Editor\LumaKroma.Sps2SetupAssistant.Editor.asmdef'
 $maAssemblyPath = Join-Path $packageRoot 'Editor\ModularAvatar\LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.asmdef'
 $maTestsAssemblyPath = Join-Path $packageRoot 'Tests\Editor\ModularAvatar\LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.Tests.asmdef'
@@ -114,8 +114,8 @@ foreach ($pattern in $forbiddenPatterns) {
     Assert-Condition (-not [regex]::IsMatch($publicOnlySource, $pattern)) "Dependency-private integration escaped Editor/Compatibility: $pattern"
 }
 
-Assert-Condition ($source.Contains('FuryComponents.CreateSocket')) 'Public VRCFury Socket creation call is missing.'
-Assert-Condition ($source.Contains('FuryComponents.CreateArmatureLink')) 'Public VRCFury Armature Link call is missing.'
+Assert-Condition ($compatibility.Contains('CreateSocket') -and $compatibility.Contains('com.vrcfury.api.FuryComponents')) 'Public Socket API late binding is missing.'
+Assert-Condition ($compatibility.Contains('CreateArmatureLink') -and -not $compatibility.Contains('BindingFlags.NonPublic')) 'Public-only attachment API binding is missing.'
 Assert-Condition ($source.Contains('ModularAvatarBoneProxy')) 'Public Modular Avatar Bone Proxy integration is missing.'
 Assert-Condition ($source.Contains('AttachmentBackendRegistry.IsAvailable')) 'Backend availability guard is missing.'
 Assert-Condition ($source.Contains('Undo.RevertAllDownToGroup')) 'Atomic Undo rollback is missing.'
@@ -142,4 +142,4 @@ if ($LASTEXITCODE -ne 0) {
     throw 'git diff --cached --check failed.'
 }
 
-Write-Output "PASS development metadata, optional MA, data-only authoring, isolated exact-version adapter, 15-part plus legacy catalog, display asset provenance, Undo and diff whitespace"
+Write-Output "PASS development metadata, optional MA, data-only authoring, isolated capability adapter, 15-part plus legacy catalog, display asset provenance, Undo and diff whitespace"

@@ -1,0 +1,11 @@
+{
+  "entries": 1,
+  "actualErrors": 1,
+  "errors": [
+    {
+      "type": "Assert",
+      "message": "Assertion failed on expression: 'targetScene != nullptr'",
+      "stackTrace": "UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()\n"
+    }
+  ]
+}

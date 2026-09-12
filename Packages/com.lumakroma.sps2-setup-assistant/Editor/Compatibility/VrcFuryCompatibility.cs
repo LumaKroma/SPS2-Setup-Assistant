@@ -1,12 +1,12 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using com.vrcfury.api;
-using com.vrcfury.api.Components;
+
+
 using LumaKroma.Sps2SetupAssistant.Editor.Model;
 using LumaKroma.Sps2SetupAssistant.Editor.Generation;
 using UnityEditor;
-using UnityEditor.PackageManager;
+
 using UnityEngine;
 
 namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
@@ -16,13 +16,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
     {
         public const string SupportedVersion = "1.1403.0";
         internal const string SocketType = "VF.Component.VRCFuryHapticSocket";
-        private const string PlugType = "VF.Component.VRCFuryHapticPlug";
+        internal const string PlugType = "VF.Component.VRCFuryHapticPlug";
 
         public static void RequireVersion()
         {
-            var package = UnityEditor.PackageManager.PackageInfo.FindForAssembly(typeof(FuryComponents).Assembly);
-            if (package == null || package.name != "com.vrcfury.vrcfury" || package.version != SupportedVersion)
-                throw new InvalidOperationException($"この構成は VRCFury {SupportedVersion} 用です。現在の版では変更を行いません。");
+            var capabilities = VrcFuryCapabilities.Current;
+            if (!capabilities.CanGenerate)
+                throw new InvalidOperationException(capabilities.BlockReason + "\n" + VrcFuryCapabilities.UpdateGuide);
         }
 
         internal static SerializedProperty Require(SerializedObject data, string path, SerializedPropertyType type)
@@ -54,21 +54,16 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 throw new InvalidOperationException("所有 Socket の参照が失われています。");
             var data = new SerializedObject(component);
             Require(data, "name", SerializedPropertyType.String);
-            Require(data, "oscId", SerializedPropertyType.String);
-            Require(data, "enableAuto", SerializedPropertyType.Boolean);
             Require(data, "addMenuItem", SerializedPropertyType.Boolean);
-            Require(data, "useLights", SerializedPropertyType.Boolean);
-            Require(data, "guidedPathStops", SerializedPropertyType.Generic);
-            Require(data, "depthActions2", SerializedPropertyType.Generic);
             return data;
         }
 
         public static Component CreateSocket(GameObject pose, SocketSettings part, SetupSettings setup, List<string> warnings)
         {
             RequireVersion();
-            var wrapper = UndoComponentRegistration.Invoke(pose, "SPS2 セットアップ", () => FuryComponents.CreateSocket(pose));
+            var wrapper = UndoComponentRegistration.Invoke(pose, "SPS2 セットアップ", () => VrcFuryApi.CreateSocket(pose));
             wrapper.SetName(part.name);
-            wrapper.SetMode(part.id == "mouth" || part.id == "anus" ? FurySocket.Mode.Ring : FurySocket.Mode.Auto);
+            wrapper.SetMode(part.id == "mouth" || part.id == "anus" ? "Ring" : "Auto");
             if (part.id == "chest" || part.id == "handLeft" || part.id == "handRight" || part.id == "hands" ||
                 part.id == "footLeft" || part.id == "footRight" || part.id == "feet") wrapper.UseRadiusOffset();
             var component = FindSocket(pose);
@@ -80,12 +75,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         {
             RequireVersion();
             var target = SocketData(component);
-            if (target.FindProperty("depthActions2").arraySize > 1)
+            if (target.FindProperty("depthActions2")?.arraySize > 1)
                 throw new InvalidOperationException(part.name + ": 手動で追加された深度グループがあります。設定を保持するため、変更を中止しました。");
             var temporary = new GameObject("SPS2 configuration staging") { hideFlags = HideFlags.HideAndDontSave };
             try
             {
-                var wrapper = FuryComponents.CreateSocket(temporary);
+                var wrapper = VrcFuryApi.CreateSocket(temporary);
                 var offIndices = new List<int>();
                 if (part.depth)
                 {
@@ -129,10 +124,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 }
                 Undo.RecordObject(component, "SPS2 設定反映");
                 target.FindProperty("name").stringValue = part.name;
-                target.FindProperty("enableAuto").boolValue = setup.autoMode;
-                target.FindProperty("useLights").boolValue = setup.legacy;
+                SetOptionalBool(target, "enableAuto", setup.autoMode);
+                if (VrcFuryCapabilities.Current.Legacy) SetOptionalBool(target, "useLights", setup.legacy);
                 target.FindProperty("addMenuItem").boolValue = true;
-                CopyDepthActions(source, target);
+                if (VrcFuryCapabilities.Current.Depth) CopyDepthActions(source, target);
                 target.ApplyModifiedProperties();
                 PrefabUtility.RecordPrefabInstancePropertyModifications(component);
             }
@@ -169,10 +164,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         {
             var data = SocketData(component);
             Undo.RecordObject(component, "SPS2 共通設定");
-            data.FindProperty("enableAuto").boolValue = setup.autoMode;
-            data.FindProperty("useLights").boolValue = setup.legacy;
+            SetOptionalBool(data, "enableAuto", setup.autoMode);
+            if (VrcFuryCapabilities.Current.Legacy) SetOptionalBool(data, "useLights", setup.legacy);
             data.ApplyModifiedProperties();
             PrefabUtility.RecordPrefabInstancePropertyModifications(component);
+        }
+
+        private static void SetOptionalBool(SerializedObject data, string path, bool value)
+        {
+            if (data.FindProperty(path) != null) Require(data, path, SerializedPropertyType.Boolean).boolValue = value;
         }
 
         public static void SetPath(Component socket, Transform[] stops, Transform avatar, bool collapseInternal = false)
@@ -182,25 +182,37 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 if (stop == null || !stop.IsChildOf(avatar) || AllSockets(stop.gameObject).Length != 0)
                     throw new InvalidOperationException("Guided Path の参照が不正です。");
             var data = SocketData(socket);
-            var array = data.FindProperty("guidedPathStops");
+            var caps = VrcFuryCapabilities.Current;
+            var array = data.FindProperty(caps.PathStops ? "guidedPathStops" : "guidedPath");
+            if (array == null)
+            {
+                if (stops.Length != 0) throw new InvalidOperationException("この版では貫通経路を利用できません。");
+                return;
+            }
             Undo.RecordObject(socket, "SPS2 貫通設定");
             array.arraySize = stops.Length;
             for (int i = 0; i < stops.Length; i++)
             {
+                if (!caps.PathStops) { array.GetArrayElementAtIndex(i).objectReferenceValue = stops[i]; continue; }
                 var prefix = $"guidedPathStops.Array.data[{i}].";
                 Require(data, prefix + "transform", SerializedPropertyType.ObjectReference).objectReferenceValue = stops[i];
-                Require(data, prefix + "shrink", SerializedPropertyType.Boolean).boolValue = collapseInternal;
-                Require(data, prefix + "customizeTangentIn", SerializedPropertyType.Boolean).boolValue = false;
-                Require(data, prefix + "customizeTangentOut", SerializedPropertyType.Boolean).boolValue = false;
-                Require(data, prefix + "tangentIn", SerializedPropertyType.Vector3).vector3Value = Vector3.zero;
-                Require(data, prefix + "tangentOut", SerializedPropertyType.Vector3).vector3Value = Vector3.zero;
+                SetOptionalBool(data, prefix + "shrink", collapseInternal);
+                if (caps.Tangents)
+                {
+                    SetOptionalBool(data, prefix + "customizeTangentIn", false);
+                    SetOptionalBool(data, prefix + "customizeTangentOut", false);
+                    Require(data, prefix + (caps.LocalTangents ? "tangentInLocal" : "tangentIn"), SerializedPropertyType.Vector3).vector3Value = Vector3.zero;
+                    Require(data, prefix + (caps.LocalTangents ? "tangentOutLocal" : "tangentOut"), SerializedPropertyType.Vector3).vector3Value = Vector3.zero;
+                }
             }
+            if (caps.LocalTangents) SetOptionalBool(data, "offsetsInLocalUnits", true);
             data.ApplyModifiedProperties();
             PrefabUtility.RecordPrefabInstancePropertyModifications(socket);
         }
 
         public static void SetPathCollapse(Component socket, bool collapse)
         {
+            if (!VrcFuryCapabilities.Current.Collapse) return;
             RequireVersion(); var data = SocketData(socket);
             Undo.RecordObject(socket, "SPS2 体内の太さ");
             var count = data.FindProperty("guidedPathStops").arraySize;
@@ -210,6 +222,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         }
         public static void SetPathTangents(Component socket, int segment, Vector3 exit, Vector3 enter)
         {
+            var caps = VrcFuryCapabilities.Current;
+            if (!caps.Tangents) return;
             RequireVersion(); var data = SocketData(socket);
             if (segment < 0 || segment >= data.FindProperty("guidedPathStops").arraySize)
                 throw new InvalidOperationException("貫通経路の区間がありません。");
@@ -217,22 +231,38 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             string prefix = $"guidedPathStops.Array.data[{segment}].";
             Require(data, prefix + "customizeTangentOut", SerializedPropertyType.Boolean).boolValue = true;
             Require(data, prefix + "customizeTangentIn", SerializedPropertyType.Boolean).boolValue = true;
-            Require(data, prefix + "tangentOut", SerializedPropertyType.Vector3).vector3Value = exit;
-            Require(data, prefix + "tangentIn", SerializedPropertyType.Vector3).vector3Value = enter;
+            if (caps.LocalTangents)
+            {
+                var stop = Require(data, prefix + "transform", SerializedPropertyType.ObjectReference).objectReferenceValue as Transform;
+                var previous = segment == 0 ? socket.transform :
+                    Require(data, $"guidedPathStops.Array.data[{segment - 1}].transform", SerializedPropertyType.ObjectReference).objectReferenceValue as Transform;
+                if (stop == null || previous == null || Mathf.Abs(stop.lossyScale.x) < 1e-6f || Mathf.Abs(previous.lossyScale.x) < 1e-6f)
+                    throw new InvalidOperationException("経路の参照またはスケールが不正です。");
+                exit /= previous.lossyScale.x; enter /= stop.lossyScale.x;
+                SetOptionalBool(data, "offsetsInLocalUnits", true);
+            }
+            Require(data, prefix + (caps.LocalTangents ? "tangentOutLocal" : "tangentOut"), SerializedPropertyType.Vector3).vector3Value = exit;
+            Require(data, prefix + (caps.LocalTangents ? "tangentInLocal" : "tangentIn"), SerializedPropertyType.Vector3).vector3Value = enter;
             data.ApplyModifiedProperties(); PrefabUtility.RecordPrefabInstancePropertyModifications(socket);
         }
 
         internal static string ReadIdentity(Component socket)
         {
-            var property = new SerializedObject(socket).FindProperty("oscId");
-            return property != null && property.propertyType == SerializedPropertyType.String ? property.stringValue : null;
+            var data = new SerializedObject(socket);
+            var property = data.FindProperty("oscId");
+            if (property != null && property.propertyType == SerializedPropertyType.String &&
+                Sps2SetupStorage.TryToken(property.stringValue, out _, out _)) return property.stringValue;
+            var name = data.FindProperty("name");
+            return name != null && name.propertyType == SerializedPropertyType.String &&
+                Sps2SetupStorage.TryToken(name.stringValue, out _, out _) ? name.stringValue : null;
         }
         internal static void SetAuthoringIdentity(Component socket, string identity)
         {
             var data = SocketData(socket);
-            if (data.FindProperty("oscId").stringValue == identity) return;
+            var property = data.FindProperty("oscId") ?? data.FindProperty("name");
+            if (property.stringValue == identity) return;
             Undo.RecordObject(socket, "SPS2 設定識別子");
-            data.FindProperty("oscId").stringValue = identity;
+            property.stringValue = identity;
             data.ApplyModifiedProperties();
             PrefabUtility.RecordPrefabInstancePropertyModifications(socket);
         }
@@ -241,7 +271,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         {
             var data = SocketData(socket);
             data.FindProperty("name").stringValue = token;
-            data.FindProperty("oscId").stringValue = token;
+            var identity = data.FindProperty("oscId");
+            if (identity != null) identity.stringValue = token;
             data.ApplyModifiedPropertiesWithoutUndo();
         }
 
@@ -253,25 +284,29 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             {
                 if (root.sockets.Any(s => s.socket == socket)) continue;
                 var data = SocketData(socket);
-                if (tokens.Contains(data.FindProperty("name").stringValue) || tokens.Contains(data.FindProperty("oscId").stringValue))
+                if (tokens.Contains(data.FindProperty("name").stringValue) || tokens.Contains(data.FindProperty("oscId")?.stringValue))
                     throw new InvalidOperationException("SPS2 のビルド識別子と既存 Socket が衝突しています。");
             }
+            foreach (var plug in avatar.GetComponentsInChildren<Component>(true).Where(c => c != null && c.GetType().FullName == PlugType))
+                if (tokens.Contains(new SerializedObject(plug).FindProperty("name")?.stringValue))
+                    throw new InvalidOperationException("SPS2 のビルド識別子と Plug 名が衝突しています。");
         }
 
         internal static int AutoSocketCount(GameObject avatar) => AllSockets(avatar).Count(s =>
         {
             var data = SocketData(s);
-            return data.FindProperty("addMenuItem").boolValue && data.FindProperty("enableAuto").boolValue;
+            return data.FindProperty("addMenuItem").boolValue && data.FindProperty("enableAuto")?.boolValue == true;
         });
 
         public static Component CreateTestPlug(GameObject obj, Renderer[] renderers, string label = "SPS2 テストプラグ")
         {
             RequireVersion();
+            if (!VrcFuryCapabilities.Current.TestPlug) throw new InvalidOperationException("この版ではテストプラグを生成できません。" + VrcFuryCapabilities.UpdateGuide);
             var type = TypeCache.GetTypesDerivedFrom<MonoBehaviour>().SingleOrDefault(t => t.FullName == PlugType);
             if (type == null) throw new InvalidOperationException("対応する VRCFury Plug が見つかりません。");
             var plug = Undo.AddComponent(obj, type);
             var data = new SerializedObject(plug);
-            Require(data, "enableSps", SerializedPropertyType.Boolean).boolValue = true;
+            Require(data, data.FindProperty("enableSps") != null ? "enableSps" : "configureSps", SerializedPropertyType.Boolean).boolValue = true;
             Require(data, "autoRenderer", SerializedPropertyType.Boolean).boolValue = false;
             var list = Require(data, "configureTpsMesh", SerializedPropertyType.Generic);
             list.arraySize = renderers.Length;

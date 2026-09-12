@@ -13,7 +13,7 @@ and [validation record](Packages/com.lumakroma.sps2-setup-assistant/Documentatio
 
 - Unity `2022.3`; observed Editor version `2022.3.22f1`.
 - VRChat Avatars SDK `>=3.10.4 <4.0.0`; observed `3.10.4`.
-- **VRCFury `1.1403.0` exactly.** The compatibility layer stops on other versions.
+- VRCFury: capability/schema detection, with native integration currently validated on `1.1403.0`. SPS1 warns and allows supported basic sockets; no SPS blocks generation. Unsupported options show update guidance. Older/newer release runtime validation remains separate.
 - Optional Modular Avatar `>=1.18.1 <2.0.0` for the MA attachment route.
 - The bundled IcePop material uses lilToon. Test-Plug placement requires its shader.
 

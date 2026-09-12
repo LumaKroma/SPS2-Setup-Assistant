@@ -1,0 +1,16 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Retrieved 1 log entries.",
+    "data": [
+      {
+        "type": "Assert",
+        "message": "Assertion failed on expression: 'targetScene != nullptr'",
+        "file": "./Library/PackageCache/com.unity.test-framework@1.1.33/UnityEditor.TestRunner/TestRun/Tasks/PerformUndoTask.cs",
+        "line": 28,
+        "stackTrace": "UnityEditor.EditorApplication:Internal_CallUpdateFunctions ()\n"
+      }
+    ]
+  }
+}

@@ -1,5 +1,6 @@
 using System;
 using System.Linq;
+using LumaKroma.Sps2SetupAssistant.Editor.Compatibility;
 using LumaKroma.Sps2SetupAssistant.Editor.Generation;
 using LumaKroma.Sps2SetupAssistant.Editor.Model;
 using UnityEditor;
@@ -88,6 +89,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 var next = (VRCAvatarDescriptor)EditorGUILayout.ObjectField("アバター", descriptor, typeof(VRCAvatarDescriptor), true);
                 if (next != descriptor) Change(() => BindAvatar(next));
                 scroll = EditorGUILayout.BeginScrollView(scroll);
+                DrawCompatibility();
                 DrawPresets();
                 DrawSocketParts();
                 DrawOptions();
@@ -129,23 +131,23 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         private void DrawOptions()
         {
             GUILayout.Space(12);
-            Toggle("貫通", settings.penetration, v => settings.penetration = v,
+            CompatibleToggle("貫通", settings.penetration, v => settings.penetration = v, VrcFuryCapabilities.Current.Path,
                 "口-肛門の間にプラグが通る経路を生成します。非常に長いプラグの場合、体を貫通します。\n「体内で太さを0にする」をオンにすると、体内の太さを0にし、出口の外では元の太さに戻します。");
             if (settings.penetration)
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     GUILayout.Space(18);
-                    Toggle("体内で太さを0にする", !settings.showInternalThickness, v => settings.showInternalThickness = !v);
+                    CompatibleToggle("体内で太さを0にする", !settings.showInternalThickness, v => settings.showInternalThickness = !v, VrcFuryCapabilities.Current.Collapse);
                 }
             }
-            Toggle("Auto Mode", settings.autoMode, v => settings.autoMode = v,
+            CompatibleToggle("Auto Mode", settings.autoMode, v => settings.autoMode = v, VrcFuryCapabilities.Current.AutoMode,
                 "プラグに最も近い対象ソケットを自動で有効にするメニューを追加します。");
-            Toggle("後方互換性", settings.legacy, v => settings.legacy = v,
+            CompatibleToggle("後方互換性", settings.legacy, v => settings.legacy = v, VrcFuryCapabilities.Current.Legacy,
                 "SPS1・DPS・TPSのプラグにも対応させ、互換機能の切り替えメニューを追加します。\nSPS2同士だけで使う場合はオフにできます。");
-            Toggle("インスタント起動", settings.instant, v => settings.instant = v,
+            CompatibleToggle("インスタント起動", settings.instant, v => settings.instant = v, VrcFuryCapabilities.Current.Instant,
                 "口と膣のソケットをまとめてオンにするボタンをメニューに追加します。\n後方互換性がオフのときに動作します。");
-            Toggle("Local Only", settings.localOnly, v => settings.localOnly = v);
+            CompatibleToggle("Local Only", settings.localOnly, v => settings.localOnly = v, VrcFuryCapabilities.Current.LocalOnly);
             GUILayout.Space(8);
             Toggle("Modular Avatarで追従", settings.modularAvatar, v => settings.modularAvatar = v);
             GUILayout.Space(12);
@@ -162,7 +164,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             }
             else if (EditorApplication.isPlayingOrWillChangePlaymode)
                 EditorGUILayout.HelpBox("再生を停止すると生成・再生成できます。", MessageType.Info);
-            using (new EditorGUI.DisabledScope(descriptor == null || EditorApplication.isPlayingOrWillChangePlaymode))
+            using (new EditorGUI.DisabledScope(descriptor == null || EditorApplication.isPlayingOrWillChangePlaymode || !VrcFuryCapabilities.Current.CanGenerate))
             {
                 if (!generated)
                 {
@@ -172,10 +174,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 {
                     if (GUILayout.Button("プレハブを再生成", GUILayout.Height(30))) Apply(true);
                     if (GUILayout.Button("置き換えずに変更を反映", GUILayout.Height(30))) Apply(false);
+                    using (new EditorGUI.DisabledScope(!VrcFuryCapabilities.Current.TestPlug))
                     if (GUILayout.Button("貫通テストプラグ出現", GUILayout.Height(30)))
                     {
                         bool ok = FullSetupGenerator.ShowLongTestPlug(descriptor, out var error); SetMessage(error, ok);
                     }
+                    using (new EditorGUI.DisabledScope(!VrcFuryCapabilities.Current.TestPlug))
                     if (GUILayout.Button("テストプラグ出現", GUILayout.Height(30)))
                     {
                         bool ok = FullSetupGenerator.ShowTestPlug(descriptor, out var error); SetMessage(error, ok);
@@ -199,8 +203,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     }
                     if (part.included)
                     {
-                        bool depth = EditorGUILayout.ToggleLeft("深度アクション", part.depth, GUILayout.MinWidth(114));
-                        if (depth != part.depth) Change(() => { part.depth = depth; if (depth && part.actions.Count == 0) part.actions.Add(new DepthActionSettings()); });
+                        using (new EditorGUI.DisabledScope(!VrcFuryCapabilities.Current.Depth))
+                        {
+                        bool depth = EditorGUILayout.ToggleLeft("深度アクション", part.depth && VrcFuryCapabilities.Current.Depth, GUILayout.MinWidth(114));
+                        if (VrcFuryCapabilities.Current.Depth && depth != part.depth) Change(() => { part.depth = depth; if (depth && part.actions.Count == 0) part.actions.Add(new DepthActionSettings()); });
+                        }
                     }
                     if (part.custom && GUILayout.Button("−", GUILayout.Width(24))) Change(() => settings.parts.Remove(part));
                 }
@@ -209,7 +216,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     var target = (Transform)EditorGUILayout.ObjectField("追従先", part.target, typeof(Transform), true);
                     if (target != part.target) Change(() => part.target = target);
                 }
-                if (!part.included || !part.depth) return;
+                if (!part.included || !part.depth || !VrcFuryCapabilities.Current.Depth) return;
                 using (new EditorGUI.DisabledScope(!part.included))
                 {
                     DrawRange(part);
@@ -284,6 +291,25 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             bool ok = FullSetupGenerator.Apply(descriptor, settings, regenerate, out _, out var result); SetMessage(result, ok);
         }
         private void SetMessage(string text, bool success) { message = text; messageType = success ? MessageType.Warning : MessageType.Error; Repaint(); }
+        private void DrawCompatibility()
+        {
+            var caps = VrcFuryCapabilities.Current;
+            var notes = caps.Notices();
+            if (notes.Count == 0) return;
+            EditorGUILayout.HelpBox("VRCFury " + caps.Version + "\n" + string.Join("\n", notes) + "\n" + VrcFuryCapabilities.UpdateGuide, MessageType.Warning);
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                if (GUILayout.Button("VRCFury 導入・更新の案内")) Application.OpenURL(VrcFuryCapabilities.GuideUrl);
+                if (GUILayout.Button("互換性を再確認")) { VrcFuryCapabilities.Refresh(); Repaint(); }
+            }
+        }
+
+        private void CompatibleToggle(string label, bool value, Action<bool> set, bool available, string tooltip = null)
+        {
+            using (new EditorGUI.DisabledScope(!available))
+                Toggle(label, value && available, v => { if (available) set(v); }, available ? tooltip : "この版では利用できません。" + VrcFuryCapabilities.UpdateGuide);
+        }
+
         private void Toggle(string label, bool value, Action<bool> set, string tooltip = null)
         {
             using (new EditorGUILayout.HorizontalScope())

@@ -50,7 +50,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 {
                     Pending.Add(avatar.GetInstanceID(), root);
                     VrcFuryCompatibility.ValidateBuildTokens(avatar, root);
-                    if (VrcFuryCompatibility.AutoSocketCount(avatar) > 16) throw new InvalidOperationException("Auto Mode の対象が16個を超えています。");
+                    root.settings = VrcFuryCapabilities.Current.Effective(root.settings);
+                    if (VrcFuryCapabilities.Current.Legacy && VrcFuryCompatibility.AutoSocketCount(avatar) > 16) throw new InvalidOperationException("Auto Mode の対象が16個を超えています。");
                     var seenSockets = new HashSet<Component>();
                     foreach (var socket in root.sockets)
                     {
@@ -138,15 +139,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             }
             var auto = Unique(entries, AutoLabel, false);
             var legacy = Unique(entries, LegacyLabel, false);
-            var localOnly = Unique(entries, LocalOnlyLabel, true);
-            SetPersistence(avatar, fx, localOnly, false, 0);
+            var localOnly = Unique(entries, LocalOnlyLabel, root.settings.localOnly);
+            if (localOnly != null) SetPersistence(avatar, fx, localOnly, false, 0);
             if (root.settings.legacy && legacy == null) throw new InvalidOperationException("後方互換性メニューがありません。");
             if (auto != null) SetPersistence(avatar, fx, auto, true, 0);
             if (legacy != null) SetPersistence(avatar, fx, legacy, true, 1);
             var requiredControls = owned.Values.Select(e => e.control).ToList();
             if (auto != null) requiredControls.Add(auto.control);
             if (legacy != null) requiredControls.Add(legacy.control);
-            requiredControls.Add(localOnly.control);
+            if (localOnly != null) requiredControls.Add(localOnly.control);
             var nativeContainer = entries.Where(e => e.control.subMenu != null)
                 .Select(e => new { entry = e, children = Entries(e.control.subMenu) })
                 .Where(e => requiredControls.All(c => e.children.Any(child => child.control == c)))
@@ -162,8 +163,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             { legacy.parent.controls.Remove(legacy.control); legacy.control.name = "後方互換性"; settingsMenu.controls.Add(legacy.control); }
             if (root.settings.instant && (owned.ContainsKey("mouth") || owned.ContainsKey("vagina")))
                 AddInstant(avatar, root, fx, settingsMenu, owned, legacy);
-            localOnly.parent.controls.Remove(localOnly.control);
-            if (root.settings.localOnly)
+            if (localOnly != null) localOnly.parent.controls.Remove(localOnly.control);
+            if (root.settings.localOnly && localOnly != null)
             { localOnly.control.name = "Local Only"; settingsMenu.controls.Add(localOnly.control); }
             var direct = new[] { "mouth", "chest", "vagina", "anus", "handRight", "handLeft", "hands" };
             void MoveSocket(string id, VRCExpressionsMenu destination)

@@ -1,0 +1,27 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": {
+        "Version": "1.1403.0",
+        "HasSps": true,
+        "Sps2": true,
+        "CanGenerate": true,
+        "BlockReason": null,
+        "Path": true,
+        "Collapse": true,
+        "Depth": true,
+        "Legacy": true,
+        "Instant": true,
+        "TestPlug": true,
+        "PublicAttachment": true,
+        "Tangents": true,
+        "LocalTangents": false,
+        "notes": []
+      },
+      "compiler": "roslyn"
+    }
+  }
+}

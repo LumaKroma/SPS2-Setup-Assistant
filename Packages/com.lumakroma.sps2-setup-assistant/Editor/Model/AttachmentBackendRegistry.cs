@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using com.vrcfury.api;
+using LumaKroma.Sps2SetupAssistant.Editor.Compatibility;
 using UnityEngine;
 
 namespace LumaKroma.Sps2SetupAssistant.Editor.Model
@@ -83,12 +83,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
 
             public void Apply(GameObject anchor, HumanBodyBones bone)
             {
-                var armatureLink = UndoComponentRegistration.Invoke(
-                    anchor,
-                    "Set Up SPS2 Sockets",
-                    () => FuryComponents.CreateArmatureLink(anchor));
-                armatureLink.LinkTo(bone);
-                armatureLink.SetAlign(true);
+                VrcFuryApi.Attach(anchor, bone);
             }
         }
     }

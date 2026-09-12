@@ -186,7 +186,7 @@ validation.
 ## Menu, persistence and Instant flow
 
 Build callbacks at -10001 and -9999 surround observed VRCFury processing.
-The exact `1.1403.0` guard and required serialized-property schema isolate
+Installed feature/schema checks and actual native build-output checks isolate
 private dependency integration in `Editor/Compatibility`.
 
 On the build clone, collision-checked temporary Socket labels identify the
@@ -260,3 +260,42 @@ including that snapshot even if later settings snapshots have been created.
 Only owner-approved display model/material assets are included; original menus,
 Tracker integrations and gimmick components are not copied.
 See [asset provenance](ASSET_PROVENANCE.md) and [validation](VALIDATION.md).
+
+## VRCFury compatibility (2026-09-13 amendment)
+
+Exact-version rejection is replaced by installed schema/capability inspection.
+The core has no compile-time VRCFury assembly reference. Missing VRCFury/SPS
+shows a warning and official VCC update/install guidance and disables generation,
+regeneration, apply and test-Plug operations. A malformed required basic schema
+also stops before authoring mutation. Other dependency/Unity compilation failures
+cannot be repaired by this package's warning UI.
+
+SPS1 (`configureSps` or `enableSps` on Plug without SPS2 tags) shows an upgrade
+warning but supports available basic sockets. Missing options are disabled and
+identified; generation copies requested settings and omits unsupported features
+from the effective saved setup. UI inputs are not modified merely by inspection.
+Path, Collapse, custom tangents, Auto, Legacy/Instant, Local Only, depth actions,
+radius offset, test Plug and attachment API availability are checked separately.
+Pre-stops SPS2 retains native Dual Mode; Legacy and Instant are unavailable there.
+SPS1 has no imposed SPS2 Auto16 cap. Unrelated/native Dual Mode controls remain.
+
+Public API calls are late-bound only in Compatibility with exact public signatures.
+Before the public factory era, native basic Socket construction uses required schema
+checks and attachment uses public Unity ParentConstraint. Depth auto-configuration
+requires the public depth/action API and its matching serialized fields. Missing
+radius offset leaves the native default. Missing tangent overrides use native path
+interpolation; missing Collapse leaves thickness unchanged and visibly warns.
+New local tangent fields convert world distances using the previous/current stop
+scales respectively, matching the observed upstream migration.
+
+When native oscId is absent, the existing exact prefix/asset GUID/part token is
+stored in the native Socket name. This is visible in its native Inspector and OSC
+name; the final menu still restores the configured display name. Upgrading reads
+only valid tokens, migrates ownership to oscId when available, and retains external
+asset/path validation. Existing Plug names as well as Socket identifiers participate
+in build-token collision checks. No custom component is added to generated objects.
+
+Official stable-source boundaries: SPS first appears in 1.171.0; SPS2 including
+stops/vector tangents/Collapse in 1.1349.0; local tangent units in 1.1409.0. Beta
+versions can have intermediate schemas. These observations guide detection and
+are not claims that every release passed Unity/VRChat tests; see VALIDATION.md.

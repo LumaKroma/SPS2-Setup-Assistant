@@ -1,3 +1,42 @@
+# Capability-based VRCFury compatibility — 2026-09-13
+
+Baseline `e8bf98f111517fa00f364561785ff84c4eebb980`. User requested broad version
+compatibility, per-feature warnings/guidance, SPS1 warning with supported basic
+creation allowed, and missing-SPS warning plus disabled generation. Contract impact:
+capability-adaptive authoring/install/build integration; OUTPUT_CONTRACT and standalone
+agent/contribution/validation rules updated together. Exact version dependency/guard
+removed; no installed VRCFury replacement or dependency source modification.
+
+Observed validation on VRCFury1.1403.0 / Unity2022.3.22f1 / SDK3.10.4 / owned session6:
+- Real late-bound public creation: all current capabilities detected; no warning.
+  Ten generation scenarios remain identical to baseline in29,969 normalized lines.
+- EditMode30/30: existing21, seven synthetic capability-policy cases, two real native
+  ownership/Plug-collision tests. Synthetic cases cover missingSPS, configureSps,
+  SPS1, earlySPS2, noCollapse, world/local field detection and no hard API reference;
+  they are not historical-version runtime tests.
+- Native full SDK preprocess (15 sockets, both test Plugs) passed; manual pose/reuse,
+  ordered single menu, LocalOnly default0/unsaved and repeated OFF/ON/OFF/ON/OFF
+  with Instant true/false verified. MA anus-only build:14 sockets, three stops,
+  excluded Socket/menu absent, native markers1/1/1/0, no missing constraints.
+- Independent source/schema/code review found three issues (early configureSps name,
+  partial attachment API fallback, missing depth factory prerequisite); all corrected.
+  Public signatures/return types and null results are checked. Historical observations
+  and source identities are in Evidence/compatibility-20260913/DISCOVERY_AND_REVIEW.md.
+- Initial new native tests left destroyed targets in TestRunner Undo records, causing
+  Unity targetScene assertion during PerformUndoTask. Reproduced with the two tests;
+  fixed by flushing and clearing only disposable fixture objects' Undo records before
+  destruction. Final30/30 rerun has zero Console errors without masking that assertion.
+- 106 compiled package inputs match owned warm host; package validator/diff check pass.
+  Actual current-version window capture inspected. Original avatar restored to window,
+  not regenerated/saved. Editor remains open, ready, no compile errors/Console0.
+
+Evidence in `Evidence/compatibility-20260913`, with hashes for local captures/source
+snapshots. Official stable boundaries observed in source: SPS1.171.0, SPS2+paths/
+Collapse1.1349.0, local tangents1.1409.0; intermediate beta schemas handled by fields.
+All-version compatibility is not certified: historical release SDK/Editor/VRChat runs,
+fresh absent-dependency installation, higher DPI and other avatars remain unverified.
+Existing VRC PC gate remains; no push, merge, release or upload. The previously recorded
+management/warm-host split procedure deviation and exact owned client were reused.
 # Behavior-preserving refactor — 2026-09-13
 
 Baseline `adde0d8e5f60edab0a48aef67a4f08ff90801e06`. User accepted current

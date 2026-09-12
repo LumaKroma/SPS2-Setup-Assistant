@@ -1,8 +1,8 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using com.vrcfury.api;
-using com.vrcfury.api.Components;
+using LumaKroma.Sps2SetupAssistant.Editor.Compatibility;
+
 using LumaKroma.Sps2SetupAssistant.Editor.Model;
 using LumaKroma.Sps2SetupAssistant.Editor.Planning;
 using UnityEditor;
@@ -27,6 +27,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         {
             generatedRoot = null;
             unavailableReasons = Array.Empty<string>();
+
+            if (!VrcFuryCapabilities.Current.CanGenerate)
+            {
+                error = VrcFuryCapabilities.Current.BlockReason + "\n" + VrcFuryCapabilities.UpdateGuide;
+                return false;
+            }
 
             if (!AttachmentBackendRegistry.IsAvailable(backend))
             {
@@ -88,9 +94,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     var socket = UndoComponentRegistration.Invoke(
                         socketPose,
                         "Set Up SPS2 Sockets",
-                        () => FuryComponents.CreateSocket(socketPose));
+                        () => VrcFuryApi.CreateSocket(socketPose));
                     socket.SetName(placement.Preset.DisplayName);
-                    socket.SetMode(FurySocket.Mode.Auto);
+                    socket.SetMode("Auto");
                 }
 
                 Selection.activeGameObject = generatedRoot;

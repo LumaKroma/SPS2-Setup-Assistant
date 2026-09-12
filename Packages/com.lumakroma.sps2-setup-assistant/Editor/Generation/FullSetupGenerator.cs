@@ -1,7 +1,6 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using com.vrcfury.api;
 using LumaKroma.Sps2SetupAssistant.Editor.Compatibility;
 using LumaKroma.Sps2SetupAssistant.Editor.Model;
 using LumaKroma.Sps2SetupAssistant.Editor.Planning;
@@ -315,6 +314,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (old != null && !regenerate) ValidateOwnership(old, false);
                 var basis = BodyBasisBuilder.Build(snapshot);
                 var warnings = new List<string>();
+                settings = VrcFuryCapabilities.Current.Effective(settings, warnings);
                 if (settings.parts.GroupBy(p => p.id).Any(g => string.IsNullOrEmpty(g.Key) || g.Count() != 1))
                     throw new InvalidOperationException("部位の識別子が重複または欠落しています。");
                 using var surface = new AvatarSurface(avatar);
@@ -402,7 +402,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     foreach (var socket in root.sockets.Where(s => s.id == "mouth" || s.id == "anus"))
                         VrcFuryCompatibility.SetPathCollapse(socket.socket, !settings.showInternalThickness);
                 root.settings = settings.Copy();
-                if (VrcFuryCompatibility.AutoSocketCount(avatar.gameObject) > 16)
+                if (VrcFuryCapabilities.Current.Legacy && VrcFuryCompatibility.AutoSocketCount(avatar.gameObject) > 16)
                     throw new InvalidOperationException("既存分を含む Auto Mode 対象が16個を超えます。Auto Mode を外すか対象を減らしてください。");
                 if (root.legacy != null) { Undo.DestroyObjectImmediate(root.legacy); root.legacy = null; }
                 Undo.RecordObject(root.gameObject, UndoName); root.gameObject.name = RootName;
