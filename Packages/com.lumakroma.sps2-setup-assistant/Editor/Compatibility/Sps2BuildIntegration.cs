@@ -174,9 +174,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 destination.controls.Add(entry.control);
             }
             foreach (var id in direct) MoveSocket(id, menu);
-            var other = Menu("その他");
-            foreach (var part in root.settings.parts.Where(p => !direct.Contains(p.id))) MoveSocket(part.id, other);
-            if (other.controls.Count != 0) { Paginate(other); menu.controls.Add(Submenu("その他", other)); }
+
+            foreach (var part in root.settings.parts.Where(p => !direct.Contains(p.id))) MoveSocket(part.id, menu);
+
             // Preserve native options and unrelated Socket controls inside the same entry.
             // Empty native pagination pages disappear after moving the owned controls.
             if (nativeMenu != null)

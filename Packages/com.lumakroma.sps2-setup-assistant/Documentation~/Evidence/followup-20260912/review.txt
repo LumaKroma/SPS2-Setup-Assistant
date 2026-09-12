@@ -1,0 +1,1 @@
+Independent read-only review found an explicit-recovery stale-ID no-op. The button now clears the stale ID before checking selected/unique candidates. Native path and second Plug storage had no reported blocker. Native/MA SDK and disposable authoring evidence are not human deformation/VRChat acceptance.

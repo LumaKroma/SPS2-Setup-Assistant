@@ -13,6 +13,8 @@ contain no package-defined component. Editor-only settings snapshots live in
 identifiers. Avatar-relative paths restore scene references, and asset GUID/local
 IDs restore clip references. Ambiguous paths stop saving.
 
+The window remembers the chosen scene avatar with GlobalObjectId across reload/play. A lost reference resolves the same target; an explicit re-detect button can bind the current selection or a unique generated avatar. Missing targets and Play mode explain why authoring is unavailable.
+
 Each settings change creates a new snapshot, preserving previous snapshots for
 Undo, saved Prefabs and discarded scene edits. Reusing the existing test Plug
 does not save settings. Move the current settings asset and its `.meta` together
@@ -20,7 +22,7 @@ with the Prefab when transferring projects. A missing settings asset stops edits
 and builds; the tool does not guess ownership or overwrite unknown objects.
 
 Each part has an anchor and a child `Socket Pose` with a native VRCFury Socket.
-The root can also contain `Guided Paths` and one `SPS2 Test Plug`.
+The root can also contain `Guided Paths`, one `SPS2 Test Plug` and one independent `SPS2 Long Test Plug`.
 No custom runtime script executes or is attached by generation. The old data-only
 `Sps2SetupRoot` type remains solely for migration: Apply or Show Test Plug moves
 its settings to an asset, removes it and renames its root in one Undo group.
@@ -68,7 +70,8 @@ renderer world transform including scale. A missing/ambiguous body reports a
 bone-estimate warning. Surface estimates are not an anatomical guarantee.
 
 Nipples use the breast surface. Pelvis sockets use the underside surface near
-the hips, with sagittal outward normals. Cleavage points down so its ring plane
+the hips, with sagittal outward normals. The anus ray is .055 body-height units
+behind Hips, with .003 body-height surface clearance; this is a bounded estimate. Cleavage points down so its ring plane
 is horizontal. Hands run along the palm and feet along the sole toward the toes;
 foot extents include weighted descendants when Humanoid Toes is unmapped.
 Native radius offset is enabled on cleavage, hands and feet (including pairs),
@@ -117,11 +120,14 @@ stops instead of deleting the extra groups.
 
 ## Penetration path
 
-When enabled and both mouth/anus exist, two shared torso points follow
-Chest/Spine and Hips. Separate exit points follow the opposing Socket pose.
-Mouth uses Upper → Lower → Anus Exit; anus uses Lower → Upper → Mouth Exit.
-Each direction has three stops, no shrink and native automatic tangents.
-
+When enabled and both mouth/anus exist, each direction has its own Chest/Spine
+and Hips waypoint frames. Mouth uses Upper → Lower → Anus Exit; anus uses
+Lower → Upper → Mouth Exit. Each direction has three stops, no shrink and
+native automatic tangents. Native path travel is -Z, so waypoint frames point
+opposite the local route direction instead of inheriting bone rotations.
+Exit positions follow the opposing Socket pose exactly; their +Z is reversed
+from that entrance so the plug travels outwards. These changes require path
+rebuilding/regeneration; unchanged nonreplacement keeps manually adjusted paths.
 Stops are separate from Socket subtrees to meet the native Guided Path contract.
 Rebuilding/removing the path clears native references first. Unchanged settings
 retain manually adjusted paths; structural changes rebuild the affected path
@@ -148,10 +154,10 @@ not directly edited.
 | Instant button | OFF | No |
 | Local Only (native Stealth) | OFF | No |
 
-The SPS2 menu preserves this order: 設定, 口, 胸の間, 膣, 肛門, 右手, 左手,
-両手, その他. Excluded sockets are omitted. With all parts, page 1 contains
-設定 through 左手 plus 次へ; page 2 contains 両手 and その他. Other generated
-fixed/custom sockets are under その他, paginated as needed (eight controls max).
+The SPS2 menu begins in this order: 設定, 口, 胸の間, 膣, 肛門, 右手, 左手,
+両手. Remaining generated fixed/custom sockets follow directly in catalog order;
+there is no その他 submenu. Excluded sockets are omitted. Each page has at most
+eight controls including 次へ. Full selects 15 sockets and uses three pages.
 設定 contains Auto Mode, Legacy Compatibility and Instant when included.
 The authoring Local Only checkbox is unchecked by default. Checking it exposes
 the existing native Stealth control under 設定 as Local Only; unchecking removes
@@ -189,6 +195,18 @@ The same IcePop display Plug is reused and repositioned in front of the avatar.
 It is included in upload when present, has no EditorOnly tag and is not removed
 with the metadata. Its creation/repositioning supports Undo. Removing the setup
 root removes it.
+
+A separate 貫通テストプラグ出現 button creates/reuses a blue capsule with native
+SPS Plug behavior. Its mesh is 1.5 m long and .05 m wide at avatar scale 1,
+with 3729 vertices (96 longitudinal shaft segments) for deformation. Its tip
+starts .08 world meters in front of the current mouth Socket, pointing inwards.
+A missing mouth prevents this operation with an explanation. Move the Plug
+using Unity's transform tools during native testing; no automatic insertion or
+custom runtime simulator is introduced. Both Plugs persist across regeneration,
+support Undo and are included in builds when present. Removing the root removes
+both. The capsule's mesh/material are persistent subassets of its creation
+settings snapshot. Transfer the Prefab with all referenced asset dependencies,
+including that snapshot even if later settings snapshots have been created.
 
 Only owner-approved display model/material assets are included; original menus,
 Tracker integrations and gimmick components are not copied.

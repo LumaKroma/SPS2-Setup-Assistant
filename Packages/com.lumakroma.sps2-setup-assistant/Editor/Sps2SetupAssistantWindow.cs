@@ -12,6 +12,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
     {
         [SerializeField] private VRCAvatarDescriptor descriptor;
         [SerializeField] private SetupSettings settings;
+        [SerializeField] private string avatarId;
         private Vector2 scroll;
         private string message;
         private MessageType messageType;
@@ -29,9 +30,44 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         {
             if (settings == null || settings.parts.Count == 0) settings = FullSetupCatalog.CreateDefault();
             Undo.undoRedoPerformed += Repaint;
-            EditorApplication.hierarchyChanged += Repaint;
+            EditorApplication.hierarchyChanged += RecoverAvatar;
+            EditorApplication.playModeStateChanged += PlayModeChanged;
+            EditorApplication.delayCall += RecoverAvatar;
         }
-        private void OnDisable() { Undo.undoRedoPerformed -= Repaint; EditorApplication.hierarchyChanged -= Repaint; }
+        private void OnDisable() { Undo.undoRedoPerformed -= Repaint; EditorApplication.hierarchyChanged -= RecoverAvatar; EditorApplication.playModeStateChanged -= PlayModeChanged; EditorApplication.delayCall -= RecoverAvatar; }
+        private void PlayModeChanged(PlayModeStateChange state)
+        {
+            if (state == PlayModeStateChange.ExitingEditMode) RememberAvatar();
+            if (state == PlayModeStateChange.EnteredEditMode) RecoverAvatar();
+            Repaint();
+        }
+        private void RememberAvatar()
+        {
+            if (descriptor != null && !EditorApplication.isPlaying)
+                avatarId = GlobalObjectId.GetGlobalObjectIdSlow(descriptor).ToString();
+        }
+        public void RecoverAvatar()
+        {
+            if (EditorApplication.isPlayingOrWillChangePlaymode) { Repaint(); return; }
+            if (descriptor == null && GlobalObjectId.TryParse(avatarId, out var id))
+                descriptor = GlobalObjectId.GlobalObjectIdentifierToObjectSlow(id) as VRCAvatarDescriptor;
+            if (descriptor == null && string.IsNullOrEmpty(avatarId))
+            {
+                var selected = Selection.activeGameObject != null ? Selection.activeGameObject.GetComponentInParent<VRCAvatarDescriptor>() : null;
+                var owned = UnityEngine.Object.FindObjectsOfType<VRCAvatarDescriptor>(true)
+                    .Where(a => a.gameObject.scene.IsValid() && FullSetupGenerator.HasGeneratedRoot(a)).ToArray();
+                var candidate = selected != null ? selected : owned.Length == 1 ? owned[0] : null;
+                if (candidate != null) BindAvatar(candidate);
+            }
+            RememberAvatar(); Repaint();
+        }
+        public void BindAvatar(VRCAvatarDescriptor next)
+        {
+            descriptor = next; avatarId = null;
+            try { settings = FullSetupGenerator.Find(next)?.settings.Copy() ?? FullSetupCatalog.CreateDefault(); message = null; }
+            catch (Exception e) { settings = FullSetupCatalog.CreateDefault(); SetMessage(e.Message, false); }
+            FullSetupCatalog.DetectMouth(settings, next); RememberAvatar();
+        }
         private void OnGUI()
         {
             if (title == null) title = new GUIStyle(EditorStyles.boldLabel) { fontSize = 20 };
@@ -42,13 +78,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 GUILayout.Label("SPS2 Setup Assistant", title);
                 GUILayout.Space(10);
                 var next = (VRCAvatarDescriptor)EditorGUILayout.ObjectField("アバター", descriptor, typeof(VRCAvatarDescriptor), true);
-                if (next != descriptor) Change(() =>
-                {
-                    descriptor = next;
-                    try { settings = FullSetupGenerator.Find(next)?.settings.Copy() ?? FullSetupCatalog.CreateDefault(); message = null; }
-                    catch (Exception e) { settings = FullSetupCatalog.CreateDefault(); SetMessage(e.Message, false); }
-                    FullSetupCatalog.DetectMouth(settings, next);
-                });
+                if (next != descriptor) Change(() => BindAvatar(next));
                 scroll = EditorGUILayout.BeginScrollView(scroll);
                 GUILayout.Space(10);
                 GUILayout.Label("プリセット", EditorStyles.boldLabel);
@@ -84,6 +114,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 EditorGUILayout.EndScrollView();
                 if (!string.IsNullOrEmpty(message)) EditorGUILayout.HelpBox(message, messageType);
                 bool generated = FullSetupGenerator.HasGeneratedRoot(descriptor);
+                if (descriptor == null)
+                {
+                    EditorGUILayout.HelpBox("対象アバターを選択してください。以前の対象が開かれている場合は再検出できます。", MessageType.Info);
+                    if (GUILayout.Button("対象アバターを再検出")) Change(() => { avatarId = null; RecoverAvatar(); });
+                }
+                else if (EditorApplication.isPlayingOrWillChangePlaymode)
+                    EditorGUILayout.HelpBox("再生を停止すると生成・再生成できます。", MessageType.Info);
                 using (new EditorGUI.DisabledScope(descriptor == null || EditorApplication.isPlayingOrWillChangePlaymode))
                 {
                     if (!generated)
@@ -94,6 +131,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     {
                         if (GUILayout.Button("プレハブを再生成", GUILayout.Height(30))) Apply(true);
                         if (GUILayout.Button("置き換えずに変更を反映", GUILayout.Height(30))) Apply(false);
+                        if (GUILayout.Button("貫通テストプラグ出現", GUILayout.Height(30)))
+                        {
+                            bool ok = FullSetupGenerator.ShowLongTestPlug(descriptor, out var error); SetMessage(error, ok);
+                        }
                         if (GUILayout.Button("テストプラグ出現", GUILayout.Height(30)))
                         {
                             bool ok = FullSetupGenerator.ShowTestPlug(descriptor, out var error); SetMessage(error, ok);

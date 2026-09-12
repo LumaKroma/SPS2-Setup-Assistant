@@ -39,7 +39,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         private static void ValidateOwnership(Sps2SetupContext root, bool allowMissing)
         {
             if (root.settings == null || root.sockets == null) throw new InvalidOperationException("SPS2 生成データが欠けています。");
-            if (root.testPlug != null && root.testPlug.transform.parent != root.transform)
+            if ((root.testPlug != null && root.testPlug.transform.parent != root.transform) ||
+                (root.longTestPlug != null && root.longTestPlug.transform.parent != root.transform))
                 throw new InvalidOperationException("テストプラグが所有ルートの外へ移動されています。");
             var anchors = new HashSet<Transform>();
             var ids = new HashSet<string>();
@@ -176,11 +177,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             }
             else if (part.id == "vagina" || part.id == "anus")
             {
-                // Locate the crotch surface below the pelvis, not the hips' front/back at bone height.
-                var center = p.first.position + forward * h * (part.id == "vagina" ? .012f : -.014f);
-                direction = -up;
-                if (surface.Ray(center, -up, h * .2f, out point, out var normal))
-                { p.position = point; direction = Vector3.ProjectOnPlane(normal, right).normalized; }
+                bool anal = part.id == "anus";
+                var center = p.first.position + forward * h * (anal ? -.055f : .012f);
+                var outward = -up;
+                direction = outward;
+                if (surface.Ray(center, outward, h * .2f, out point, out var normal))
+                {
+                    direction = Vector3.ProjectOnPlane(normal, right).normalized;
+                    p.position = point + (anal ? direction * h * .003f : Vector3.zero);
+                }
                 up = forward;
             }
             else if (part.id == "handLeft" || part.id == "handRight")
@@ -331,6 +336,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 var asset = createdAsset = Sps2SetupStorage.Create(avatar.name);
                 var identity = Sps2SetupStorage.Identity(asset);
                 GameObject existingPlug = old != null ? old.testPlug : null;
+                GameObject existingLongPlug = old != null ? old.longTestPlug : null;
+                if (regenerate && existingLongPlug != null) Undo.SetTransformParent(existingLongPlug.transform, avatar.transform, UndoName);
                 if (regenerate && existingPlug != null) Undo.SetTransformParent(existingPlug.transform, avatar.transform, UndoName);
                 if (regenerate && old != null) Undo.DestroyObjectImmediate(old.gameObject);
                 if (legacy != null) Undo.DestroyObjectImmediate(legacy.gameObject);
@@ -340,6 +347,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     var obj = Create(RootName, avatar.transform);
                     root = new Sps2SetupContext { gameObject = obj, avatar = avatar, asset = asset, identity = identity, settings = settings.Copy() };
                     if (existingPlug != null) { Undo.SetTransformParent(existingPlug.transform, root.transform, UndoName); root.testPlug = existingPlug; }
+                    if (existingLongPlug != null) { Undo.SetTransformParent(existingLongPlug.transform, root.transform, UndoName); root.longTestPlug = existingLongPlug; }
                 }
                 root.asset = asset; root.identity = identity;
                 // RegisterCreatedObjectUndo ends pending RecordObject tracking. The metadata
@@ -441,20 +449,31 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             var hips = animator.GetBoneTransform(HumanBodyBones.Hips);
             if (chest == null || hips == null) { warnings.Add("貫通: 胴体の参照が不足しています。"); return; }
             var path = Create(PathName, root.transform);
-            Transform Stop(string name, Transform target)
+            Transform Stop(string name, Transform target, Vector3 direction)
             {
-                var point = Create(name, path.transform); point.transform.SetPositionAndRotation(target.position, target.rotation);
-                Constrain(point, target); return point.transform;
+                var anchor = Create(name + " Follow", path.transform);
+                anchor.transform.SetPositionAndRotation(target.position, target.rotation); Constrain(anchor, target);
+                var point = Create(name, anchor.transform);
+                point.transform.rotation = Quaternion.LookRotation(direction.normalized, avatar.transform.right);
+                return point.transform;
             }
-            var upper = Stop("Upper", chest); var lower = Stop("Lower", hips);
-            var mouthExit = Stop("Mouth Exit", mouth.pose); var anusExit = Stop("Anus Exit", anus.pose);
-            mouth.pathStops = new[] { upper, lower, anusExit };
-            anus.pathStops = new[] { lower, upper, mouthExit };
+            // Native path travel is -Z. Reverse routes need opposite waypoint frames;
+            // an exit therefore faces opposite to the destination entrance Socket.
+            mouth.pathStops = new[] {
+                Stop("Mouth Upper", chest, mouth.pose.position - hips.position),
+                Stop("Mouth Lower", hips, chest.position - anus.pose.position),
+                Stop("Anus Exit", anus.pose, -anus.pose.forward) };
+            anus.pathStops = new[] {
+                Stop("Anus Lower", hips, anus.pose.position - chest.position),
+                Stop("Anus Upper", chest, hips.position - mouth.pose.position),
+                Stop("Mouth Exit", mouth.pose, -mouth.pose.forward) };
             VrcFuryCompatibility.SetPath(mouth.socket, mouth.pathStops, avatar.transform);
             VrcFuryCompatibility.SetPath(anus.socket, anus.pathStops, avatar.transform);
         }
 
-        public static bool ShowTestPlug(VRCAvatarDescriptor avatar, out string error)
+        public static bool ShowTestPlug(VRCAvatarDescriptor avatar, out string error) => ShowTestPlug(avatar, false, out error);
+        public static bool ShowLongTestPlug(VRCAvatarDescriptor avatar, out string error) => ShowTestPlug(avatar, true, out error);
+        private static bool ShowTestPlug(VRCAvatarDescriptor avatar, bool longPlug, out string error)
         {
             int group = -1;
             Sps2SetupAsset createdAsset = null;
@@ -463,34 +482,49 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 VrcFuryCompatibility.RequireVersion();
                 var root = Find(avatar);
                 if (root == null) throw new InvalidOperationException("先にセットアップを生成してください。");
+                var selectedPlug = longPlug ? root.longTestPlug : root.testPlug;
                 Undo.IncrementCurrentGroup(); group = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName("SPS2 テストプラグ");
-                if (root.asset == null || root.testPlug == null)
+                if (root.asset == null || selectedPlug == null)
                 {
                     root.asset = createdAsset ?? Sps2SetupStorage.Create(avatar.name);
                     createdAsset = root.asset;
                     root.identity = Sps2SetupStorage.Identity(root.asset);
                 }
-                bool metadataChanged = createdAsset != null || root.legacy != null || root.testPlug == null;
+                bool metadataChanged = createdAsset != null || root.legacy != null || selectedPlug == null;
                 if (metadataChanged) Undo.RegisterCompleteObjectUndo(root.asset, UndoName);
                 string metadataBefore = root.asset.stateJson;
-                if (root.testPlug == null)
+                if (selectedPlug == null)
                 {
-                    var model = AssetDatabase.LoadAssetAtPath<GameObject>(PackagePath + "/Assets/IcePop/IcePop.fbx");
                     var material = AssetDatabase.LoadAssetAtPath<Material>(PackagePath + "/Assets/IcePop/IcePop.mat");
-                    if (model == null || material == null || material.shader == null) throw new InvalidOperationException("IcePop の表示用アセットが見つかりません。");
-                    var plug = Create("SPS2 Test Plug", root.transform);
-                    var mesh = UnityEngine.Object.Instantiate(model, plug.transform, false);
-                    Undo.RegisterCreatedObjectUndo(mesh, UndoName);
-                    mesh.transform.localRotation = Quaternion.Euler(90, 0, 0);
-                    foreach (var renderer in mesh.GetComponentsInChildren<Renderer>(true))
-                        renderer.sharedMaterials = Enumerable.Repeat(material, renderer.sharedMaterials.Length).ToArray();
-                    VrcFuryCompatibility.CreateTestPlug(plug, mesh.GetComponentsInChildren<Renderer>(true));
-                    root.testPlug = plug;
+                    if (material == null || material.shader == null) throw new InvalidOperationException("プラグの表示用アセットが見つかりません。");
+                    var plug = Create(longPlug ? "SPS2 Long Test Plug" : "SPS2 Test Plug", root.transform);
+                    GameObject mesh;
+                    if (longPlug) mesh = LongTestPlugMesh.Create(plug.transform, root.asset, material);
+                    else
+                    {
+                        var model = AssetDatabase.LoadAssetAtPath<GameObject>(PackagePath + "/Assets/IcePop/IcePop.fbx");
+                        if (model == null) throw new InvalidOperationException("IcePop の表示用アセットが見つかりません。");
+                        mesh = UnityEngine.Object.Instantiate(model, plug.transform, false);
+                        Undo.RegisterCreatedObjectUndo(mesh, UndoName);
+                        mesh.transform.localRotation = Quaternion.Euler(90, 0, 0);
+                        foreach (var renderer in mesh.GetComponentsInChildren<Renderer>(true))
+                            renderer.sharedMaterials = Enumerable.Repeat(material, renderer.sharedMaterials.Length).ToArray();
+                    }
+                    VrcFuryCompatibility.CreateTestPlug(plug, mesh.GetComponentsInChildren<Renderer>(true), longPlug ? "SPS2 貫通テストプラグ" : "SPS2 テストプラグ");
+                    selectedPlug = plug;
+                    if (longPlug) root.longTestPlug = plug; else root.testPlug = plug;
                 }
-                Undo.RecordObject(root.testPlug.transform, UndoName);
+                Undo.RecordObject(selectedPlug.transform, UndoName);
                 var head = avatar.GetComponent<Animator>().GetBoneTransform(HumanBodyBones.Head);
-                root.testPlug.transform.SetPositionAndRotation((head != null ? head.position : avatar.transform.position + avatar.transform.up) + avatar.transform.forward * .35f, Quaternion.LookRotation(-avatar.transform.forward, avatar.transform.up));
-                Undo.RecordObject(root.testPlug, UndoName); root.testPlug.SetActive(true);
+                selectedPlug.transform.SetPositionAndRotation((head != null ? head.position : avatar.transform.position + avatar.transform.up) + avatar.transform.forward * .35f, Quaternion.LookRotation(-avatar.transform.forward, avatar.transform.up));
+                if (longPlug)
+                {
+                    var mouth = root.sockets.Find(s => s.id == "mouth")?.pose;
+                    if (mouth == null) throw new InvalidOperationException("貫通テストには口のソケットを生成してください。");
+                    float length = LongTestPlugMesh.Length * Mathf.Abs(selectedPlug.transform.lossyScale.z);
+                    selectedPlug.transform.SetPositionAndRotation(mouth.position + mouth.forward * (length + .08f), Quaternion.LookRotation(-mouth.forward, mouth.up));
+                }
+                Undo.RecordObject(selectedPlug, UndoName); selectedPlug.SetActive(true);
                 if (root.legacy != null) { Undo.DestroyObjectImmediate(root.legacy); root.legacy = null; }
                 Undo.RecordObject(root.gameObject, UndoName); root.gameObject.name = RootName;
                 if (metadataChanged)
@@ -499,7 +533,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     CommitMetadata(root, metadataBefore);
                 }
                 EditorSceneManager.MarkSceneDirty(avatar.gameObject.scene);
-                Selection.activeGameObject = root.testPlug;
+                Selection.activeGameObject = selectedPlug;
                 Undo.CollapseUndoOperations(group); error = null; return true;
             }
             catch (Exception e) { if (group >= 0) Undo.RevertAllDownToGroup(group); if (createdAsset != null) AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(createdAsset)); error = e.Message; return false; }

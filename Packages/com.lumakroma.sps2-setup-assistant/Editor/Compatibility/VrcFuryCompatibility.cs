@@ -241,7 +241,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             return data.FindProperty("addMenuItem").boolValue && data.FindProperty("enableAuto").boolValue;
         });
 
-        public static Component CreateTestPlug(GameObject obj, Renderer[] renderers)
+        public static Component CreateTestPlug(GameObject obj, Renderer[] renderers, string label = "SPS2 テストプラグ")
         {
             RequireVersion();
             var type = TypeCache.GetTypesDerivedFrom<MonoBehaviour>().SingleOrDefault(t => t.FullName == PlugType);
@@ -253,7 +253,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             var list = Require(data, "configureTpsMesh", SerializedPropertyType.Generic);
             list.arraySize = renderers.Length;
             for (int i = 0; i < renderers.Length; i++) list.GetArrayElementAtIndex(i).objectReferenceValue = renderers[i];
-            Require(data, "name", SerializedPropertyType.String).stringValue = "SPS2 テストプラグ";
+            Require(data, "name", SerializedPropertyType.String).stringValue = label;
             data.ApplyModifiedProperties();
             return plug;
         }

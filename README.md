@@ -61,13 +61,15 @@ The package reads its separate settings asset through native Socket identifiers.
 Old attached metadata is supported for migration only. VRCFury supplies native
 SPS behavior; public SDK callbacks configure
 the generated menu, persistence and Instant Animator layer on the build clone.
-The test Plug stays in uploaded avatars when present.
+The test Plugs stay in uploaded avatars when present. A separate 貫通テストプラグ出現
+button provides a long capsule in front of the mouth; move it with Unity transform
+tools to inspect native penetration. Transfer its referenced mesh/material asset dependencies with the Prefab.
 
 Owned Socket toggles start OFF and are unsaved. Auto starts OFF and is saved;
 Legacy Compatibility starts ON and is saved. Instant is an unsaved button that
 requests the generated mouth and vagina ON when Legacy is OFF or excluded.
-The menu follows 設定 → 口 → 胸の間 → 膣 → 肛門 → 右手 → 左手 → 両手 → その他,
-with 次へ pagination. Settings contains the three shared controls. Optional Local
+The menu follows 設定 → 口 → 胸の間 → 膣 → 肛門 → 右手 → 左手 → 両手, followed by remaining sockets directly,
+with 次へ pagination and no その他 submenu. Settings contains the three shared controls. Optional Local
 Only reuses native Stealth, starts OFF and is unsaved; its setup checkbox defaults
 to unchecked. Existing setups need regeneration to adopt corrected automatic
 placement and native surface radius offsets. Nonreplacement keeps manual poses.

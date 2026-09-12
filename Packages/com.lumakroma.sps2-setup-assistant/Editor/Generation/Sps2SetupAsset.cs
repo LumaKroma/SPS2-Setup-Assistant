@@ -26,6 +26,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         public SetupSettings settings;
         public List<GeneratedSocket> sockets = new List<GeneratedSocket>();
         public GameObject testPlug;
+        public GameObject longTestPlug;
     }
 
     internal static class Sps2SetupStorage
@@ -47,7 +48,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             public SetupSettings settings;
             public List<Reference> references = new List<Reference>();
             public List<SocketRecord> sockets = new List<SocketRecord>();
-            public string plug;
+            public string plug, longPlug;
         }
         internal static bool TryToken(string token, out string identity, out string part)
         {
@@ -91,7 +92,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         private static Transform Resolve(Transform root, string path) => path == null ? null : path.Length == 0 ? root : root.Find(path);
         internal static string Serialize(Sps2SetupContext root)
         {
-            var state = new State { settings = root.settings.Copy(), plug = Path(root.testPlug != null ? root.testPlug.transform : null, root.transform) };
+            var state = new State { settings = root.settings.Copy(), plug = Path(root.testPlug != null ? root.testPlug.transform : null, root.transform), longPlug = Path(root.longTestPlug != null ? root.longTestPlug.transform : null, root.transform) };
             void SaveReference(string key, UnityEngine.Object value)
             {
                 if (value == null) return;
@@ -174,6 +175,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             var result = new Sps2SetupContext { avatar = avatar, asset = asset, identity = identities[0], gameObject = transform != null ? transform.gameObject : avatar.gameObject,
                 settings = build ? state.settings.Copy() : BindSettings(state, avatar) };
             if (!build && !string.IsNullOrEmpty(state.plug)) result.testPlug = Resolve(transform, state.plug)?.gameObject;
+            if (!build && !string.IsNullOrEmpty(state.longPlug)) result.longTestPlug = Resolve(transform, state.longPlug)?.gameObject;
             foreach (var record in state.sockets)
             {
                 var sockets = owned.Where(s => s.token == Token(result, record.id)).ToArray();

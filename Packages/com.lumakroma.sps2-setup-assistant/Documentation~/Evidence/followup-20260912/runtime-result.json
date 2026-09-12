@@ -1,0 +1,38 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        "generated=True;message=",
+        "sockets=15",
+        "paths=3,3",
+        "nonreplace=True;samePose=True;position=True;message=",
+        "longPlug=True;message=",
+        "plug=True;message=",
+        "plugReuse=True;tag=Untagged",
+        "preprocess=True",
+        "localOnlySaved=False;default=0",
+        "page1=\u8a2d\u5b9a|\u53e3|\u80f8\u306e\u9593|\u81a3|\u809b\u9580|\u53f3\u624b|\u5de6\u624b|\u6b21\u3078",
+        "page2=\u4e21\u624b|\u5de6\u8033|\u53f3\u8033|\u5de6\u4e73\u9996|\u53f3\u4e73\u9996|\u3075\u3068\u3082\u3082\u306e\u9593|\u5de6\u8db3|\u6b21\u3078",
+        "noOtherGroup=True",
+        "longMeshBuilt=True",
+        "menuRoots=SPS2",
+        "menuControls=SPS2|\u8a2d\u5b9a|\u53e3|\u80f8\u306e\u9593|\u81a3|\u809b\u9580|\u53f3\u624b|\u5de6\u624b|\u6b21\u3078|Auto Mode|\u5f8c\u65b9\u4e92\u63db\u6027|\u30a4\u30f3\u30b9\u30bf\u30f3\u30c8\u8d77\u52d5|Local Only|\u6a19\u6e96\u8a2d\u5b9a\u30fb\u65e2\u5b58Socket|\u4e21\u624b|\u5de6\u8033|\u53f3\u8033|\u5de6\u4e73\u9996|\u53f3\u4e73\u9996|\u3075\u3068\u3082\u3082\u306e\u9593|\u5de6\u8db3|\u6b21\u3078|<b>Options|Next|\u53f3\u8db3|\u4e21\u8db3|<b>Disable Depth Pass</b>\n<size=20>(May fix 'ghost' plugs in some worlds)|<b>Disable Realtime Shadows</b>\n<size=20>(May fix 'ghost' plugs in some worlds)|Next|Existing Socket",
+        "targetParam=VF79___SPS2_da13630d3e92fd04480d68845c22b2dc_mouth;paths=Armature/Hips/Spine/Chest/Neck/Head/[VF309] mouth/Original Object/Socket Pose/BakedSpsSocket",
+        "instant=True;set=0;objects=Armature/Hips/Spine/Chest/Neck/Head/[VF309] mouth/Original Object/Socket Pose/BakedSpsSocket=False",
+        "instant=True;set=1;objects=Armature/Hips/Spine/Chest/Neck/Head/[VF309] mouth/Original Object/Socket Pose/BakedSpsSocket=True",
+        "instant=True;set=0;objects=Armature/Hips/Spine/Chest/Neck/Head/[VF309] mouth/Original Object/Socket Pose/BakedSpsSocket=False",
+        "instant=True;set=1;objects=Armature/Hips/Spine/Chest/Neck/Head/[VF309] mouth/Original Object/Socket Pose/BakedSpsSocket=True",
+        "instant=True;set=0;objects=Armature/Hips/Spine/Chest/Neck/Head/[VF309] mouth/Original Object/Socket Pose/BakedSpsSocket=False",
+        "instant=False;set=0;objects=Armature/Hips/Spine/Chest/Neck/Head/[VF309] mouth/Original Object/Socket Pose/BakedSpsSocket=False",
+        "instant=False;set=1;objects=Armature/Hips/Spine/Chest/Neck/Head/[VF309] mouth/Original Object/Socket Pose/BakedSpsSocket=True",
+        "instant=False;set=0;objects=Armature/Hips/Spine/Chest/Neck/Head/[VF309] mouth/Original Object/Socket Pose/BakedSpsSocket=False",
+        "instant=False;set=1;objects=Armature/Hips/Spine/Chest/Neck/Head/[VF309] mouth/Original Object/Socket Pose/BakedSpsSocket=True",
+        "instant=False;set=0;objects=Armature/Hips/Spine/Chest/Neck/Head/[VF309] mouth/Original Object/Socket Pose/BakedSpsSocket=False"
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

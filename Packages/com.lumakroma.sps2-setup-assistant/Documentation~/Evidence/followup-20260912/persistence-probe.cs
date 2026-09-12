@@ -1,0 +1,11 @@
+var original=UnityEngine.SceneManagement.SceneManager.GetActiveScene().GetRootGameObjects().SelectMany(g=>g.GetComponentsInChildren<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>(true)).Single(a=>a.name=="MANUKA_lilToon");var avatar=UnityEngine.Object.Instantiate(original.gameObject);avatar.name="Issue121 persistence probe";
+try{
+var descriptor=avatar.GetComponent<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>();var settings=LumaKroma.Sps2SetupAssistant.Editor.Model.FullSetupCatalog.CreateDefault();LumaKroma.Sps2SetupAssistant.Editor.Generation.Sps2SetupContext root;string error;
+if(!LumaKroma.Sps2SetupAssistant.Editor.Generation.FullSetupGenerator.Apply(descriptor,settings,true,out root,out error))return error;
+if(!LumaKroma.Sps2SetupAssistant.Editor.Generation.FullSetupGenerator.ShowLongTestPlug(descriptor,out error))return error;
+UnityEditor.Selection.activeGameObject=avatar;UnityEditor.Undo.FlushUndoRecordObjects();UnityEditor.Undo.PerformUndo();
+root=LumaKroma.Sps2SetupAssistant.Editor.Generation.FullSetupGenerator.Find(descriptor);bool undone=root.longTestPlug==null;UnityEditor.Undo.PerformRedo();root=LumaKroma.Sps2SetupAssistant.Editor.Generation.FullSetupGenerator.Find(descriptor);bool redone=root.longTestPlug!=null;
+var mesh=root.longTestPlug.GetComponentInChildren<UnityEngine.MeshFilter>().sharedMesh;
+string path=UnityEditor.AssetDatabase.GenerateUniqueAssetPath("Assets/ZZZ_GeneratedAssets/Issue121/LongPlugPersistence.prefab");UnityEditor.PrefabUtility.SaveAsPrefabAsset(avatar,path);var saved=UnityEditor.PrefabUtility.LoadPrefabContents(path);
+try{var loaded=LumaKroma.Sps2SetupAssistant.Editor.Generation.FullSetupGenerator.Find(saved.GetComponent<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>());return new{undo=undone,redo=redone,savedMesh=loaded.longTestPlug.GetComponentInChildren<UnityEngine.MeshFilter>().sharedMesh==mesh,customComponents=loaded.longTestPlug.GetComponentsInChildren<UnityEngine.MonoBehaviour>(true).Count(c=>c!=null&&c.GetType().Namespace!=null&&c.GetType().Namespace.StartsWith("LumaKroma"))};}finally{UnityEditor.PrefabUtility.UnloadPrefabContents(saved);}
+}finally{UnityEditor.Selection.activeGameObject=original.gameObject;UnityEngine.Object.DestroyImmediate(avatar);}

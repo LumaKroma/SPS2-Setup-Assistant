@@ -1,0 +1,7 @@
+{
+  "type": "Exception",
+  "message": "NullReferenceException: Object reference not set to an instance of an object",
+  "file": "",
+  "line": 0,
+  "stackTrace": "UnityEditor.UIElements.InspectorElement..ctor (UnityEditor.Editor editor, UnityEditor.UIElements.InspectorElement+DefaultInspectorFramework defaultInspectorFramework) (at <80a8ce1980c648dca8e68f0d8aa3b930>:0)\nUnityEditor.UIElements.InspectorElement..ctor (UnityEditor.Editor editor) (at <80a8ce1980c648dca8e68f0d8aa3b930>:0)\nUnityEditor.UIElements.EditorElement.BuildInspectorElement () (at <80a8ce1980c648dca8e68f0d8aa3b930>:0)\nUnityEditor.UIElements.EditorElement.CreateInspectorElement () (at <80a8ce1980c648dca8e68f0d8aa3b930>:0)\nUnityEditor.EditorElementUpdater.CreateInspectorElementsForMilliseconds (System.Int64 targetMilliseconds) (at <80a8ce1980c648dca8e68f0d8aa3b930>:0)\nUnityEditor.PropertyEditor.Update () (at <80a8ce1980c648dca8e68f0d8aa3b930>:0)\nUnityEditor.HostView.SendUpdate () (at <80a8ce1980c648dca8e68f0d8aa3b930>:0)\nUnityEditor.EditorApplication.Internal_CallUpdateFunctions () (at <80a8ce1980c648dca8e68f0d8aa3b930>:0)\n"
+}

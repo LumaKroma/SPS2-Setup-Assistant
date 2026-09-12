@@ -1,3 +1,41 @@
+# Authoring recovery and penetration follow-up — 2026-09-12
+
+Baseline2511eb4063129e0318c177ebbeebe24aff66d2c3, same session6/environment.
+`Evidence/followup-20260912` pins source and observations separately.
+
+- Observed the user's window descriptor null while MANUKA and its generated
+  root remained loaded in Edit mode. Persisted GlobalObjectId now restores the
+  same avatar after deliberate reference loss. Unresolvable IDs are explained;
+  explicit re-detect clears that stale ID and checks selection/unique ownership.
+- Anus underside ray moved posteriorly, with surface clearance. On MANUKA its
+  local position changed from (0,.67488,.01816) to (0,.68295,-.02368). A failed
+  diagonal-ray experiment and the subsequent actual surface scan are retained.
+- Both native path exits match the opposite Socket position (error0), with
+  reversed +Z (dot-1). Intermediate frames follow route direction, separately
+  for each direction, instead of copying bone orientations.
+- Long capsule:3729 vertices,1.5m x .05m, persistent mesh/material subassets,
+  tip .08000008m in front of mouth; independent standard/long Plug reuse,
+  regeneration retention, Undo/Redo and saved Prefab mesh restoration pass.
+  Long Plug has zero package-defined components. Side render confirms its
+  simple capsule appearance/initial mouth placement, not runtime deformation.
+- Native and MA SDK preprocessing pass with both Plugs. Capsule renderer remains
+  in built output. No その他 group; direct sockets follow the specified first
+  seven and paginate. Mouth FX OFF/ON/OFF/ON/OFF passes with/without Instant.
+- All21 existing EditMode tests pass; source blendshapes remain unchanged.
+  Translated/yaw90/scaled1.2 geometry remains within .000003341m and0degrees.
+- Independent read-only review found the stale-ID explicit recovery issue;
+  explicit re-detect now clears it. No other concrete blocker was reported.
+
+A Unity UIElements InspectorElement NullReferenceException occurred during temporary
+selection/fixture teardown; its engine-only stack is retained. After restoring
+the user target and clearing preserved logs, final Editor is ready/Console0.
+
+User avatar/scene were not regenerated or saved. Regenerate to adopt automatic
+anal placement and path frames, then summon the long Plug. Existing hand edits
+survive nonreplacement. Actual deformation, GM Contact/driver behavior, subjective
+placement across avatars and exact-commit VRC PC remain unverified. No push,
+upload, merge or release. Editor stays open for the requested manual checks.
+
 # Menu and placement delta — 2026-09-12
 
 Baseline `0eb74bec80d6ba562855a9987d807f8782c0217d`; same owned session 6,
