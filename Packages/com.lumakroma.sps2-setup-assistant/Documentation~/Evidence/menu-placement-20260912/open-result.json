@@ -1,0 +1,21 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": {
+        "scene": "Assets/ZZZ_GeneratedAssets/Issue121/ManualValidation71d891c.unity",
+        "avatar": "MANUKA_lilToon",
+        "window": "SPS2 Setup",
+        "bound": true,
+        "partCount": 15,
+        "mouthRenderer": true,
+        "rootSockets": 12,
+        "regenerated": false,
+        "sceneSaved": false
+      },
+      "compiler": "roslyn"
+    }
+  }
+}

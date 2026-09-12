@@ -1,0 +1,312 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Test job status retrieved.",
+    "data": {
+      "job_id": "842c7014511a4819aeeb27d33d2798c1",
+      "status": "succeeded",
+      "mode": "EditMode",
+      "started_unix_ms": 1789231191010,
+      "finished_unix_ms": 1789231199564,
+      "last_update_unix_ms": 1789231199564,
+      "progress": {
+        "completed": 30,
+        "total": 173,
+        "current_test_full_name": null,
+        "current_test_started_unix_ms": 1789231199283,
+        "last_finished_test_full_name": "LumaKroma.Sps2SetupAssistant.Editor.Tests.VrcFuryCapabilitiesTests.VectorPathsWithoutShrinkHaveIndependentCapabilities",
+        "last_finished_unix_ms": 1789231199284,
+        "stuck_suspected": false,
+        "editor_is_focused": false,
+        "blocked_reason": null,
+        "failures_so_far": [],
+        "failures_capped": false
+      },
+      "error": null,
+      "result": {
+        "mode": "EditMode",
+        "summary": {
+          "total": 30,
+          "passed": 30,
+          "failed": 0,
+          "skipped": 0,
+          "durationSeconds": 1.7155321,
+          "resultState": "Passed"
+        },
+        "results": [
+          {
+            "name": "AvailableBackends_IncludesModularAvatarWhenPackageIsPresent",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.Tests.ModularAvatarAttachmentBackendTests.AvailableBackends_IncludesModularAvatarWhenPackageIsPresent",
+            "state": "Passed",
+            "durationSeconds": 0.0062245,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "TryApply_ModularAvatarCreatesConfiguredPublicBoneProxy",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.Tests.ModularAvatarAttachmentBackendTests.TryApply_ModularAvatarCreatesConfiguredPublicBoneProxy",
+            "state": "Passed",
+            "durationSeconds": 0.0340285,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "AvailableBackends_AlwaysIncludesVrcFury",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.AttachmentBackendRegistryTests.AvailableBackends_AlwaysIncludesVrcFury",
+            "state": "Passed",
+            "durationSeconds": 0.002238,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "TryApply_UnknownBackendFailsBeforeMutation",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.AttachmentBackendRegistryTests.TryApply_UnknownBackendFailsBeforeMutation",
+            "state": "Passed",
+            "durationSeconds": 0.0016095,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "TryApply_VrcFuryCreatesAnAuthoringComponent",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.AttachmentBackendRegistryTests.TryApply_VrcFuryCreatesAnAuthoringComponent",
+            "state": "Passed",
+            "durationSeconds": 0.0311924,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "Build_FallsBackToAvatarAxesWhenLimbDirectionsAreMissing",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.BodyBasisBuilderTests.Build_FallsBackToAvatarAxesWhenLimbDirectionsAreMissing",
+            "state": "Passed",
+            "durationSeconds": 0.0023216,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "Build_ProducesRightHandedAvatarAlignedBasisAndMeasuredHeight",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.BodyBasisBuilderTests.Build_ProducesRightHandedAvatarAlignedBasisAndMeasuredHeight",
+            "state": "Passed",
+            "durationSeconds": 0.0013299,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "ForeignMetadataReferencesAreRejectedWithoutMovingOrDeletingThem(True)",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.FullSetupSettingsTests.ForeignMetadataReferencesAreRejectedWithoutMovingOrDeletingThem(True)",
+            "state": "Passed",
+            "durationSeconds": 0.0036457,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "ForeignMetadataReferencesAreRejectedWithoutMovingOrDeletingThem(False)",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.FullSetupSettingsTests.ForeignMetadataReferencesAreRejectedWithoutMovingOrDeletingThem(False)",
+            "state": "Passed",
+            "durationSeconds": 0.0007339,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "NonlinearDistanceControlIsMonotonicAndRoundTripsBothSidesOfZero",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.FullSetupSettingsTests.NonlinearDistanceControlIsMonotonicAndRoundTripsBothSidesOfZero",
+            "state": "Passed",
+            "durationSeconds": 0.0030098,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "PresetRoundTripPreservesCustomAndDisabledActionInputs",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.FullSetupSettingsTests.PresetRoundTripPreservesCustomAndDisabledActionInputs",
+            "state": "Passed",
+            "durationSeconds": 0.0021672,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "FindOwnedRoot_AcceptsOnlyDeterministicCatalogSignature",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.OwnedRootTests.FindOwnedRoot_AcceptsOnlyDeterministicCatalogSignature",
+            "state": "Passed",
+            "durationSeconds": 0.0023365,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "FindOwnedRoot_FailsClosedForMalformedExactNameRoot",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.OwnedRootTests.FindOwnedRoot_FailsClosedForMalformedExactNameRoot",
+            "state": "Passed",
+            "durationSeconds": 0.0004407,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "FindOwnedRoot_LeavesUnrelatedChildrenAlone",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.OwnedRootTests.FindOwnedRoot_LeavesUnrelatedChildrenAlone",
+            "state": "Passed",
+            "durationSeconds": 0.0003024,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "Catalog_HasExactlyEightUniqueOrderedPresets",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.SocketCatalogTests.Catalog_HasExactlyEightUniqueOrderedPresets",
+            "state": "Passed",
+            "durationSeconds": 0.0023332,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "ResolveBone_PrefersUpperChestOverChest",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.SocketCatalogTests.ResolveBone_PrefersUpperChestOverChest",
+            "state": "Passed",
+            "durationSeconds": 0.0009357,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "ResolveBone_UsesHeadWhenJawIsUnavailable",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.SocketCatalogTests.ResolveBone_UsesHeadWhenJawIsUnavailable",
+            "state": "Passed",
+            "durationSeconds": 0.0002277,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "CreatePlan_MirrorsHandsAndPointsEntryTowardEachAnchor",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.SocketPlacementPlannerTests.CreatePlan_MirrorsHandsAndPointsEntryTowardEachAnchor",
+            "state": "Passed",
+            "durationSeconds": 0.0035638,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "CreatePlan_MissingOneBoneDisablesOnlyThatPreset",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.SocketPlacementPlannerTests.CreatePlan_MissingOneBoneDisablesOnlyThatPreset",
+            "state": "Passed",
+            "durationSeconds": 0.0016466,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "CreatePlan_PointsFrontAndBackHipsInOppositeInwardDirections",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.SocketPlacementPlannerTests.CreatePlan_PointsFrontAndBackHipsInOppositeInwardDirections",
+            "state": "Passed",
+            "durationSeconds": 0.0004,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "Invoke_RegistersComponentsCreatedByExternalFactories",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.UndoComponentRegistrationTests.Invoke_RegistersComponentsCreatedByExternalFactories",
+            "state": "Passed",
+            "durationSeconds": 0.0057053,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "FirstSps2PathDoesNotImplyCollapseLegacyOrInstant",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.VrcFuryCapabilitiesTests.FirstSps2PathDoesNotImplyCollapseLegacyOrInstant",
+            "state": "Passed",
+            "durationSeconds": 0.0017764,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "LegacyNameIdentityCanBeRecoveredAndMigratedToOscId",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.VrcFuryCapabilitiesTests.LegacyNameIdentityCanBeRecoveredAndMigratedToOscId",
+            "state": "Passed",
+            "durationSeconds": 0.0033189,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "LocalPathFieldsAreRecognizedWithoutObsoleteWorldFields",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.VrcFuryCapabilitiesTests.LocalPathFieldsAreRecognizedWithoutObsoleteWorldFields",
+            "state": "Passed",
+            "durationSeconds": 0.0011573,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "MissingSpsBlocksBeforeGeneratingAndExplainsUpdate",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.VrcFuryCapabilitiesTests.MissingSpsBlocksBeforeGeneratingAndExplainsUpdate",
+            "state": "Passed",
+            "durationSeconds": 0.0014929,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "OriginalConfigureSpsFieldIsRecognizedAsSps1",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.VrcFuryCapabilitiesTests.OriginalConfigureSpsFieldIsRecognizedAsSps1",
+            "state": "Passed",
+            "durationSeconds": 0.0008688,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "ProbeDoesNotLeaveObjectsAndCoreHasNoVrcFuryAssemblyDependency",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.VrcFuryCapabilitiesTests.ProbeDoesNotLeaveObjectsAndCoreHasNoVrcFuryAssemblyDependency",
+            "state": "Passed",
+            "durationSeconds": 0.0010549000000000001,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "ReservedBuildNameOnPlugIsRejectedBeforeNativeRenaming",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.VrcFuryCapabilitiesTests.ReservedBuildNameOnPlugIsRejectedBeforeNativeRenaming",
+            "state": "Passed",
+            "durationSeconds": 0.0029671,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "Sps1AllowsBasicSocketsAndRetainsRequestedSettings",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.VrcFuryCapabilitiesTests.Sps1AllowsBasicSocketsAndRetainsRequestedSettings",
+            "state": "Passed",
+            "durationSeconds": 0.0008096,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "VectorPathsWithoutShrinkHaveIndependentCapabilities",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.VrcFuryCapabilitiesTests.VectorPathsWithoutShrinkHaveIndependentCapabilities",
+            "state": "Passed",
+            "durationSeconds": 0.0009758,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          }
+        ]
+      }
+    }
+  }
+}

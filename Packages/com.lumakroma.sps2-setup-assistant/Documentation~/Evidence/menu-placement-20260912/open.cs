@@ -1,0 +1,11 @@
+var scene=UnityEngine.SceneManagement.SceneManager.GetActiveScene();
+var descriptor=scene.GetRootGameObjects().SelectMany(g=>g.GetComponentsInChildren<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>(true)).Single(a=>a.name=="MANUKA_lilToon");
+if(UnityEditor.EditorApplication.isPlaying)return "stopped-playing";
+var root=LumaKroma.Sps2SetupAssistant.Editor.Generation.FullSetupGenerator.Find(descriptor);
+LumaKroma.Sps2SetupAssistant.Editor.Sps2SetupAssistantWindow.Open();
+var window=UnityEditor.EditorWindow.GetWindow<LumaKroma.Sps2SetupAssistant.Editor.Sps2SetupAssistantWindow>();
+UnityEngine.JsonUtility.FromJsonOverwrite("{\"settings\":"+UnityEngine.JsonUtility.ToJson(root.settings.Copy())+"}",window);
+var binding=new UnityEditor.SerializedObject(window);binding.FindProperty("descriptor").objectReferenceValue=descriptor;binding.ApplyModifiedPropertiesWithoutUndo();
+UnityEditor.Selection.activeGameObject=descriptor.gameObject;window.Repaint();window.Focus();
+var serialized=new UnityEditor.SerializedObject(window);var parts=serialized.FindProperty("settings.parts");
+return new {scene=scene.path,avatar=descriptor.name,window=window.titleContent.text,bound=serialized.FindProperty("descriptor").objectReferenceValue==descriptor,partCount=parts.arraySize,mouthRenderer=parts.GetArrayElementAtIndex(0).FindPropertyRelative("actions").GetArrayElementAtIndex(0).FindPropertyRelative("renderer").objectReferenceValue!=null,rootSockets=root.sockets.Count,regenerated=false,sceneSaved=false};

@@ -1,0 +1,21 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        "actions=3",
+        "VRCFury VF.Model.StateAction.BlendShapeAction",
+        "VRCFury VF.Model.StateAction.AnimationClipAction",
+        "VRCFury VF.Model.StateAction.ObjectToggleAction",
+        "blendshape=True",
+        "clip=True",
+        "object=True",
+        "objectMode=TurnOff",
+        "updatedActions=1"
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

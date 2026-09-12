@@ -1,0 +1,23 @@
+{
+  "name": "com.lumakroma.sps2-setup-assistant",
+  "displayName": "SPS2 Setup Assistant",
+  "version": "1.0.0",
+  "description": "SPS2 authoring setup, native VRCFury integration and uploaded test Plug for Humanoid VRChat avatars.",
+  "unity": "2022.3",
+  "author": {
+    "name": "LumaKroma",
+    "url": "https://github.com/LumaKroma"
+  },
+  "license": "MIT",
+  "keywords": [
+    "vrchat",
+    "sps2",
+    "socket",
+    "vrcfury",
+    "modular-avatar"
+  ],
+  "vpmDependencies": {
+    "com.vrchat.avatars": ">=3.10.4 <4.0.0",
+    "com.vrcfury.vrcfury": ">=1.0.0"
+  }
+}

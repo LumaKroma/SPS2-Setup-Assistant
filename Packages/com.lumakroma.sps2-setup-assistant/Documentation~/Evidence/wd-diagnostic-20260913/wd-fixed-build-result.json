@@ -1,0 +1,42 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        {
+          "inputWD": true,
+          "built": true,
+          "on": 92,
+          "off": 0,
+          "unexpected": [],
+          "instant": [
+            "Ready=True",
+            "Fire=True",
+            "Held=True",
+            "DeniedHeld=True"
+          ],
+          "errors": []
+        },
+        {
+          "inputWD": false,
+          "built": true,
+          "on": 4,
+          "off": 88,
+          "unexpected": [
+            "Fixture (NO VALID ANIMATIONS)/Warning from VRCFury!\nThis layer contains no valid animations,\nand will be removed during a real upload,\nMake sure the animated objects / components\nactually exist at the paths used in the\nclips"
+          ],
+          "instant": [
+            "Ready=False",
+            "Fire=False",
+            "Held=False",
+            "DeniedHeld=False"
+          ],
+          "errors": []
+        }
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

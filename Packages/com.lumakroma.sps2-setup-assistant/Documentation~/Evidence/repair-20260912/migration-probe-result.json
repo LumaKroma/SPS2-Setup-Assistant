@@ -1,0 +1,27 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        "generateMs=123;warnings=",
+        "name=SPS2;ownMono=0;sockets=15;asset=Assets/SPS2Settings/Issue121 storage probe SPS2 12.asset",
+        "reload=True",
+        "preservePose=True",
+        "plugFirstMs=93",
+        "ownerIdMs=1",
+        "allAvatarsMs=0;count=4",
+        "plugRepeatMs=0;same=True",
+        "findThreeMs=1",
+        "missingAssetStops=True",
+        "legacyPlugMigration=True",
+        "cloneIsolated=True",
+        "undoIdentity=True",
+        "redoIdentity=True",
+        "prefabRestore=True"
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

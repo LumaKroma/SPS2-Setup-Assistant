@@ -1,0 +1,120 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        {
+          "regenerate": false,
+          "assetLoaded": true,
+          "built": true,
+          "residue": false,
+          "sequence": [
+            {
+              "value": 0.0,
+              "states": [
+                {
+                  "path": "Armature/Hips/Spine/Chest/Neck/Head/[VF860] mouth/Original Object/Socket Pose/BakedSpsSocket",
+                  "active": false
+                }
+              ]
+            },
+            {
+              "value": 1.0,
+              "states": [
+                {
+                  "path": "Armature/Hips/Spine/Chest/Neck/Head/[VF860] mouth/Original Object/Socket Pose/BakedSpsSocket",
+                  "active": true
+                }
+              ]
+            },
+            {
+              "value": 0.0,
+              "states": [
+                {
+                  "path": "Armature/Hips/Spine/Chest/Neck/Head/[VF860] mouth/Original Object/Socket Pose/BakedSpsSocket",
+                  "active": false
+                }
+              ]
+            },
+            {
+              "value": 1.0,
+              "states": [
+                {
+                  "path": "Armature/Hips/Spine/Chest/Neck/Head/[VF860] mouth/Original Object/Socket Pose/BakedSpsSocket",
+                  "active": true
+                }
+              ]
+            },
+            {
+              "value": 0.0,
+              "states": [
+                {
+                  "path": "Armature/Hips/Spine/Chest/Neck/Head/[VF860] mouth/Original Object/Socket Pose/BakedSpsSocket",
+                  "active": false
+                }
+              ]
+            }
+          ],
+          "errors": []
+        },
+        {
+          "regenerate": true,
+          "assetLoaded": true,
+          "built": true,
+          "residue": false,
+          "sequence": [
+            {
+              "value": 0.0,
+              "states": [
+                {
+                  "path": "Armature/Hips/Spine/Chest/Neck/Head/[VF752] mouth/Original Object/Socket Pose/BakedSpsSocket",
+                  "active": false
+                }
+              ]
+            },
+            {
+              "value": 1.0,
+              "states": [
+                {
+                  "path": "Armature/Hips/Spine/Chest/Neck/Head/[VF752] mouth/Original Object/Socket Pose/BakedSpsSocket",
+                  "active": true
+                }
+              ]
+            },
+            {
+              "value": 0.0,
+              "states": [
+                {
+                  "path": "Armature/Hips/Spine/Chest/Neck/Head/[VF752] mouth/Original Object/Socket Pose/BakedSpsSocket",
+                  "active": false
+                }
+              ]
+            },
+            {
+              "value": 1.0,
+              "states": [
+                {
+                  "path": "Armature/Hips/Spine/Chest/Neck/Head/[VF752] mouth/Original Object/Socket Pose/BakedSpsSocket",
+                  "active": true
+                }
+              ]
+            },
+            {
+              "value": 0.0,
+              "states": [
+                {
+                  "path": "Armature/Hips/Spine/Chest/Neck/Head/[VF752] mouth/Original Object/Socket Pose/BakedSpsSocket",
+                  "active": false
+                }
+              ]
+            }
+          ],
+          "errors": []
+        }
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

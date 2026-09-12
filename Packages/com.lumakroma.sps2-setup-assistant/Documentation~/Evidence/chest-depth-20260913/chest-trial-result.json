@@ -1,0 +1,33 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        {
+          "avatar": "MANUKA_lilToon",
+          "before": "(0.00000, 0.95566, 0.08458)",
+          "after": "(0.00000, 0.95566, 0.06115)",
+          "rearwardMeters": 0.0234319642,
+          "rotationChanged": false
+        },
+        {
+          "avatar": "Milltina",
+          "before": "(0.00000, 0.83532, 0.12495)",
+          "after": "(0.00000, 0.83532, 0.07065)",
+          "rearwardMeters": 0.0542957336,
+          "rotationChanged": false
+        },
+        {
+          "avatar": "rurune_None",
+          "before": "(0.00000, 1.02553, 0.10400)",
+          "after": "(0.00000, 1.02553, 0.10128)",
+          "rearwardMeters": 0.00272317231,
+          "rotationChanged": false
+        }
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

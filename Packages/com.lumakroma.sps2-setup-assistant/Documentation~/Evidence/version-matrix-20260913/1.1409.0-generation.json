@@ -1,0 +1,38 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        "version=1.1409.0",
+        "canGenerate=True",
+        "sps2=True",
+        "path=True",
+        "collapse=True",
+        "localTangents=True",
+        "depth=True",
+        "publicAttachment=True",
+        "notices=",
+        "generated=True;message=",
+        "sockets=15",
+        "mouthStops=3",
+        "effective={}",
+        "effectivePenetration=True;instant=True;legacy=True",
+        "apply=True;posePreserved=True;message=",
+        "regenerated=True;message=",
+        "longPlug=True;message=",
+        "plug=True;message=",
+        "ownedCustomScripts=0",
+        "preprocess=True",
+        "actualErrors=",
+        "menuRoots=SPS2",
+        "menusWithin8=True",
+        "mouthMenu=1",
+        "depthBindings=1",
+        "localOnlySaved=False;default=0"
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

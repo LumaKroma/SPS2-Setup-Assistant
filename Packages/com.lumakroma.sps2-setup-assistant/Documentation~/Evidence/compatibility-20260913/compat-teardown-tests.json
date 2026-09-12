@@ -1,0 +1,60 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Test job status retrieved.",
+    "data": {
+      "job_id": "5bc169376cd24014a2eadad77977609c",
+      "status": "succeeded",
+      "mode": "EditMode",
+      "started_unix_ms": 1789231064665,
+      "finished_unix_ms": 1789231066375,
+      "last_update_unix_ms": 1789231066375,
+      "progress": {
+        "completed": 2,
+        "total": 173,
+        "current_test_full_name": null,
+        "current_test_started_unix_ms": 1789231066095,
+        "last_finished_test_full_name": "LumaKroma.Sps2SetupAssistant.Editor.Tests.VrcFuryCapabilitiesTests.ReservedBuildNameOnPlugIsRejectedBeforeNativeRenaming",
+        "last_finished_unix_ms": 1789231066097,
+        "stuck_suspected": false,
+        "editor_is_focused": false,
+        "blocked_reason": null,
+        "failures_so_far": [],
+        "failures_capped": false
+      },
+      "error": null,
+      "result": {
+        "mode": "EditMode",
+        "summary": {
+          "total": 2,
+          "passed": 2,
+          "failed": 0,
+          "skipped": 0,
+          "durationSeconds": 0.6602113,
+          "resultState": "Passed"
+        },
+        "results": [
+          {
+            "name": "LegacyNameIdentityCanBeRecoveredAndMigratedToOscId",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.VrcFuryCapabilitiesTests.LegacyNameIdentityCanBeRecoveredAndMigratedToOscId",
+            "state": "Passed",
+            "durationSeconds": 0.0009464,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          },
+          {
+            "name": "ReservedBuildNameOnPlugIsRejectedBeforeNativeRenaming",
+            "fullName": "LumaKroma.Sps2SetupAssistant.Editor.Tests.VrcFuryCapabilitiesTests.ReservedBuildNameOnPlugIsRejectedBeforeNativeRenaming",
+            "state": "Passed",
+            "durationSeconds": 0.0015729,
+            "message": null,
+            "stackTrace": null,
+            "output": ""
+          }
+        ]
+      }
+    }
+  }
+}

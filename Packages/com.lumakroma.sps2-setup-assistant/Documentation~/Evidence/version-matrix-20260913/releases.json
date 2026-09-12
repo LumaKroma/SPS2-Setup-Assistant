@@ -1,0 +1,22 @@
+[
+  {
+    "version": "1.900.0",
+    "url": "https://github.com/VRCFury/VRCFury/releases/download/com.vrcfury.vrcfury/1.900.0/com.vrcfury.vrcfury-1.900.0-vcc.zip",
+    "zipSha256": "6AE5ECFEEB8880E6B8BB0D94CCEC74D0B462979655FA52803757CDCE04FDD7EB"
+  },
+  {
+    "version": "1.1200.0",
+    "url": "https://github.com/VRCFury/VRCFury/releases/download/com.vrcfury.vrcfury/1.1200.0/com.vrcfury.vrcfury-1.1200.0-vcc.zip",
+    "zipSha256": "0238441D5A39B69D4B6608231DAFD121D5BAFDF703B8EA0AD8F7E9A110DEBF5D"
+  },
+  {
+    "version": "1.1349.0",
+    "url": "https://github.com/VRCFury/VRCFury/releases/download/com.vrcfury.vrcfury/1.1349.0/com.vrcfury.vrcfury-1.1349.0-vcc.zip",
+    "zipSha256": "ABBAF01AB3AE2DDC8E067516416F63A1C1F63E9D683AEC6C845BBA651F22D43E"
+  },
+  {
+    "version": "1.1409.0",
+    "url": "https://github.com/VRCFury/VRCFury/releases/download/com.vrcfury.vrcfury/1.1409.0/com.vrcfury.vrcfury-1.1409.0-vcc.zip",
+    "zipSha256": "9CDDC183F3B9287FF22D13636E3F015BCBE81779E6758397F8A5A28F30A089C4"
+  }
+]

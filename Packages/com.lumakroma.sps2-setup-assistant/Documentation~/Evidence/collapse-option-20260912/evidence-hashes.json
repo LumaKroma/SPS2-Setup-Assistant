@@ -1,0 +1,70 @@
+[
+  {
+    "file": "collapse-option-authoring-result.json",
+    "normalizedTextSha256": "12B3BBA4E39770F89D8BF63EE9D5B1060325D30E6D1D875126EB877745E37505"
+  },
+  {
+    "file": "collapse-option-authoring.cs",
+    "normalizedTextSha256": "83F26B6950ADCB83BC6208F1070997A373B4E75A39E7092F3E3B78DB6D2FA61F"
+  },
+  {
+    "file": "collapse-option-console-actual.json",
+    "normalizedTextSha256": "FFE367BF5EB0C224D19C86CE946C415CAF5FED57439D763B73B35B0A0C181DBB"
+  },
+  {
+    "file": "collapse-option-final-snapshot.json",
+    "normalizedTextSha256": "5B2B210715AEA47FB60915931F3AFFCB7FAA0EEF1823904D20AB918453D475A4"
+  },
+  {
+    "file": "collapse-option-off-build-result.json",
+    "normalizedTextSha256": "F1BB2F2E7AFDFD915359798DCF7B2D1AC482BFE60F0ACCB1372C87FF4A0688BD"
+  },
+  {
+    "file": "collapse-option-off-build.cs",
+    "normalizedTextSha256": "528440517F6EE4166E9A78F765E7621BA9AB79ADCFA23DACFC29F5127429DCF7"
+  },
+  {
+    "file": "collapse-option-on-ma-result.json",
+    "normalizedTextSha256": "620DC42B74A5478858DDE17D7D64B61E4F6FA16E7847C0DBBFECB8A0AE1A74CE"
+  },
+  {
+    "file": "collapse-option-on-ma.cs",
+    "normalizedTextSha256": "E3EE78A462635C8418F8BEC177FF22455D3B447BFE8AEE6F91CCAD59C155255F"
+  },
+  {
+    "file": "collapse-option-profile-result.json",
+    "normalizedTextSha256": "B589037CCF761DF7E38F954310F25475854FCA99702023CA598D53D45EE4ED75"
+  },
+  {
+    "file": "collapse-option-profile.cs",
+    "normalizedTextSha256": "F85AD9CD88292E6FDADE561A8B703C6E87FA1306D186DA16FBDAD10B0C90B5F4"
+  },
+  {
+    "file": "collapse-option-tests.json",
+    "normalizedTextSha256": "CDA03319AE5EAB64F7A40D9F65B2C18A16D5F0FCC2045186BCCBD358FAC25BAB"
+  },
+  {
+    "file": "collapse-option-visual-result.json",
+    "normalizedTextSha256": "9EB0DFCAC12CBDFC496EE65F3B24BF14F82AB5D3E5A76DD3BF2FCF3B51F010E9"
+  },
+  {
+    "file": "collapse-option-visual.cs",
+    "normalizedTextSha256": "7FA76A42F826DCC1BE5FE96E18A7DE7534C727EDC7CBFE5540EE12851363A398"
+  },
+  {
+    "file": "collapse-option-window.json",
+    "normalizedTextSha256": "41E942E94C759C25D4958B8A4552FF8069D4373E678D970C6F7A8816C389D28C"
+  },
+  {
+    "file": "local-preview.json",
+    "normalizedTextSha256": "1BD295E6705C7378500BDFABB36986282D97E78F59778D7A075189972C5C5099"
+  },
+  {
+    "file": "README.md",
+    "normalizedTextSha256": "1A61BA0DA87BF4738E97BF4DEBAF2D664786AFE01857478B561722D046994534"
+  },
+  {
+    "file": "validated-source-hashes.json",
+    "normalizedTextSha256": "FF21D9475898364F7E3ADB4FFE5CF2FA95F29EBEA42101F02D39B4599E19BB04"
+  }
+]

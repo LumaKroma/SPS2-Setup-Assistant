@@ -1,0 +1,8 @@
+{
+  "rawLinesBefore": 38251,
+  "rawLinesAfter": 38251,
+  "comparedLines": 29969,
+  "ignoredLines": 8282,
+  "remainingDifferences": 0,
+  "reason": "Serialized object-reference child m_FileID is clone-instance-specific; parent reference paths remain compared. oscId character-array children duplicate string value already normalized by replacing generated root.identity; normalized oscId parent strings remain compared."
+}

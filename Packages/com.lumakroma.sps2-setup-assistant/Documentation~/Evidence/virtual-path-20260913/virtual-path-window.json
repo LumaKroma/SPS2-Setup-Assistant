@@ -1,0 +1,19 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": {
+        "avatar": "MANUKA_lilToon",
+        "bound": true,
+        "remembered": true,
+        "generated": true,
+        "playing": false,
+        "sceneSaved": false,
+        "regenerated": false
+      },
+      "compiler": "roslyn"
+    }
+  }
+}

@@ -1,0 +1,63 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": {
+        "layers": [
+          {
+            "layer": "Fixture (NO VALID ANIMATIONS)",
+            "hasDirect": false,
+            "states": [
+              {
+                "name": "Idle",
+                "wd": false,
+                "direct": false
+              },
+              {
+                "name": "Warning from VRCFury!\nThis layer contains no valid animations,\nand will be removed during a real upload,\nMake sure the animated objects / components\nactually exist at the paths used in the\nclips",
+                "wd": true,
+                "direct": false
+              }
+            ]
+          },
+          {
+            "layer": "[VF10] IsObjectEnabledService (NO VALID ANIMATIONS)",
+            "hasDirect": true,
+            "states": [
+              {
+                "name": "DBT",
+                "wd": true,
+                "direct": true
+              },
+              {
+                "name": "Warning from VRCFury!\nThis layer contains no valid animations,\nand will be removed during a real upload,\nMake sure the animated objects / components\nactually exist at the paths used in the\nclips",
+                "wd": true,
+                "direct": false
+              }
+            ]
+          },
+          {
+            "layer": "[VF66] LayerToTreeService",
+            "hasDirect": true,
+            "states": [
+              {
+                "name": "DBT",
+                "wd": true,
+                "direct": true
+              }
+            ]
+          }
+        ],
+        "trialObjects": [],
+        "originals": [
+          "MANUKA_lilToon",
+          "Milltina",
+          "rurune_None"
+        ]
+      },
+      "compiler": "roslyn"
+    }
+  }
+}

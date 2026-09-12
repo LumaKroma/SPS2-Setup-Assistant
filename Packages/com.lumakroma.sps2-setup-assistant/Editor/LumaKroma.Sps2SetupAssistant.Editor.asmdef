@@ -1,0 +1,19 @@
+{
+  "name": "LumaKroma.Sps2SetupAssistant.Editor",
+  "rootNamespace": "LumaKroma.Sps2SetupAssistant.Editor",
+  "references": [
+    "LumaKroma.Sps2SetupAssistant.Authoring",
+    "VRC.SDK3A"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [],
+  "versionDefines": [],
+  "noEngineReferences": false
+}

@@ -1,0 +1,1 @@
+Independent read-only review: no blocking defect after final coordinate transform correction. Existing nonreplacement intentionally preserves old radius offsets; regeneration required. Uniform scale/yaw evidence does not establish shear or nonuniform-scale behavior.

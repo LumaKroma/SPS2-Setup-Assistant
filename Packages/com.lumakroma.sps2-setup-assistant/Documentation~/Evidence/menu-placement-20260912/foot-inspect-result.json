@@ -1,0 +1,43 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": {
+        "bones": [
+          {
+            "name": "Hips",
+            "position": "(0.00000, 0.78332, 0.03207)"
+          },
+          {
+            "name": "LeftUpperLeg",
+            "position": "(-0.05520, 0.71279, 0.02055)"
+          },
+          {
+            "name": "LeftFoot",
+            "position": "(-0.05520, 0.09410, -0.00464)"
+          },
+          {
+            "name": "LeftToes",
+            "position": null
+          }
+        ],
+        "footCount": 1422,
+        "footMin": "(-0.05072, 0.02361, -0.01075)",
+        "footMax": "(-0.04790, 0.10039, 0.11217)",
+        "blendshapes": [
+          {
+            "name": "Foot_heel",
+            "weight": 100.0
+          },
+          {
+            "name": "Shrink_stocking (default)",
+            "weight": 100.0
+          }
+        ]
+      },
+      "compiler": "roslyn"
+    }
+  }
+}

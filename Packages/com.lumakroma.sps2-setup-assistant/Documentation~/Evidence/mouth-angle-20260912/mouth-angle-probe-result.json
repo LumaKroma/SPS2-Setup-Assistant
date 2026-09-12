@@ -1,0 +1,18 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        "position=(0.000000, 1.091941, 0.071624)",
+        "direction=(0.000000, -0.551994, 0.833848)",
+        "pitchDegrees=33.50393",
+        "exitPositionError=0",
+        "exitDirectionDot=-1",
+        "manualRotationPreserved=True"
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

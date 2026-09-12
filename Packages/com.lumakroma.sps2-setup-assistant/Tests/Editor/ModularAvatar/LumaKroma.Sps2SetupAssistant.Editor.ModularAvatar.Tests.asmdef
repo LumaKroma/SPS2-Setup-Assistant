@@ -1,0 +1,32 @@
+{
+  "name": "LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.Tests",
+  "rootNamespace": "LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.Tests",
+  "references": [
+    "LumaKroma.Sps2SetupAssistant.Editor",
+    "LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar",
+    "nadena.dev.modular-avatar.core"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": false,
+  "defineConstraints": [
+    "UNITY_INCLUDE_TESTS",
+    "LUMAKROMA_SPS2_HAS_MODULAR_AVATAR"
+  ],
+  "versionDefines": [
+    {
+      "name": "nadena.dev.modular-avatar",
+      "expression": "[1.18.1,2.0.0)",
+      "define": "LUMAKROMA_SPS2_HAS_MODULAR_AVATAR"
+    }
+  ],
+  "noEngineReferences": false,
+  "optionalUnityReferences": [
+    "TestAssemblies"
+  ]
+}

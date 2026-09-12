@@ -1,0 +1,1 @@
+var c=LumaKroma.Sps2SetupAssistant.Editor.Compatibility.VrcFuryCapabilities.Current; return new {c.Version,c.HasSps,c.Sps2,c.CanGenerate,c.BlockReason,c.Path,c.Collapse,c.Depth,c.Legacy,c.Instant,c.TestPlug,c.PublicAttachment,c.Tangents,c.LocalTangents,notes=c.Notices()};

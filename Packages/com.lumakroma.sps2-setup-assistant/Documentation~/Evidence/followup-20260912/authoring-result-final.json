@@ -1,0 +1,18 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        "windowRecovered=True;id=GlobalObjectId_V1-2-5e69b4d9cf208b143ad3f172d536eb66-1568551194290255110-1799874201",
+        "mouth;position=(0.00000, 1.09194, 0.07162);axis=(0.00000, 0.00000, 1.00000);exitError=0;exitAxisDot=-1",
+        "anus;position=(0.00000, 0.68295, -0.02368);axis=(0.00000, -0.92939, -0.36911);exitError=0;exitAxisDot=-1",
+        "meshVertices=3729;length=1.5;meshPersistent=True;tipGap=0.08000008",
+        "reuse=True;twoPlugs=True",
+        "regenerationRetains=True"
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

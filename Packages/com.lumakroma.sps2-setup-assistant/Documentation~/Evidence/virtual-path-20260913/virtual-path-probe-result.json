@@ -1,0 +1,25 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        "mouthOnly;owned=mouth,nippleLeft,nippleRight,chest,handLeft,handRight,hands,vagina,footLeft,footRight,feet;nativeCount=11;stops=3;referenceError=0;rotationError=0",
+        "validConstraints=True",
+        "collapseOnlyPreserves=True",
+        "parentOffClears=True",
+        "parentOnRestores=True",
+        "anusOnly;owned=nippleLeft,nippleRight,chest,handLeft,handRight,hands,vagina,anus,footLeft,footRight,feet;nativeCount=11;stops=3;referenceError=0;rotationError=0",
+        "validConstraints=True",
+        "collapseOnlyPreserves=True",
+        "parentOffClears=True",
+        "parentOnRestores=True",
+        "neitherHasNoPath=True",
+        "undoRestoresAnusPath=True",
+        "redoRemovesPath=True"
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

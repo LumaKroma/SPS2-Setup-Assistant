@@ -1,0 +1,29 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        "rotated=False;sourceShapesUnchanged=True",
+        "rotated=True;sourceShapesUnchanged=True",
+        "mouth;positionError=0.1823855;angleError=0",
+        "earLeft;positionError=0.1907553;angleError=0",
+        "earRight;positionError=0.1907553;angleError=0",
+        "nippleLeft;positionError=0.1601612;angleError=0",
+        "nippleRight;positionError=0.1601613;angleError=0",
+        "chest;positionError=0.1598997;angleError=0",
+        "handLeft;positionError=0.01168382;angleError=4.138472",
+        "handRight;positionError=0.0116837;angleError=4.138472",
+        "hands;positionError=0.01168382;angleError=1.241102",
+        "vagina;positionError=0.120028;angleError=11.46967",
+        "anus;positionError=0.2012937;angleError=90.57841",
+        "thighs;positionError=9.692518E-08;angleError=0",
+        "footLeft;positionError=0.01392812;angleError=0",
+        "footRight;positionError=0.01392826;angleError=0",
+        "feet;positionError=0.01102621;angleError=0"
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

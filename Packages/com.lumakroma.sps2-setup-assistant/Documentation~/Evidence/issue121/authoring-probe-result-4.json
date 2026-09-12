@@ -1,0 +1,28 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": [
+        "generate=True",
+        "sixteenIncludingCustom=True",
+        "undoRemovesGeneratedRoot=True",
+        "redoRestoresMetadataAndReferences=True",
+        "nonreplace=True",
+        "nonreplacePreservesIdentityAndManualPose=True",
+        "customRebindPreservesWorldPose=True",
+        "plug=True",
+        "regenerate=True",
+        "regenerateStableIdentityNewRoot=True",
+        "regeneratePreservesSinglePlug=True",
+        "regenerateRestoresAutoPose=True",
+        "prefabReloadMetadata=True",
+        "prefabReloadPlug=True",
+        "prefabReloadCustomReference=True",
+        "prefabReloadRendererReference=True"
+      ],
+      "compiler": "roslyn"
+    }
+  }
+}

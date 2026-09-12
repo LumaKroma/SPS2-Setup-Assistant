@@ -1,0 +1,27 @@
+{
+  "name": "LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar",
+  "rootNamespace": "LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar",
+  "references": [
+    "LumaKroma.Sps2SetupAssistant.Editor",
+    "nadena.dev.modular-avatar.core"
+  ],
+  "includePlatforms": [
+    "Editor"
+  ],
+  "excludePlatforms": [],
+  "allowUnsafeCode": false,
+  "overrideReferences": false,
+  "precompiledReferences": [],
+  "autoReferenced": true,
+  "defineConstraints": [
+    "LUMAKROMA_SPS2_HAS_MODULAR_AVATAR"
+  ],
+  "versionDefines": [
+    {
+      "name": "nadena.dev.modular-avatar",
+      "expression": "[1.18.1,2.0.0)",
+      "define": "LUMAKROMA_SPS2_HAS_MODULAR_AVATAR"
+    }
+  ],
+  "noEngineReferences": false
+}
