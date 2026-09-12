@@ -260,8 +260,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         private void SetMessage(string text, bool success) { message = text; messageType = success ? MessageType.Warning : MessageType.Error; Repaint(); }
         private void Toggle(string label, bool value, Action<bool> set, string tooltip = null)
         {
-            bool next = EditorGUILayout.ToggleLeft(new GUIContent(label, tooltip), value);
-            if (next != value) Change(() => set(next));
+            using (new EditorGUILayout.HorizontalScope())
+            {
+                bool next = EditorGUILayout.ToggleLeft(new GUIContent(label, tooltip), value);
+                if (!string.IsNullOrEmpty(tooltip))
+                {
+                    var icon = EditorGUIUtility.IconContent("_Help").image;
+                    var help = icon != null ? new GUIContent(icon, tooltip) : new GUIContent("?", tooltip);
+                    GUILayout.Label(help, GUILayout.Width(18), GUILayout.Height(EditorGUIUtility.singleLineHeight));
+                }
+                if (next != value) Change(() => set(next));
+            }
         }
         private void Change(Action change) { Undo.RecordObject(this, "SPS2 設定"); change(); EditorUtility.SetDirty(this); Repaint(); }
     }

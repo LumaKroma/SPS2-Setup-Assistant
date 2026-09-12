@@ -126,7 +126,10 @@ groups were added manually, changing that part's managed depth configuration
 stops instead of deleting the extra groups.
 
 The setup window provides hover tooltips for 貫通, Auto Mode, 後方互換性 and
-インスタント起動, describing their effects and use conditions. Loading settings
+インスタント起動, describing their effects and use conditions. Each tooltip has
+a visible help/question icon at the right of its row; label and icon expose the
+same explanation. The Instant authoring option defaults OFF for new setups;
+saved explicit ON/OFF preferences remain unchanged. Loading settings
 upgrades only the built-in chest's former default label 胸の間 to 胸; custom
 parts/names and internal IDs remain unchanged. Apply persists the updated label
 to generated menus; changing this label does not require pose regeneration.

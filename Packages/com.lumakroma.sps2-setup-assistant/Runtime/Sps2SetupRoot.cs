@@ -38,7 +38,7 @@ namespace LumaKroma.Sps2SetupAssistant
         public bool showInternalThickness;
         public bool autoMode = true;
         public bool legacy = true;
-        public bool instant = true;
+        public bool instant;
         public bool localOnly;
         public bool modularAvatar;
 

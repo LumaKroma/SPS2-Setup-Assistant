@@ -1,0 +1,16 @@
+{
+  "status": "success",
+  "result": {
+    "success": true,
+    "message": "Code executed successfully.",
+    "data": {
+      "result": {
+        "newDefaultOff": true,
+        "copyPreservesTrue": true,
+        "jsonPreservesTrue": true,
+        "helpIconAvailable": true
+      },
+      "compiler": "roslyn"
+    }
+  }
+}

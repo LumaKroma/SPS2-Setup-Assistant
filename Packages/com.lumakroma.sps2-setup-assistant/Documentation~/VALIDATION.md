@@ -1,3 +1,15 @@
+# Help icons and Instant authoring default — 2026-09-12
+
+Baseline 49d95e9839194d4f54a7beab95e17982fef231af. Visible native help icons
+added only to nonempty tooltips; labels/icons share the same text. Instant
+defaults OFF in newly created setup settings, preserving explicitly saved
+values through Copy/JSON. Public Editor probe checks the default, persistence
+and built-in help texture availability; compile/window readiness and Console
+checked in the same owned warm host. Evidence: `Evidence/help-icon-20260912`.
+This changes authoring default and presentation only, not the existing Instant
+runtime flow. No automated hover visual check or new VRC PC evidence. Original
+avatar not regenerated or scene saved. Previous VRC PC gates remain.
+
 # Chest label and setup tooltips — 2026-09-12
 
 Baseline d378bd63a5cf24a6758819733950c2a5be7d7848. UI-only delta: default chest
