@@ -120,7 +120,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             if (!Sps2) notes.Add("SPS無印（SPS1）を検出しました。対応する基本ソケットは生成できますが、SPS2 への更新を推奨します。");
             void Missing(bool available, string feature) { if (!available) notes.Add(feature + " はこの版では利用できません（生成対象外）。"); }
             Missing(Path, "貫通");
-            if (Path) { Missing(Collapse, "体内で太さを0にする"); Missing(Tangents, "貫通経路の曲線調整（標準の経路補間を使用）"); }
+            if (Path) { Missing(Collapse, "首付近で太さを0にする"); Missing(Tangents, "貫通経路の曲線調整（標準の経路補間を使用）"); }
             Missing(AutoMode, "Auto Mode"); Missing(Legacy, "後方互換性の切り替え"); Missing(Instant, "インスタント起動");
             Missing(LocalOnly, "Local Only"); Missing(Depth, "深度アクションの自動設定"); Missing(TestPlug, "テストプラグ");
             if (!RadiusOffset) notes.Add("Radius Offset 非対応のため、標準のソケット配置を使用します。");

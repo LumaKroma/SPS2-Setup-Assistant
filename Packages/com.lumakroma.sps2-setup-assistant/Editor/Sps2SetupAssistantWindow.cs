@@ -132,13 +132,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         {
             GUILayout.Space(12);
             CompatibleToggle("貫通", settings.penetration, v => settings.penetration = v, VrcFuryCapabilities.Current.Path,
-                "口-肛門の間にプラグが通る経路を生成します。非常に長いプラグの場合、体を貫通します。\n「体内で太さを0にする」をオンにすると、体内の太さを0にし、出口の外では元の太さに戻します。");
+                "口-肛門の間にプラグが通る経路を生成します。非常に長いプラグの場合、体を貫通します。\n「首付近で太さを0にする」をオンにすると、口の入口では太さを保ち、首付近から体内の太さを0にします。出口の外では元の太さに戻します。");
             if (settings.penetration)
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     GUILayout.Space(18);
-                    CompatibleToggle("体内で太さを0にする", !settings.showInternalThickness, v => settings.showInternalThickness = !v, VrcFuryCapabilities.Current.Collapse);
+                    CompatibleToggle("首付近で太さを0にする", !settings.showInternalThickness, v => settings.showInternalThickness = !v, VrcFuryCapabilities.Current.Collapse);
                 }
             }
             CompatibleToggle("Auto Mode", settings.autoMode, v => settings.autoMode = v, VrcFuryCapabilities.Current.AutoMode,
