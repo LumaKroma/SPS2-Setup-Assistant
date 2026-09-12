@@ -23,6 +23,14 @@ the earlier section and evidence describe the previous implementation only.
 - Independent read-only review found and resolved scene-discard snapshot and
   legacy Plug migration issues. No further concrete blocker was reported.
 
+Final Console audit also found an existing polymorphic depth-action copy error:
+`CopyFromSerializedProperty` could not initialize the managed-reference array.
+The guarded adapter now copies group fields and managed-reference action values.
+A real probe verified BlendShape renderer, clip wrapper reference, object target,
+TurnOff and a 3-to-1 action update, with zero Console errors after clearing and
+rerunning. Native/MA SDK, OFF cycling and all 21 EditMode tests passed again;
+the `*-final.json` evidence and current source manifest cover this correction.
+
 The empty WD OFF source-controller fixture stalled in a native VRCFury dialog
 before this repair's final checks; that owned session was aborted, not passed.
 WD OFF source-avatar compatibility, visual placement across three avatars,

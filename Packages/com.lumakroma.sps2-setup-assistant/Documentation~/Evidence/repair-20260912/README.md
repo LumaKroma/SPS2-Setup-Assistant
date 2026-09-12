@@ -14,6 +14,11 @@ snapshots and test Prefabs in the owned sandbox. They are not customer setup scr
 in `discard-probe.cs`; its underlying generator source is the same. The native
 `menu-probe-result.json` predates the final immutable storage snapshot correction;
 `menu-ma-probe-result.json` validates the corrected generation and full SDK route.
+The later `menu-probe-final.json`, `menu-ma-probe-final.json` and
+`editmode-final-results.json` also include the depth-action managed-reference
+transfer correction. `depth-probe-result-2.json` verifies three typed references,
+TurnOff and an action-count reduction; `depth-console-after.json` records a clean
+Console after that reproduction. The source manifest identifies this final adapter.
 
 Placement research: https://github.com/wholesomevr/SPS-Configurator/ at
 `a8102b875b9a5a51982a0201685a0ee42cb14025`. Observed baked mesh surface queries,

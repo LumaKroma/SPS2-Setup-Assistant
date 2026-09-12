@@ -130,11 +130,37 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 target.FindProperty("enableAuto").boolValue = setup.autoMode;
                 target.FindProperty("useLights").boolValue = setup.legacy;
                 target.FindProperty("addMenuItem").boolValue = true;
-                target.CopyFromSerializedProperty(source.FindProperty("depthActions2"));
+                CopyDepthActions(source, target);
                 target.ApplyModifiedProperties();
                 PrefabUtility.RecordPrefabInstancePropertyModifications(component);
             }
             finally { UnityEngine.Object.DestroyImmediate(temporary); }
+        }
+
+        private static void CopyDepthActions(SerializedObject source, SerializedObject target)
+        {
+            var from = Require(source, "depthActions2", SerializedPropertyType.Generic);
+            var to = Require(target, "depthActions2", SerializedPropertyType.Generic);
+            to.arraySize = from.arraySize;
+            for (int i = 0; i < from.arraySize; i++)
+            {
+                string path = $"depthActions2.Array.data[{i}].";
+                Require(target, path + "range", SerializedPropertyType.Vector2).vector2Value = Require(source, path + "range", SerializedPropertyType.Vector2).vector2Value;
+                Require(target, path + "units", SerializedPropertyType.Enum).enumValueIndex = Require(source, path + "units", SerializedPropertyType.Enum).enumValueIndex;
+                foreach (string field in new[] { "enableSelf", "reverseClip" })
+                    Require(target, path + field, SerializedPropertyType.Boolean).boolValue = Require(source, path + field, SerializedPropertyType.Boolean).boolValue;
+                Require(target, path + "smoothingSeconds", SerializedPropertyType.Float).floatValue = Require(source, path + "smoothingSeconds", SerializedPropertyType.Float).floatValue;
+                var actions = Require(source, path + "actionSet.actions", SerializedPropertyType.Generic);
+                var destination = Require(target, path + "actionSet.actions", SerializedPropertyType.Generic);
+                destination.arraySize = actions.arraySize;
+                for (int n = 0; n < actions.arraySize; n++)
+                {
+                    string actionPath = path + $"actionSet.actions.Array.data[{n}]";
+                    // Generic array copying cannot initialize polymorphic SerializeReference entries.
+                    Require(target, actionPath, SerializedPropertyType.ManagedReference).managedReferenceValue =
+                        Require(source, actionPath, SerializedPropertyType.ManagedReference).managedReferenceValue;
+                }
+            }
         }
 
         public static void ConfigureCommon(Component component, SetupSettings setup)
