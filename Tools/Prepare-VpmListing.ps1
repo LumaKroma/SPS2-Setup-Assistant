@@ -7,7 +7,7 @@ $source = Get-Content (Join-Path $root 'source.json') -Raw | ConvertFrom-Json
 $releases = @()
 for ($page=1; ; $page++) {
     # Public unauthenticated endpoint deliberately excludes private draft assets.
-    $batch = @(Invoke-RestMethod "https://api.github.com/repos/LumaKroma/SPS2-Setup-Assistant/releases?per_page=100&page=$page")
+    $batch = @(Invoke-RestMethod "https://api.github.com/repos/LumaKroma/SPS2-Setup-Assistant/releases?per_page=100&page=$page" | ForEach-Object { $_ })
     $releases += $batch
     if ($batch.Count -lt 100) { break }
 }
