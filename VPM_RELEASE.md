@@ -1,5 +1,19 @@
 # VPM release handoff
 
+## 1.0.1 patch (approved 2026-09-20)
+
+The owner authorized publishing the breast placement repair in Issue 180 as a
+patch release. Recognize numbered breast bone chains and exclude independent
+outfit skeletons from body breast selection. Existing generated positions remain
+editable and require explicit regeneration to adopt the new automatic placement.
+The tested implementation is 9c5f4e9ba2bb1b9be674d02d59961f60fe2b84ac;
+release preparation changes metadata only. See Documentation~/VALIDATION.md for
+33/33 Editor tests and real avatar comparison evidence. VRC PC, Airi and a fresh
+1.0.1 VCC/ALCOM installation remain unverified; publication approval is not a
+runtime validation result. Preserve the published 1.0.0 release and listing entry.
+
+## Historical 1.0.0 approval
+
 Version 1.0.0 is approved for publication by the owner on 2026-09-13, from
 implementation baseline 5ddff4837122d53526112f01d6f1c6732961cd65 (Issue121).
 The owner reported VRC PC PASS and accepted the final feature removals.
