@@ -1,5 +1,28 @@
 # VPM release handoff
 
+## Native unitypackage distribution
+
+The 1.0.1 unitypackage addition is owner-approved (2026-09-20). Keep the published
+VPM ZIP immutable. `Tools/Prepare-UnityPackage.ps1` verifies that ZIP's SHA256 and
+stages it in a fresh Unity project under `Assets/LumaKroma/SPS2SetupAssistant`.
+Only the exact `FullSetupGenerator.PackagePath` declaration changes; asset and
+script GUIDs are preserved. A Japanese `UNITYPACKAGE.md` explains prerequisites,
+fixed installation path and switching between mutually exclusive VPM/Assets installs.
+
+Capture the script's JSON output as the staging manifest. Use Unity's public
+`AssetDatabase.ExportPackage` on that exact root with `Recurse`, never
+`IncludeDependencies`. Audit with `python Tools/Test-UnityPackage.py <archive>
+<staging-manifest.json>`. Verify clean import, compilation, test Plug assets and
+generation in an isolated dependency-equipped project before uploading the native
+archive to the matching GitHub Release. Do not distribute validation avatars,
+Editor tests, dependencies or internal evidence. Record validation separately;
+Editor import checks do not establish VRC PC PASS.
+
+Standalone SHA256SUMS files are internal build evidence, not Release attachments.
+Retain ZIP hash validation and the VPM manifest's zipSHA256. Under the existing
+Pages environment policy, dispatch listing.yml on reviewed main after publishing;
+release-tag deployment is not permitted by that environment.
+
 ## 1.0.1 patch (approved 2026-09-20)
 
 The owner authorized publishing the breast placement repair in Issue 180 as a
