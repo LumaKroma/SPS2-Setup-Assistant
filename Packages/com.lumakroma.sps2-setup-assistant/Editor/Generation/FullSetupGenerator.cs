@@ -65,15 +65,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             public Quaternion rotation;
         }
 
-        private static Transform Breast(VRCAvatarDescriptor avatar, bool left)
-        {
-            string[] names = left ? new[] { "breastl", "bustl", "munel", "leftbreast", "leftbust", "breastleft" }
-                : new[] { "breastr", "bustr", "muner", "rightbreast", "rightbust", "breastright" };
-            var bones = avatar.GetComponentsInChildren<SkinnedMeshRenderer>(true).SelectMany(r => r.bones).Where(t => t != null).Distinct();
-            var matches = bones.Where(t => names.Contains(t.name.Replace("_", "").Replace(".", "").Replace(" ", "").ToLowerInvariant())).ToArray();
-            return matches.Length == 1 ? matches[0] : null;
-        }
-
         private static Placement Place(SocketSettings part, VRCAvatarDescriptor avatar, BodyBasis basis, AvatarSurface surface)
         {
             var animator = avatar.GetComponent<Animator>();
@@ -85,6 +76,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             var right = avatar.transform.right;
             Vector3 offset = Vector3.zero, direction = forward;
             var chest = Bone(HumanBodyBones.UpperChest, HumanBodyBones.Chest, HumanBodyBones.Spine);
+            var breastTorso = Bone(HumanBodyBones.Chest, HumanBodyBones.UpperChest, HumanBodyBones.Spine);
             if (part.custom)
             {
                 if (part.target == null || !part.target.IsChildOf(avatar.transform)) return null;
@@ -105,7 +97,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     direction = part.id == "earLeft" ? -right : right;
                     break;
                 case "nippleLeft": case "nippleRight":
-                    p.first = Breast(avatar, part.id == "nippleLeft");
+                    p.first = surface.Breast(breastTorso, part.id == "nippleLeft");
                     p.followTransform = p.first != null;
                     if (p.first == null) p.first = chest;
                     p.bone = Bone(HumanBodyBones.UpperChest) != null ? HumanBodyBones.UpperChest : Bone(HumanBodyBones.Chest) != null ? HumanBodyBones.Chest : HumanBodyBones.Spine;
@@ -113,7 +105,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     if (!p.followTransform) offset += right * h * .045f * (part.id == "nippleLeft" ? -1 : 1);
                     break;
                 case "chest":
-                    p.first = Breast(avatar, true); p.second = Breast(avatar, false);
+                    p.first = surface.Breast(breastTorso, true); p.second = surface.Breast(breastTorso, false);
                     offset = forward * h * .055f;
                     break;
                 case "vagina": case "anus":
