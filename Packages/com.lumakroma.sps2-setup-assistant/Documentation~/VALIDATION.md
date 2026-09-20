@@ -1,3 +1,26 @@
+# Breast candidate resolution — 2026-09-20 (Issue 180)
+
+Baseline 180d464611c4e676a12989899eace3a00d3c6404; Unity 2022.3.22f1,
+VRCFury 1.1403.0, existing private validation host. Core Editor tests: 33/33 PASS,
+including 7 resolver cases for supported names, numbered chains, skin-referenced
+ancestors, separate outfit skeletons, ordering, left/right and ambiguous roots.
+No dependency version or native runtime logic changes.
+
+Real generation comparisons: default SELESTIA 1.02, Milfy 1.4.2 and Lazuli 2.0.2
+retain exact nipple and central-chest positions and rotations. Yumeka 1.0.4 now
+resolves Breast_1_L/R, moving nipples up approximately 0.02470 m to the previously
+verified alias-control positions. SELESTIA with Danzai Bunny V1.2 (MA prefab,
+MaterialPack 1.6) now matches default SELESTIA positions; the prior 0.04020 m downward
+and 0.05881 m backward error is removed. Central chest generation also recovers
+for both previously unresolved cases. Diagnostic surface renders inspected for
+both fixes. All five fixtures preserve manually changed position/rotation on
+nonreplacement Apply. Final Console error query empty. Package validation and
+diff whitespace checks pass. Private fixture evidence remains in Issue 180's
+validation workspace; no third-party assets or images are distributed.
+
+This is Editor authoring evidence, not VRC PC, fresh VCC install or universal-avatar
+certification. Airi remains unavailable. Existing generated poses require explicit
+regeneration to adopt the new placement. Release/publication is not performed.
 # Unpublished PoC removal — 2026-09-13
 
 Baseline a49a4d9953e9d30f3df7ba99737f96905bd91123. User authorizes deleting

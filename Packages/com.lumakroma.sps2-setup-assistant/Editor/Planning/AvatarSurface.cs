@@ -50,6 +50,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Planning
         private readonly Dictionary<SkinnedMeshRenderer, Snapshot> snapshots = new Dictionary<SkinnedMeshRenderer, Snapshot>();
         private readonly SkinnedMeshRenderer body;
         public bool HasBody => body != null;
+        public Transform Breast(Transform torso, bool left)
+        {
+            var bones = body != null ? body.bones.AsEnumerable()
+                : avatar.GetComponentsInChildren<SkinnedMeshRenderer>(true).SelectMany(r => r.bones);
+            return BreastBoneResolver.Resolve(bones, torso, left);
+        }
         public AvatarSurface(VRCAvatarDescriptor avatar)
         {
             this.avatar = avatar;

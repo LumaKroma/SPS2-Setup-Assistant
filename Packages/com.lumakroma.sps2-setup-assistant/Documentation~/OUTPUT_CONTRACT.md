@@ -1,3 +1,15 @@
+# Breast selection repair — 2026-09-20
+
+Breast sockets use bones referenced by the measured body skin, restricted to the
+humanoid Chest subtree (UpperChest/Spine when Chest is absent). If the body skin
+cannot be identified, the same torso restriction applies to all skin references.
+Separate outfit armatures cannot compete with the body skeleton. Existing breast
+name aliases also accept numeric segments; matching descendants resolve to their
+matching ancestor root, even if only a descendant is referenced by the skin.
+Independent ambiguous roots remain unresolved. Surface measurement, pose math,
+native attachment and nonreplacement manual pose preservation are unchanged.
+The central chest socket shares this resolver. Existing setups require regeneration
+to adopt corrected automatic positions; ordinary Apply retains manual positions.
 # 1.0.0 promotion — 2026-09-13
 
 Owner approves current implementation as 1.0.0 and public VPM publication.
