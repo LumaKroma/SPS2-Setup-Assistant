@@ -37,7 +37,7 @@ jobs:
               tag_name: version, target_commitish: context.sha, name: `SPS2 Setup Assistant ${version}`,
               draft: true, prerelease: version.includes('-'),
               body: `Source: ${context.sha}\n\nDraft only. Complete the checks in VPM_RELEASE.md before publishing.` });
-            for (const name of [`${manifest.name}-${version}.zip`, 'package.json', 'SHA256SUMS']) {
+            for (const name of [`${manifest.name}-${version}.zip`, 'package.json']) {
               const data = fs.readFileSync(path.join('.artifacts/vpm', name));
               await github.rest.repos.uploadReleaseAsset({ owner, repo, release_id: release.data.id,
                 name, data, headers: { 'content-type': 'application/octet-stream', 'content-length': data.length } });
