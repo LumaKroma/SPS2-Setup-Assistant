@@ -1,5 +1,9 @@
 # Changelog
 
+## 1.0.2 — 2026-09-22
+- 貫通がオフのとき、口と肛門のソケット種別を Auto に変更。貫通がオンの場合は Ring を使用します。
+- 既存セットアップも設定を適用すると更新されます。手動調整した位置は維持されます。
+
 ## [0.1.0] - Unreleased
 
 - Add the private Socket-only, Humanoid-only proof-of-concept package skeleton.

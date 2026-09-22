@@ -388,6 +388,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                         }
                     }
                 }
+                foreach (var socket in root.sockets.Where(s => s.id == "mouth" || s.id == "anus"))
+                    VrcFuryCompatibility.ConfigurePenetrationMode(socket.socket, settings);
                 if (regenerate || structureChanged || previous == null || previous.penetration != settings.penetration ||
                     previous.parts.Any(p => (p.id == "mouth" || p.id == "anus") && p.included != settings.parts.Find(n => n.id == p.id)?.included))
                     ConfigurePath(root, avatar, settings, warnings, basis, surface);

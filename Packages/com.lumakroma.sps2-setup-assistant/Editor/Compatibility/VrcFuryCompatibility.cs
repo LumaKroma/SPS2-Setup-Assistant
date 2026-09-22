@@ -63,7 +63,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             RequireVersion();
             var wrapper = UndoComponentRegistration.Invoke(pose, "SPS2 セットアップ", () => VrcFuryApi.CreateSocket(pose));
             wrapper.SetName(part.name);
-            wrapper.SetMode(part.id == "mouth" || part.id == "anus" ? "Ring" : "Auto");
+            wrapper.SetMode(setup.penetration && (part.id == "mouth" || part.id == "anus") ? "Ring" : "Auto");
             if (part.id == "chest" || part.id == "handLeft" || part.id == "handRight" || part.id == "hands" ||
                 part.id == "footLeft" || part.id == "footRight" || part.id == "feet") wrapper.UseRadiusOffset();
             var component = FindSocket(pose);
@@ -160,6 +160,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             }
         }
 
+        public static void ConfigurePenetrationMode(Component component, SetupSettings setup)
+        {
+            var data = SocketData(component);
+            var mode = Require(data, "addLight", SerializedPropertyType.Enum);
+            string expected = setup.penetration ? "Ring" : "Auto";
+            if (mode.enumNames[mode.enumValueIndex] == expected) return;
+            Undo.RecordObject(component, "SPS2 貫通モード");
+            SetEnum(mode, expected);
+            data.ApplyModifiedProperties();
+            PrefabUtility.RecordPrefabInstancePropertyModifications(component);
+        }
         public static void ConfigureCommon(Component component, SetupSettings setup)
         {
             var data = SocketData(component);
