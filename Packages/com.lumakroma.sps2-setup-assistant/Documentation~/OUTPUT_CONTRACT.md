@@ -1,3 +1,10 @@
+# 1.0.2 socket mode amendment — 2026-09-22
+
+Mouth and anus use Ring only when effective penetration is enabled; otherwise Auto.
+Every Apply reconciles these two modes, including unchanged OFF settings from 1.0.1.
+Other socket modes and manual poses remain unchanged. Mode changes participate in Undo.
+Unsupported guided paths are effectively OFF and therefore use Auto.
+
 # Breast selection repair — 2026-09-20
 
 Breast sockets use bones referenced by the measured body skin, restricted to the
