@@ -1,3 +1,18 @@
+# 1.0.2 candidate verification — 2026-09-22
+
+Source cd4227d97c2ef619f0666e4a4d79419b5a51b241, Unity 2022.3.22f1,
+VRCFury 1.1403.0, fresh private p102 host (no reused Library).
+39/39 package Editor tests PASS, including 6 native mode/Undo tests.
+SELESTIA real generation: initial OFF Auto/Auto; Apply ON Ring/Ring with three
+path stops each; Apply Undo/Redo Auto/Ring; Apply OFF Auto/Auto with no path.
+Unchanged OFF repairs simulated previous Ring endpoints. Manual transforms and
+an unrelated manually selected Ring mode remain unchanged. Existing capability
+tests verify unsupported path settings become effective OFF.
+Native export audit PASS: 42 assets, 74 source/metadata files. No licensed avatar,
+dependency or tests included. Console warning/error query returned 0 entries.
+Native unitypackage reimport and the same real-generation sequence also PASS.
+Exact VRC PC and fresh VCC/ALCOM installation remain unverified.
+
 # Breast candidate resolution — 2026-09-20 (Issue 180)
 
 Baseline 180d464611c4e676a12989899eace3a00d3c6404; Unity 2022.3.22f1,
