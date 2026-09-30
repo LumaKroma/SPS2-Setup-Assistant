@@ -35,7 +35,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             Register();
             api.Execute(new ExecutionSettings(new Filter {
                 testMode = TestMode.EditMode,
-                testNames = new[] { "LumaKroma.Sps2SetupAssistant.Editor.Tests.FingerRingCalibrationTests.NativeParentConstraintMovesThenReturnsToCalibration" }
+                assemblyNames = new[] { "LumaKroma.Sps2SetupAssistant.Editor.Tests", "LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.Tests" }
             }));
         }
         [Serializable] private sealed class Result
@@ -47,7 +47,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
         {
             public void RunStarted(ITestAdaptor testsToRun) { }
             public void TestStarted(ITestAdaptor test) { }
-            public void TestFinished(ITestResultAdaptor result) { }
+            public void TestFinished(ITestResultAdaptor result)
+            {
+                if (!SessionState.GetBool(Pending, false) || result.FailCount == 0) return;
+                Directory.CreateDirectory(Path.GetDirectoryName(Output));
+                File.AppendAllText(Output + ".failures.txt", result.Test.FullName + "\n" + result.Message + "\n" + result.StackTrace + "\n");
+            }
             public void RunFinished(ITestResultAdaptor result)
             {
                 if (!SessionState.GetBool(Pending, false)) return;

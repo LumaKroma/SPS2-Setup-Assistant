@@ -64,6 +64,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
                 var a=new GameObject("Thumb").transform;a.SetParent(root.transform);
                 var b=new GameObject("Index").transform;b.SetParent(root.transform);
                 var target=new GameObject("Socket");target.transform.SetParent(root.transform);
+                // Undo.AddComponent is an authoring operation; the runtime fixture owns this component.
+                target.AddComponent<ParentConstraint>();
                 a.position=new Vector3(.04f,1,.03f);a.rotation=Quaternion.Euler(80,125,-35);
                 b.position=new Vector3(-.03f,1.04f,.02f);b.rotation=Quaternion.Euler(-45,10,65);
                 var center=new Vector3(.01f,1.025f,.065f);var facing=Quaternion.Euler(20,35,80);
