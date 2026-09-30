@@ -73,7 +73,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
 
         public static void Configure(GameObject anchor, Transform thumb, Transform index, FingerRingCalibration value)
         {
-            var constraint = anchor.GetComponent<ParentConstraint>() ?? Undo.AddComponent<ParentConstraint>(anchor);
+            var constraint = anchor.GetComponent<ParentConstraint>();
+            // Unity missing-component wrappers compare == null but are not C# null.
+            if (constraint == null) constraint = Undo.AddComponent<ParentConstraint>(anchor);
             Undo.RecordObject(constraint, "Finger ring calibration");
             constraint.constraintActive = false; constraint.locked = false;
             constraint.SetSources(new List<ConstraintSource> {

@@ -13,6 +13,25 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
     public class FingerRingCalibrationTests
     {
         [Test]
+        public void AuthoringCreatesMissingNativeConstraint()
+        {
+            var root = new GameObject("Ring creation regression");
+            try {
+                var thumb = new GameObject("Thumb").transform; thumb.SetParent(root.transform);
+                var index = new GameObject("Index").transform; index.SetParent(root.transform);
+                var target = new GameObject("Target"); target.transform.SetParent(root.transform);
+                var calibration = FingerRingCalibrationUtility.Capture(root.transform, thumb, index, Vector3.one, Quaternion.identity, .3f);
+                FingerRingCalibrationUtility.Configure(target, thumb, index, calibration);
+                var constraint = target.GetComponent<ParentConstraint>();
+                Assert.That(constraint != null, Is.True);
+                Assert.That(constraint.sourceCount, Is.EqualTo(2));
+                Assert.That(constraint.GetSource(0).sourceTransform, Is.SameAs(thumb));
+                Assert.That(constraint.GetSource(0).weight, Is.EqualTo(.3f));
+                Assert.That(constraint.constraintActive && constraint.locked, Is.True);
+            } finally { UnityEngine.Object.DestroyImmediate(root); }
+        }
+
+        [Test]
         public void LegacyAndPresetsDoNotEnableRingsOrChangeAuto()
         {
             var settings = JsonUtility.FromJson<SetupSettings>("{\"autoMode\":true,\"parts\":[{\"id\":\"handLeft\",\"included\":true}]}");
