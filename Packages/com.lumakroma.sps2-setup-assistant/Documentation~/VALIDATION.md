@@ -1,3 +1,46 @@
+# Finger-ring prototype checkpoint (2026-09-30)
+
+Current code fix: 3a71771fce4c2f1a416085c532290090ef735e3f, local-only.
+This is an experimental implementation, not a release-ready feature.
+
+At 139451c14c4445deea5a4badb7844cd55374cdb3, the public Unity Test Runner
+completed 61/61 tests, including real Play Mode native ParentConstraint movement,
+return to calibration and release after disable. Calibration tests cover multiple
+weights, extreme initial rotations, rotated reference frames, coincident points,
+JSON/copy independence, changed/missing joint paths and legacy/preset defaults.
+A prior Slerp expectation differed by 3.978959 degrees from Unity's rotation blend;
+normalized linear blending matched the actual solver. Failed evidence is retained.
+
+The subsequent synthetic finger-avatar authoring probe passed five setup checks,
+including missing-bone rejection, valid finger Humanoid creation and refusal to
+generate uncalibrated rings. Generation then failed because C# ?? did not treat
+Unity's missing-component wrapper as null. Fix 3a71771 uses == null and adds an
+Editor creation regression. Core and test compilation pass; exact-fix Unity tests
+and the remaining generation/Auto/Undo/save/regeneration matrix are NOT yet passed.
+RMS took the shared execution resource priority, so further Unity work is deferred.
+
+The failed probe's RingHumanoid.asset is preserved. Its disposable clone scene
+was clean/untitled after rollback and was not saved by the conditional failure
+handler before normal shutdown. No original fixture or user scene was changed.
+A reviewed recovery probe reconstructs only those finger transforms from the saved
+skeleton, saves before Apply, and unconditionally saves its known scene on failure.
+It has compiled but has not run. Future save audits must catch nonempty untitled
+scenes even when isDirty is false. Do not resend the original fixture creation.
+
+Evidence in management checkout .codex-staging/sps2-i18n-110:
+ring-constraint-observation.json (SDK conversion observed; Edit Mode did not move),
+ring-runtime-test.json plus .failures.txt (60 pass, 1 failure),
+ring-runtime-test-v2.json (61 pass), ring-authoring-result.json (generation failure),
+ring-third-audit.json and ring-authoring-recovery.cs (not yet executed).
+The initial transient test callback was lost across domain reload; a test-only
+InitializeOnLoad recorder now persists public Test Runner results correctly.
+
+Remaining prototype gates: exact-fix Unity tests, complete authoring/native-build
+and converted-constraint runtime checks, left/right real-avatar visual evaluation,
+scaled rigs (currently rejected), localized calibration UI and VRC PC. Old tooltip,
+fresh installation and native-speaker gates remain open. Auto Casual restriction
+and legacy installation migration are still unimplemented proposals. Existing
+naming changes remain preserved. No push, merge, package export or publication.
 # 1.1.0 paired naming - Shared Unity validation (2026-09-30)
 
 Code revision: 82aeac4831bef0ce9a5e31c298c915735b8ca5d2, local-only.
