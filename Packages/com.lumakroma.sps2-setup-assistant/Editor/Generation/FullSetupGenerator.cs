@@ -277,7 +277,25 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             constraint.constraintActive = true;
         }
 
-        private static GeneratedSocket CreatePart(Sps2SetupContext root, SocketSettings part, Placement placement, SetupSettings setup, List<string> warnings)
+        internal static string SocketPoseName(string id, string existingName = null)
+        {
+            // Saved paths and external animation bindings take priority over new naming.
+            if (existingName != null) return existingName;
+            switch (id)
+            {
+                case "earLeft": return "SPS_EarSocket_L";
+                case "earRight": return "SPS_EarSocket_R";
+                case "nippleLeft": return "SPS_NippleSocket_L";
+                case "nippleRight": return "SPS_NippleSocket_R";
+                case "handLeft": return "SPS_HandSocket_L";
+                case "handRight": return "SPS_HandSocket_R";
+                case "footLeft": return "SPS_FootSocket_L";
+                case "footRight": return "SPS_FootSocket_R";
+                default: return "Socket Pose";
+            }
+        }
+
+        private static GeneratedSocket CreatePart(Sps2SetupContext root, SocketSettings part, Placement placement, SetupSettings setup, List<string> warnings, string existingPoseName)
         {
             var anchor = Create(part.id, root.transform);
             anchor.transform.SetPositionAndRotation(
@@ -291,7 +309,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (!AttachmentBackendRegistry.TryApply(backend, anchor, placement.bone, out var error))
                     throw new InvalidOperationException(error);
             }
-            var pose = Create("Socket Pose", anchor.transform);
+            var pose = Create(SocketPoseName(part.id, existingPoseName), anchor.transform);
             pose.transform.SetPositionAndRotation(placement.position, placement.rotation);
             var socket = VrcFuryCompatibility.CreateSocket(pose, part, setup, warnings);
             return new GeneratedSocket { id = part.id, anchor = anchor.transform, pose = pose.transform, socket = socket };
@@ -332,6 +350,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     throw new InvalidOperationException(L("追従方式の変更には再生成を使用してください。"));
                 Undo.IncrementCurrentGroup(); group = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName(UndoName);
                 var previous = old != null ? old.settings.Copy() : null;
+                // Capture before regeneration destroys the previous hierarchy. Do not rename
+                // existing adjustment paths merely because this package was upgraded.
+                var previousPoseNames = old?.sockets.Where(s => s.pose != null)
+                    .ToDictionary(s => s.id, s => s.pose.name) ?? new Dictionary<string, string>();
                 // Preserve the settings referenced by saved scenes and Prefabs when edits are discarded.
                 var asset = createdAsset = Sps2SetupStorage.Create(avatar.name);
                 var identity = Sps2SetupStorage.Identity(asset);
@@ -371,7 +393,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 {
                     var generated = root.sockets.Find(p => p.id == part.id);
                     var oldPart = previous?.parts.Find(p => p.id == part.id);
-                    if (generated == null) { root.sockets.Add(CreatePart(root, part, placements[part.id], settings, warnings)); structureChanged = true; }
+                    if (generated == null)
+                    {
+                        previousPoseNames.TryGetValue(part.id, out var previousPoseName);
+                        root.sockets.Add(CreatePart(root, part, placements[part.id], settings, warnings, previousPoseName));
+                        structureChanged = true;
+                    }
                     else
                     {
                         if (generated.anchor == null || generated.pose == null || generated.socket == null)

@@ -1,5 +1,27 @@
 # 1.1.0 localization and menu names — 2026-09-30 (unreleased)
 
+## Paired adjustment Transform names
+
+New standard left/right adjustment children use `SPS_EarSocket_L/R`,
+`SPS_NippleSocket_L/R`, `SPS_HandSocket_L/R` and `SPS_FootSocket_L/R`.
+The paired name belongs to the adjustable Socket pose, not the attachment anchor.
+Anchor names, internal part IDs, menu names, placement, parent coordinate frames
+and native behavior are unchanged. Center and custom parts retain `Socket Pose`.
+
+Ordinary Apply never renames existing poses. Regeneration preserves the previous
+pose name for each surviving part ID, including legacy and authored names, so a
+package upgrade does not silently change those hierarchy paths. Newly added parts
+use the new rule. Existing setups do not automatically migrate; changing a saved
+hierarchy requires separately reviewing its settings paths and external animation
+bindings. This change does not migrate or rewrite third-party AnimationClips.
+
+The side suffixes permit name-based pairing in the inspected SymmetryBoneEditor
+source. Its operations mirror local coordinates, so actual geometric symmetry
+still depends on the avatar's left/right parent frames and axis settings. No
+SymmetryBoneEditor installation, runtime integration or geometric guarantee is added.
+
+## Language and display names
+
 - UI language is a local Editor preference. Menu language is saved per avatar in
   the existing settings asset. Both support Japanese, English, Korean, Simplified
   Chinese and Traditional Chinese; Japanese is the default for old and new data.

@@ -763,3 +763,17 @@ its MCP bridge unavailable: installed CoplayDev 10.2.0 differs from the bridge's
 verified 10.1.2. Its guard was preserved; no runtime smoke-test pass is claimed.
 Both final owned Editor sessions exited normally, with bridge shutdown,
 preferences restored and the official lock released.
+# 1.1.0 paired adjustment naming — implementation checkpoint
+
+Baseline: b328e0065486ce144eabc625a407b19379082f72. The naming change is
+limited to newly introduced paired pose objects and preserves existing pose names
+on Apply and regeneration. Static package/localization validation passes. The
+additional Editor regressions cover paired-name uniqueness, legacy/authored-name
+preservation and unchanged center/custom defaults.
+
+Exact-revision Unity tests, old-fixture/new-setup path and reference regression,
+Undo/reload and native build checks must be rerun on this change. Earlier
+48-test, 126-assertion authoring and multilingual build observations apply only
+to b328e006 and are not evidence for this naming revision. SymmetryBoneEditor
+was inspected as source only; local-axis geometric mirroring and VRC PC remain
+unverified. No fresh-install or native-speaker review is claimed.

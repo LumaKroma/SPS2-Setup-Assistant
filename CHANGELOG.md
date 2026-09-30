@@ -1,6 +1,7 @@
 # Changelog
 
 ## 1.1.0 — Unreleased
+- New paired standard Socket adjustment transforms use unique `SPS_*Socket_L/R` names. Existing names and paths remain unchanged on Apply and regeneration; no automatic migration of user animation bindings.
 - UI and generated menu language selection: Japanese, English, Korean, Simplified Chinese and Traditional Chinese.
 - Per-socket menu-name override, preview and reset in the setup window. Overrides survive presets, language changes, saved settings, Apply and regeneration.
 - Existing settings retain Japanese menus; previously authored names migrate without replacing standard identities.

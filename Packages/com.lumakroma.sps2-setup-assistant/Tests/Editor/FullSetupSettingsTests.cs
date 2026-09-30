@@ -11,6 +11,40 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
     public class FullSetupSettingsTests
     {
         [Test]
+        public void NewPairedAdjustmentNamesAreUniqueAndHaveExactSidePartners()
+        {
+            var pairs = new[] { "ear", "nipple", "hand", "foot" };
+            var names = pairs.SelectMany(id => new[] {
+                FullSetupGenerator.SocketPoseName(id + "Left"),
+                FullSetupGenerator.SocketPoseName(id + "Right") }).ToArray();
+            Assert.That(names.Distinct().Count(), Is.EqualTo(names.Length));
+            foreach (var id in pairs)
+            {
+                var left = FullSetupGenerator.SocketPoseName(id + "Left");
+                Assert.That(left, Does.StartWith("SPS_").And.EndWith("_L"));
+                Assert.That(FullSetupGenerator.SocketPoseName(id + "Right"),
+                    Is.EqualTo(left.Substring(0, left.Length - 2) + "_R"));
+            }
+            Assert.That(FullSetupGenerator.SocketPoseName("handLeft"), Is.EqualTo("SPS_HandSocket_L"));
+        }
+
+        [TestCase("Socket Pose")]
+        [TestCase("Authored adjustment L")]
+        [TestCase("")]
+        public void ExistingAdjustmentPathNamesArePreserved(string existingName)
+        {
+            Assert.That(FullSetupGenerator.SocketPoseName("handLeft", existingName), Is.EqualTo(existingName));
+        }
+
+        [TestCase("hands")]
+        [TestCase("mouth")]
+        [TestCase("custom-id")]
+        public void UnpairedAdjustmentNamesRemainCompatible(string id)
+        {
+            Assert.That(FullSetupGenerator.SocketPoseName(id), Is.EqualTo("Socket Pose"));
+        }
+
+        [Test]
         public void RetiredInstantSettingIsIgnoredWithoutLosingOtherSettings()
         {
             var settings = JsonUtility.FromJson<SetupSettings>("{\"instant\":true,\"autoMode\":false,\"legacy\":true,\"localOnly\":true,\"parts\":[{\"id\":\"mouth\",\"included\":true,\"depth\":true,\"actions\":[{\"shape\":\"vrc.v_oh\",\"weight\":63}]}]}");
