@@ -67,7 +67,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         public static void Evaluate(Transform thumb, Transform index, FingerRingCalibration value, out Vector3 position, out Quaternion rotation)
         {
             position = Vector3.Lerp(index.position + index.rotation * value.indexOffset, thumb.position + thumb.rotation * value.thumbOffset, value.thumbWeight);
-            rotation = Quaternion.Slerp(index.rotation * value.indexRotation, thumb.rotation * value.thumbRotation, value.thumbWeight);
+            // Match the normalized linear rotation blend used by the native two-source constraint.
+            rotation = Quaternion.Lerp(index.rotation * value.indexRotation, thumb.rotation * value.thumbRotation, value.thumbWeight);
         }
 
         public static void Configure(GameObject anchor, Transform thumb, Transform index, FingerRingCalibration value)
