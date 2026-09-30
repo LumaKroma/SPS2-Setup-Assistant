@@ -442,7 +442,8 @@ are not claims that every release passed Unity/VRChat tests; see VALIDATION.md.
 
 ## Experimental finger-ring calibration (unreleased 1.1.0)
 
-This is a local prototype, not a validated runtime feature. Optional IDs
+This is a local prototype with revision-specific Editor evidence and open VRC PC
+and actual-avatar visual gates. Optional IDs
 fingerRingLeft/fingerRingRight are separate from palm sockets, default OFF,
 and untouched by existing presets. Native Auto stays OFF for these IDs;
 legacy/custom Auto behavior and the all-avatar 16-socket guard are unchanged.
@@ -464,11 +465,37 @@ There is no Hand-fixed rotation or cross-product normal, and therefore no
 collinear-normal fallback. Open hands continue following; no gesture detection
 or automatic activation is added. Actual visible behavior remains a validation
 question. Missing joints, changed joint paths, invalid values or non-unit world
-joint scale fail closed in this prototype. Scaled rigs need further observation.
+joint scale fail closed in this prototype. Joint world matrices must also match
+their unit rigid rotation frames, so compensated nonuniform ancestor scale cannot
+hide shear behind a lossyScale value near one. Non-finite scale and saved UI
+center/rotation values are rejected. Scaled rigs need further observation.
 
-Native SDK conversion was observed on an isolated constraint fixture. Edit Mode
-did not actually evaluate tracking, so it is not a runtime PASS. The new Play
-Mode regression uses a persistent public TestRunner callback across domain reload.
-Remaining promotion gates include dynamic/native-converted tracking, real avatar
-visual approval, left/right geometry, full persistence/regeneration/Auto regression,
-localized prototype UI, and VRC PC. No distribution format is changed here.
+Native tracking, generated-avatar SDK conversion and persistence/Auto regression
+have exact-revision evidence in VALIDATION.md and the owning Issue. Converted
+dynamic tracking has a separate Play Mode test through public SDK conversion and
+ApplyConfigurationChanges; its result must be recorded before claiming an SDK
+simulation PASS. All Play Mode results use a persistent public TestRunner callback
+across domain reload. SDK simulation does not certify the VRChat client.
+
+Ring instructions, fields, actions, status/error messages and standard left/right
+names use the existing Japanese/English/Korean/Simplified/Traditional catalog.
+An authored menu-name override still wins in every language; stable IDs, pose names
+and calibration values are unaffected. Automated translation completeness is not
+native-speaker approval. Actual-avatar aesthetics and VRC PC remain human gates.
+
+### Scale boundary
+
+A fixed positive uniform scale of the entire avatar is mathematically different
+from nonuniform bone scale: it preserves angles and has one scale factor. A future
+extension could potentially capture/rescale the offset consistently, but both
+native and converted constraints and later avatar-scale changes require real
+observation. The current prototype still rejects non-unit whole-avatar scale.
+
+The current offset is a world-distance vector expressed in joint rotation axes:
+`d = inverse(R) * (center - jointPosition)`. If a rig changes uniform scale after
+capture, joint positions scale but the saved distance does not; the desired offset
+and saved offset then differ. Merely removing the scale guard is insufficient.
+Nonuniform scaled/rotated bone chains can additionally introduce shear, for which
+one scalar or a quaternion cannot describe the complete frame. This remains
+unsupported; no scale-support expansion or avatar transform modification is made.
+No distribution format is changed here.

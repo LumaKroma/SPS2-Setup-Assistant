@@ -9,6 +9,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
         {
             { "mouth", "口" }, { "earLeft", "左耳" }, { "earRight", "右耳" },
             { "nippleLeft", "左乳首" }, { "nippleRight", "右乳首" }, { "chest", "胸" },
+            { "fingerRingLeft", "左手の指輪" }, { "fingerRingRight", "右手の指輪" },
             { "handLeft", "左手" }, { "handRight", "右手" }, { "hands", "両手" },
             { "vagina", "膣" }, { "anus", "肛門" }, { "thighs", "ふとももの間" },
             { "footLeft", "左足" }, { "footRight", "右足" }, { "feet", "両足" }

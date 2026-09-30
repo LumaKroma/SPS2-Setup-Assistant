@@ -858,3 +858,36 @@ Undo/reload and native build checks must be rerun on this change. Earlier
 to b328e006 and are not evidence for this naming revision. SymmetryBoneEditor
 was inspected as source only; local-axis geometric mirroring and VRC PC remain
 unverified. No fresh-install or native-speaker review is claimed.
+
+### Corrected prototype and localization/scale follow-up (2026-09-30 UTC)
+
+Observed at e451b25db1a7fffb912c6533bd7431ac7e26faea (code 3a71771):
+62/62 Unity package tests, 26/26 recovered-fixture authoring assertions, and 9/9
+public SDK conversion assertions passed. Source/package/profile matched; own
+Editor normally closed and lease released. Evidence and limitations are recorded
+in management Issue180 comment 5918700877 and its preserved local JSON artifacts.
+These results include native tracking and generated conversion, not converted
+runtime or VRC-client certification.
+
+The bounded follow-up adds 25 five-language translation rows for ring names,
+UI/actions/status/errors, preserving stable IDs and authored overrides. The
+localization catalog (193 complete rows) and core/editor-test compilation passed
+before Unity. Native-speaker quality is unverified. Runtime tests use documented
+public DoConvertUnityConstraints and ApplyConfigurationChanges on inactive
+isolated objects before enabling them; no private SDK reinitialization or manual
+scheduler manipulation is used. The new test exercises mirrored sides at .3/.7
+weights, closed/open/return poses, disable and reactivation. Actual results must
+be recorded against the follow-up code revision in the owning Issue.
+
+Scale analysis is calculated evidence: fixed positive whole-avatar uniform scale
+preserves angles and is potentially a bounded future extension; changing scale
+after capture needs offset rescaling. Nonuniform scaled/rotated bone chains can
+shear (an example has unit basis lengths but an XY dot product of -0.6). The
+prototype's unit-world-scale limitation is retained. Added rejection checks cover
+non-finite scale/UI values and world-matrix distortion; added tests cover .5/2
+whole-avatar scale, NaN/infinity/zero/negative/nonuniform scale and compensated
+shear. No scaled-rig support claim follows from these rejection tests.
+
+Public API documentation: https://creators.vrchat.com/common-components/constraints/constraints-api/
+Remaining human gates include actual-avatar visual calibration, translation
+quality and exact-revision VRC PC. Fresh install and tooltip display remain open.

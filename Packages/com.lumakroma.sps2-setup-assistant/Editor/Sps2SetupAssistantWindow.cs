@@ -243,15 +243,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         {
             if (part.fingerRing == null) part.fingerRing = new FingerRingCalibration();
             var value = part.fingerRing;
-            EditorGUILayout.HelpBox("Prototype: close the finger ring using your existing pose controls. Set the center and forward (+Z) direction, then capture. Auto is excluded. No gesture is changed.", MessageType.Info);
-            float weight = EditorGUILayout.Slider("Thumb weight", value.thumbWeight, 0, 1);
+            EditorGUILayout.HelpBox(L("既存のポーズ操作で親指と人差し指の輪を閉じ、中心と前方（+Z）を合わせて校正を記録してください。輪ソケットはAuto対象外です。ジェスチャーは変更しません。"), MessageType.Info);
+            float weight = EditorGUILayout.Slider(L("親指の重み"), value.thumbWeight, 0, 1);
             if (weight != value.thumbWeight) Change(() => value.thumbWeight = weight);
-            var center = EditorGUILayout.Vector3Field("Center (avatar local)", value.center);
-            var rotation = EditorGUILayout.Vector3Field("Rotation (avatar local)", value.euler);
+            var center = EditorGUILayout.Vector3Field(L("中心（アバターローカル）"), value.center);
+            var rotation = EditorGUILayout.Vector3Field(L("回転（アバターローカル）"), value.euler);
             if (center != value.center || rotation != value.euler) Change(() => { value.center = center; value.euler = rotation; value.calibrated = false; });
             using (new EditorGUI.DisabledScope(descriptor == null || EditorApplication.isPlayingOrWillChangePlaymode))
             {
-                if (GUILayout.Button("Use selected Transform as center"))
+                if (GUILayout.Button(L("選択Transformを中心に使う")))
                 {
                     var selected = Selection.activeTransform;
                     if (selected != null && selected.IsChildOf(descriptor.transform)) Change(() => {
@@ -259,20 +259,20 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                         value.euler = (Quaternion.Inverse(descriptor.transform.rotation) * selected.rotation).eulerAngles;
                         value.calibrated = false;
                     });
-                    else SetMessage("Select a Transform under this avatar.", false);
+                    else SetMessage(L("このアバター内のTransformを選択してください。"), false);
                 }
-                if (GUILayout.Button(ringHandleId == part.id ? "Hide calibration handle" : "Edit center in Scene view")) { ringHandleId = ringHandleId == part.id ? null : part.id; SceneView.RepaintAll(); }
-                if (GUILayout.Button("Capture closed-pose calibration"))
+                if (GUILayout.Button(ringHandleId == part.id ? L("校正ハンドルを隠す") : L("Sceneで中心を調整"))) { ringHandleId = ringHandleId == part.id ? null : part.id; SceneView.RepaintAll(); }
+                if (GUILayout.Button(L("輪を閉じた姿勢の校正を記録")))
                 {
                     try {
                         FingerRingCalibrationUtility.Bones(descriptor, part, out var thumb, out var index);
                         var capture = FingerRingCalibrationUtility.Capture(descriptor.transform, thumb, index,
                             descriptor.transform.TransformPoint(value.center), descriptor.transform.rotation * Quaternion.Euler(value.euler), value.thumbWeight);
-                        Change(() => part.fingerRing = capture); SetMessage("Calibration captured. Apply to save it to the setup.", true);
+                        Change(() => part.fingerRing = capture); SetMessage(L("校正を記録しました。変更を反映すると設定に保存されます。"), true);
                     } catch (Exception error) { SetMessage(error.Message, false); }
                 }
             }
-            EditorGUILayout.LabelField(value.calibrated ? "Calibration captured" : "Calibration required before generation");
+            EditorGUILayout.LabelField(value.calibrated ? L("校正記録済み") : L("生成前に校正が必要です"));
         }
 
         private void DrawRingHandle(SceneView view)

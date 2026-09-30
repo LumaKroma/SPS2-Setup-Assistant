@@ -11,6 +11,32 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
 {
     public class LocalizationTests
     {
+        [TestCase(DisplayLanguage.Japanese, "左手の指輪", "右手の指輪", "親指の重み")]
+        [TestCase(DisplayLanguage.English, "Left finger ring", "Right finger ring", "Thumb weight")]
+        [TestCase(DisplayLanguage.Korean, "왼손 손가락 고리", "오른손 손가락 고리", "엄지 가중치")]
+        [TestCase(DisplayLanguage.ChineseSimplified, "左手指环", "右手指环", "拇指权重")]
+        [TestCase(DisplayLanguage.ChineseTraditional, "左手指環", "右手指環", "拇指權重")]
+        public void RingNamesUseSelectedLanguageAndPreserveCalibrationAndOverrides(DisplayLanguage language, string left, string right, string weight)
+        {
+            var setup = FullSetupCatalog.CreateDefault();
+            var ring = setup.parts.Single(p => p.id == "fingerRingLeft");
+            ring.fingerRing.center = new Vector3(.01f, .02f, .03f);
+            ring.fingerRing.thumbWeight = .3f;
+            string calibration = JsonUtility.ToJson(ring.fingerRing);
+            // Preserve an earlier prototype's stored English name; standard labels resolve by stable ID.
+            ring.name = "Left finger ring";
+            Assert.That(SocketDisplayNames.Resolve(ring, language), Is.EqualTo(left));
+            Assert.That(SocketDisplayNames.Resolve(setup.parts.Single(p => p.id == "fingerRingRight"), language), Is.EqualTo(right));
+            Assert.That(Sps2Localization.L("親指の重み", language), Is.EqualTo(weight));
+            ring.menuNameOverride = "My Ring";
+            setup.menuLanguage = language;
+            var restored = JsonUtility.FromJson<SetupSettings>(JsonUtility.ToJson(setup.Copy()));
+            var saved = restored.parts.Single(p => p.id == ring.id);
+            Assert.That(SocketDisplayNames.Resolve(saved, language), Is.EqualTo("My Ring"));
+            Assert.That(JsonUtility.ToJson(saved.fingerRing), Is.EqualTo(calibration));
+            Assert.That(saved.included, Is.False);
+        }
+
         [Test]
         public void OldJsonKeepsJapaneseAndMigratesAuthoredNamesOnlyOnce()
         {

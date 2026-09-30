@@ -4,6 +4,7 @@ using UnityEditor;
 using UnityEngine;
 using UnityEngine.Animations;
 using VRC.SDK3.Avatars.Components;
+using static LumaKroma.Sps2SetupAssistant.Editor.Localization.Sps2Localization;
 
 namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
 {
@@ -14,22 +15,22 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         {
             var animator = avatar != null ? avatar.GetComponent<Animator>() : null;
             if (!part.IsFingerRing || animator == null || animator.avatar == null || !animator.isHuman)
-                throw new InvalidOperationException("Finger ring requires a Humanoid avatar.");
+                throw new InvalidOperationException(L("輪ソケットにはHumanoidアバターが必要です。"));
             bool left = part.id == "fingerRingLeft";
             thumb = animator.GetBoneTransform(left ? HumanBodyBones.LeftThumbDistal : HumanBodyBones.RightThumbDistal);
             index = animator.GetBoneTransform(left ? HumanBodyBones.LeftIndexIntermediate : HumanBodyBones.RightIndexIntermediate);
             if (thumb == null || index == null || thumb == index)
-                throw new InvalidOperationException("Finger ring requires ThumbDistal and IndexIntermediate. Check the avatar's joint mapping.");
+                throw new InvalidOperationException(L("輪ソケットにはThumbDistalとIndexIntermediateが必要です。アバターの関節マッピングを確認してください。"));
         }
 
         public static FingerRingCalibration Capture(Transform avatar, Transform thumb, Transform index,
             Vector3 center, Quaternion rotation, float thumbWeight)
         {
             if (avatar == null || thumb == null || index == null || !thumb.IsChildOf(avatar) || !index.IsChildOf(avatar))
-                throw new InvalidOperationException("Calibration joints must belong to this avatar.");
+                throw new InvalidOperationException(L("校正の関節はこのアバター内に配置してください。"));
             ValidateFrame(thumb); ValidateFrame(index);
             if (!Finite(center) || !Finite(rotation) || float.IsNaN(thumbWeight) || float.IsInfinity(thumbWeight) || thumbWeight < 0 || thumbWeight > 1)
-                throw new InvalidOperationException("Calibration requires finite values and a weight from 0 to 1.");
+                throw new InvalidOperationException(L("校正には有限値と0～1の重みが必要です。"));
             return new FingerRingCalibration {
                 calibrated = true, thumbWeight = thumbWeight,
                 thumbPath = AnimationUtility.CalculateTransformPath(thumb, avatar), indexPath = AnimationUtility.CalculateTransformPath(index, avatar),
@@ -45,23 +46,37 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         {
             ValidateFrame(thumb); ValidateFrame(index);
             if (value == null || !value.calibrated)
-                throw new InvalidOperationException("Close the finger ring, set its center and forward direction, then capture calibration before generating.");
+                throw new InvalidOperationException(L("輪を閉じて中心と前方を合わせ、生成前に校正を記録してください。"));
             if (AnimationUtility.CalculateTransformPath(thumb, avatar) != value.thumbPath || AnimationUtility.CalculateTransformPath(index, avatar) != value.indexPath)
-                throw new InvalidOperationException("Finger joint paths changed. Capture calibration again.");
-            if (!Finite(value.thumbOffset) || !Finite(value.indexOffset) || !Finite(value.thumbRotation) || !Finite(value.indexRotation) ||
+                throw new InvalidOperationException(L("指の関節パスが変わりました。校正を記録し直してください。"));
+            if (!Finite(value.center) || !Finite(value.euler) || !Finite(value.thumbOffset) || !Finite(value.indexOffset) || !Finite(value.thumbRotation) || !Finite(value.indexRotation) ||
                 float.IsNaN(value.thumbWeight) || float.IsInfinity(value.thumbWeight) || value.thumbWeight < 0 || value.thumbWeight > 1)
-                throw new InvalidOperationException("Invalid saved finger calibration.");
+                throw new InvalidOperationException(L("保存された指の校正値が無効です。"));
         }
 
         private static bool Finite(Vector3 v) => !(float.IsNaN(v.x) || float.IsInfinity(v.x) || float.IsNaN(v.y) || float.IsInfinity(v.y) || float.IsNaN(v.z) || float.IsInfinity(v.z));
         private static bool Finite(Quaternion q) => Finite(new Vector3(q.x,q.y,q.z)) && !float.IsNaN(q.w) && !float.IsInfinity(q.w) && Mathf.Abs(1 - (q.x*q.x+q.y*q.y+q.z*q.z+q.w*q.w)) < .001f;
         private static void ValidateFrame(Transform frame)
         {
-            if (frame == null || !Finite(frame.position) || !Finite(frame.rotation)) throw new InvalidOperationException("Missing or invalid finger frame.");
-            var scale = frame.lossyScale;
+            if (frame == null || !Finite(frame.position) || !Finite(frame.rotation)) throw new InvalidOperationException(L("指の座標系が未設定または無効です。"));
+            ValidateScale(frame.lossyScale);
+            // lossyScale alone cannot certify a rotated, nonuniform ancestor chain.
+            // The calibrated offset formula assumes a positive rigid world frame.
+            var expected = Matrix4x4.Rotate(frame.rotation);
+            for (int axis = 0; axis < 3; axis++)
+            {
+                Vector3 actual = frame.localToWorldMatrix.GetColumn(axis);
+                Vector3 basis = expected.GetColumn(axis);
+                if (!Finite(actual) || (actual - basis).sqrMagnitude > .000001f)
+                    throw new InvalidOperationException(L("現在の輪校正は関節のワールドscaleが1のアバターのみ対応します。"));
+            }
+        }
+
+        internal static void ValidateScale(Vector3 scale)
+        {
             // Scale-dependent offset semantics are not yet certified by the prototype.
-            if ((scale - Vector3.one).sqrMagnitude > .000001f)
-                throw new InvalidOperationException("Finger calibration prototype requires unit world scale on its joint frames.");
+            if (!Finite(scale) || (scale - Vector3.one).sqrMagnitude > .000001f)
+                throw new InvalidOperationException(L("現在の輪校正は関節のワールドscaleが1のアバターのみ対応します。"));
         }
 
         public static void Evaluate(Transform thumb, Transform index, FingerRingCalibration value, out Vector3 position, out Quaternion rotation)
@@ -76,7 +91,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             var constraint = anchor.GetComponent<ParentConstraint>();
             // Unity missing-component wrappers compare == null but are not C# null.
             if (constraint == null) constraint = Undo.AddComponent<ParentConstraint>(anchor);
-            Undo.RecordObject(constraint, "Finger ring calibration");
+            Undo.RecordObject(constraint, L("指の輪の校正"));
             constraint.constraintActive = false; constraint.locked = false;
             constraint.SetSources(new List<ConstraintSource> {
                 new ConstraintSource { sourceTransform = thumb, weight = value.thumbWeight },

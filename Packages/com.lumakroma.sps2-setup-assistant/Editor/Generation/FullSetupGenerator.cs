@@ -70,7 +70,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         {
             if (part.IsFingerRing)
             {
-                if (!VrcFuryCapabilities.Current.AutoMode) throw new InvalidOperationException("Finger ring requires explicit native Auto exclusion support.");
+                if (!VrcFuryCapabilities.Current.AutoMode) throw new InvalidOperationException(L("輪ソケットにはAuto対象外を明示できるVRCFuryが必要です。"));
                 FingerRingCalibrationUtility.Bones(avatar, part, out var thumb, out var index);
                 FingerRingCalibrationUtility.Validate(avatar.transform, thumb, index, part.fingerRing);
                 FingerRingCalibrationUtility.Evaluate(thumb, index, part.fingerRing, out var center, out var rotation);
