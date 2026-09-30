@@ -439,3 +439,36 @@ Official stable-source boundaries: SPS first appears in 1.171.0; SPS2 including
 stops/vector tangents/Collapse in 1.1349.0; local tangent units in 1.1409.0. Beta
 versions can have intermediate schemas. These observations guide detection and
 are not claims that every release passed Unity/VRChat tests; see VALIDATION.md.
+
+## Experimental finger-ring calibration (unreleased 1.1.0)
+
+This is a local prototype, not a validated runtime feature. Optional IDs
+fingerRingLeft/fingerRingRight are separate from palm sockets, default OFF,
+and untouched by existing presets. Native Auto stays OFF for these IDs;
+legacy/custom Auto behavior and the all-avatar 16-socket guard are unchanged.
+
+A user closes the reference pose using their existing gesture tools, sets the
+ring center and +Z forward direction via avatar-local fields/Scene handles,
+then explicitly captures two coincident joint-local frames. ThumbDistal and
+IndexIntermediate are the initial Humanoid mapping; the user must verify actual
+joint positions. No gesture clip is edited. An uncalibrated included ring blocks
+generation. Capture stores relative position/rotation offsets and joint paths;
+regeneration never recalibrates against the current pose. UI capture is a draft
+until Apply; recapture replaces the adjustment frame. Ordinary unchanged Apply
+preserves manual pose. Disabling removes generated objects while keeping settings.
+
+A two-source ParentConstraint blends the calibrated frames with thumb weight
+[0,1], initial 0.5. This is not the midpoint between anatomical joints: both
+frames coincide with the user-selected center at capture for every weight.
+There is no Hand-fixed rotation or cross-product normal, and therefore no
+collinear-normal fallback. Open hands continue following; no gesture detection
+or automatic activation is added. Actual visible behavior remains a validation
+question. Missing joints, changed joint paths, invalid values or non-unit world
+joint scale fail closed in this prototype. Scaled rigs need further observation.
+
+Native SDK conversion was observed on an isolated constraint fixture. Edit Mode
+did not actually evaluate tracking, so it is not a runtime PASS. The new Play
+Mode regression uses a persistent public TestRunner callback across domain reload.
+Remaining promotion gates include dynamic/native-converted tracking, real avatar
+visual approval, left/right geometry, full persistence/regeneration/Auto regression,
+localized prototype UI, and VRC PC. No distribution format is changed here.

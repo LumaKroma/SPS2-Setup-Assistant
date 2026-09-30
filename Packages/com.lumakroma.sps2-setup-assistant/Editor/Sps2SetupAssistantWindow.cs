@@ -17,6 +17,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         [SerializeField] private SetupSettings settings;
         [SerializeField] private string avatarId;
         private Vector2 scroll;
+        private string ringHandleId;
         private string message;
         private MessageType messageType;
         private GUIStyle titleStyle;
@@ -39,12 +40,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         {
             if (settings == null || settings.parts.Count == 0) settings = FullSetupCatalog.CreateDefault();
             FullSetupCatalog.UpgradeDisplayNames(settings);
+            SceneView.duringSceneGui += DrawRingHandle;
             Undo.undoRedoPerformed += Repaint;
             EditorApplication.hierarchyChanged += RecoverAvatar;
             EditorApplication.playModeStateChanged += PlayModeChanged;
             EditorApplication.delayCall += RecoverAvatar;
         }
-        private void OnDisable() { Undo.undoRedoPerformed -= Repaint; EditorApplication.hierarchyChanged -= RecoverAvatar; EditorApplication.playModeStateChanged -= PlayModeChanged; EditorApplication.delayCall -= RecoverAvatar; }
+        private void OnDisable() { SceneView.duringSceneGui -= DrawRingHandle; Undo.undoRedoPerformed -= Repaint; EditorApplication.hierarchyChanged -= RecoverAvatar; EditorApplication.playModeStateChanged -= PlayModeChanged; EditorApplication.delayCall -= RecoverAvatar; }
         private void PlayModeChanged(PlayModeStateChange state)
         {
             if (state == PlayModeStateChange.ExitingEditMode) RememberAvatar();
@@ -227,6 +229,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     EditorGUILayout.LabelField(L("表示名プレビュー"), SocketDisplayNames.Resolve(part, settings.menuLanguage));
                     if (!string.IsNullOrWhiteSpace(part.menuNameOverride) && GUILayout.Button(L("標準名に戻す"))) Change(() => part.menuNameOverride = "");
                 }
+                if (part.included && part.IsFingerRing) DrawFingerRing(part);
                 if (!part.included || !part.depth || !VrcFuryCapabilities.Current.Depth) return;
                 using (new EditorGUI.DisabledScope(!part.included))
                 {
@@ -236,6 +239,61 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 }
             }
         }
+        private void DrawFingerRing(SocketSettings part)
+        {
+            if (part.fingerRing == null) part.fingerRing = new FingerRingCalibration();
+            var value = part.fingerRing;
+            EditorGUILayout.HelpBox("Prototype: close the finger ring using your existing pose controls. Set the center and forward (+Z) direction, then capture. Auto is excluded. No gesture is changed.", MessageType.Info);
+            float weight = EditorGUILayout.Slider("Thumb weight", value.thumbWeight, 0, 1);
+            if (weight != value.thumbWeight) Change(() => value.thumbWeight = weight);
+            var center = EditorGUILayout.Vector3Field("Center (avatar local)", value.center);
+            var rotation = EditorGUILayout.Vector3Field("Rotation (avatar local)", value.euler);
+            if (center != value.center || rotation != value.euler) Change(() => { value.center = center; value.euler = rotation; value.calibrated = false; });
+            using (new EditorGUI.DisabledScope(descriptor == null || EditorApplication.isPlayingOrWillChangePlaymode))
+            {
+                if (GUILayout.Button("Use selected Transform as center"))
+                {
+                    var selected = Selection.activeTransform;
+                    if (selected != null && selected.IsChildOf(descriptor.transform)) Change(() => {
+                        value.center = descriptor.transform.InverseTransformPoint(selected.position);
+                        value.euler = (Quaternion.Inverse(descriptor.transform.rotation) * selected.rotation).eulerAngles;
+                        value.calibrated = false;
+                    });
+                    else SetMessage("Select a Transform under this avatar.", false);
+                }
+                if (GUILayout.Button(ringHandleId == part.id ? "Hide calibration handle" : "Edit center in Scene view")) { ringHandleId = ringHandleId == part.id ? null : part.id; SceneView.RepaintAll(); }
+                if (GUILayout.Button("Capture closed-pose calibration"))
+                {
+                    try {
+                        FingerRingCalibrationUtility.Bones(descriptor, part, out var thumb, out var index);
+                        var capture = FingerRingCalibrationUtility.Capture(descriptor.transform, thumb, index,
+                            descriptor.transform.TransformPoint(value.center), descriptor.transform.rotation * Quaternion.Euler(value.euler), value.thumbWeight);
+                        Change(() => part.fingerRing = capture); SetMessage("Calibration captured. Apply to save it to the setup.", true);
+                    } catch (Exception error) { SetMessage(error.Message, false); }
+                }
+            }
+            EditorGUILayout.LabelField(value.calibrated ? "Calibration captured" : "Calibration required before generation");
+        }
+
+        private void DrawRingHandle(SceneView view)
+        {
+            if (descriptor == null || settings == null || EditorApplication.isPlayingOrWillChangePlaymode) return;
+            var part = settings.parts.FirstOrDefault(p => p.id == ringHandleId && p.included && p.IsFingerRing);
+            if (part?.fingerRing == null) return;
+            var value = part.fingerRing;
+            var position = descriptor.transform.TransformPoint(value.center);
+            var rotation = descriptor.transform.rotation * Quaternion.Euler(value.euler);
+            EditorGUI.BeginChangeCheck();
+            position = Handles.PositionHandle(position, rotation);
+            rotation = Handles.RotationHandle(rotation, position);
+            Handles.ArrowHandleCap(0, position, rotation, HandleUtility.GetHandleSize(position) * .2f, EventType.Repaint);
+            if (EditorGUI.EndChangeCheck()) Change(() => {
+                value.center = descriptor.transform.InverseTransformPoint(position);
+                value.euler = (Quaternion.Inverse(descriptor.transform.rotation) * rotation).eulerAngles;
+                value.calibrated = false;
+            });
+        }
+
         private void DrawRange(SocketSettings part)
         {
             float min = FullSetupCatalog.DistanceToSlider(part.range.x), max = FullSetupCatalog.DistanceToSlider(part.range.y);

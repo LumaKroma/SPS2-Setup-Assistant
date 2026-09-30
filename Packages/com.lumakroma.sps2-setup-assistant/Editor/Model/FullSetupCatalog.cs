@@ -16,6 +16,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
             Add(setup, "handLeft", "左手", 2); Add(setup, "handRight", "右手", 2); Add(setup, "hands", "両手", 2);
             Add(setup, "vagina", "膣", 3); Add(setup, "anus", "肛門", 3); Add(setup, "thighs", "ふとももの間", 3);
             Add(setup, "footLeft", "左足", 4); Add(setup, "footRight", "右足", 4); Add(setup, "feet", "両足", 4);
+            EnsureFingerRings(setup);
             ApplyPreset(setup, 1);
             return setup;
         }
@@ -23,6 +24,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
         public static void UpgradeDisplayNames(SetupSettings setup)
         {
             SocketDisplayNames.Upgrade(setup);
+            EnsureFingerRings(setup);
+        }
+
+        public static void EnsureFingerRings(SetupSettings setup)
+        {
+            foreach (var id in new[] { "fingerRingLeft", "fingerRingRight" })
+                if (!setup.parts.Exists(p => p.id == id))
+                    setup.parts.Add(new SocketSettings { id = id, name = id == "fingerRingLeft" ? "Left finger ring" : "Right finger ring", category = 2, included = false });
         }
 
         private static void Add(SetupSettings setup, string id, string name, int category)
@@ -37,7 +46,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
             if (preset < 0 || preset > 2) throw new ArgumentOutOfRangeException(nameof(preset));
             foreach (var part in setup.parts)
             {
-                if (part.custom) continue;
+                if (part.custom || part.IsFingerRing) continue;
                 bool casual = part.id == "mouth" || part.id == "chest" || part.category == 2 || part.id == "vagina" || part.id == "anus";
                 bool fullOnly = part.id == "earLeft" || part.id == "earRight" || part.id == "thighs";
                 part.included = casual || preset == 2 || (preset == 1 && !fullOnly);

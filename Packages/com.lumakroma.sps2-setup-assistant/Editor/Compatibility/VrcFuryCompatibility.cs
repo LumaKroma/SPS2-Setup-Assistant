@@ -125,7 +125,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 }
                 Undo.RecordObject(component, L("SPS2 設定反映"));
                 target.FindProperty("name").stringValue = part.name;
-                SetOptionalBool(target, "enableAuto", setup.autoMode);
+                SetOptionalBool(target, "enableAuto", setup.autoMode && !part.IsFingerRing);
                 if (VrcFuryCapabilities.Current.Legacy) SetOptionalBool(target, "useLights", setup.legacy);
                 target.FindProperty("addMenuItem").boolValue = true;
                 if (VrcFuryCapabilities.Current.Depth) CopyDepthActions(source, target);
@@ -172,11 +172,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             data.ApplyModifiedProperties();
             PrefabUtility.RecordPrefabInstancePropertyModifications(component);
         }
-        public static void ConfigureCommon(Component component, SetupSettings setup)
+        public static void ConfigureCommon(Component component, SetupSettings setup, bool allowAuto = true)
         {
             var data = SocketData(component);
             Undo.RecordObject(component, L("SPS2 共通設定"));
-            SetOptionalBool(data, "enableAuto", setup.autoMode);
+            SetOptionalBool(data, "enableAuto", setup.autoMode && allowAuto);
             if (VrcFuryCapabilities.Current.Legacy) SetOptionalBool(data, "useLights", setup.legacy);
             data.ApplyModifiedProperties();
             PrefabUtility.RecordPrefabInstancePropertyModifications(component);

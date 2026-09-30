@@ -54,6 +54,8 @@ namespace LumaKroma.Sps2SetupAssistant
         public int category;
         public bool custom;
         public bool included;
+        public FingerRingCalibration fingerRing = new FingerRingCalibration();
+        public bool IsFingerRing => !custom && (id == "fingerRingLeft" || id == "fingerRingRight");
         public Transform target;
         public bool depth;
         public Vector2 range = new Vector2(0, .05f);
@@ -64,10 +66,23 @@ namespace LumaKroma.Sps2SetupAssistant
         {
             var copy = new SocketSettings { id = id, name = name, menuNameOverride = menuNameOverride, category = category,
                 custom = custom, included = included, target = target, depth = depth,
-                range = range, units = units };
+                range = range, units = units, fingerRing = fingerRing?.Copy() ?? new FingerRingCalibration() };
             foreach (var action in actions) copy.actions.Add(action.Copy());
             return copy;
         }
+    }
+
+    [Serializable]
+    public sealed class FingerRingCalibration
+    {
+        public bool calibrated;
+        public float thumbWeight = .5f;
+        public string thumbPath, indexPath;
+        public Vector3 thumbOffset, indexOffset;
+        public Quaternion thumbRotation = Quaternion.identity, indexRotation = Quaternion.identity;
+        // Avatar-local UI inputs. Capture explicitly commits these to joint-local frames.
+        public Vector3 center, euler;
+        public FingerRingCalibration Copy() => (FingerRingCalibration)MemberwiseClone();
     }
 
     [Serializable]

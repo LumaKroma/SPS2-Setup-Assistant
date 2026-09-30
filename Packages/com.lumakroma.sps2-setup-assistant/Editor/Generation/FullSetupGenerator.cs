@@ -68,6 +68,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
 
         private static Placement Place(SocketSettings part, VRCAvatarDescriptor avatar, BodyBasis basis, AvatarSurface surface)
         {
+            if (part.IsFingerRing)
+            {
+                if (!VrcFuryCapabilities.Current.AutoMode) throw new InvalidOperationException("Finger ring requires explicit native Auto exclusion support.");
+                FingerRingCalibrationUtility.Bones(avatar, part, out var thumb, out var index);
+                FingerRingCalibrationUtility.Validate(avatar.transform, thumb, index, part.fingerRing);
+                FingerRingCalibrationUtility.Evaluate(thumb, index, part.fingerRing, out var center, out var rotation);
+                return new Placement { first = thumb, second = index, position = center, rotation = rotation };
+            }
             var animator = avatar.GetComponent<Animator>();
             Transform Bone(params HumanBodyBones[] candidates) => candidates.Select(animator.GetBoneTransform).FirstOrDefault(t => t != null);
             var p = new Placement();
@@ -287,6 +295,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 case "earRight": return "SPS_EarSocket_R";
                 case "nippleLeft": return "SPS_NippleSocket_L";
                 case "nippleRight": return "SPS_NippleSocket_R";
+                case "fingerRingLeft": return "SPS_FingerRingSocket_L";
+                case "fingerRingRight": return "SPS_FingerRingSocket_R";
                 case "handLeft": return "SPS_HandSocket_L";
                 case "handRight": return "SPS_HandSocket_R";
                 case "footLeft": return "SPS_FootSocket_L";
@@ -301,7 +311,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             anchor.transform.SetPositionAndRotation(
                 placement.second == null ? placement.first.position : (placement.first.position + placement.second.position) * .5f,
                 placement.second == null ? placement.first.rotation : Quaternion.Slerp(placement.first.rotation, placement.second.rotation, .5f));
-            if (placement.second != null || placement.followTransform || part.custom)
+            if (part.IsFingerRing)
+            {
+                anchor.transform.SetPositionAndRotation(placement.position, placement.rotation);
+                FingerRingCalibrationUtility.Configure(anchor, placement.first, placement.second, part.fingerRing);
+            }
+            else if (placement.second != null || placement.followTransform || part.custom)
                 Constrain(anchor, placement.first, placement.second);
             else
             {
@@ -405,7 +420,19 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                             throw new InvalidOperationException(part.name + L(": 生成物が欠けています。再生成してください。"));
                         if (!SamePart(oldPart, part)) VrcFuryCompatibility.Configure(generated.socket, part, settings, warnings);
                         else if (previous.autoMode != settings.autoMode || previous.legacy != settings.legacy)
-                            VrcFuryCompatibility.ConfigureCommon(generated.socket, settings);
+                            VrcFuryCompatibility.ConfigureCommon(generated.socket, settings, !part.IsFingerRing);
+                        if (part.IsFingerRing && JsonUtility.ToJson(oldPart?.fingerRing) != JsonUtility.ToJson(part.fingerRing))
+                        {
+                            var placement = placements[part.id];
+                            Undo.RecordObject(generated.anchor, UndoName);
+                            Undo.RecordObject(generated.pose, UndoName);
+                            generated.anchor.SetPositionAndRotation(placement.position, placement.rotation);
+                            FingerRingCalibrationUtility.Configure(generated.anchor.gameObject, placement.first, placement.second, part.fingerRing);
+                            // Explicit recapture replaces the calibration frame; ordinary Apply retains manual pose.
+                            if (oldPart == null || oldPart.fingerRing == null || oldPart.fingerRing.thumbOffset != part.fingerRing.thumbOffset ||
+                                oldPart.fingerRing.indexOffset != part.fingerRing.indexOffset || oldPart.fingerRing.thumbRotation != part.fingerRing.thumbRotation || oldPart.fingerRing.indexRotation != part.fingerRing.indexRotation)
+                            { generated.pose.localPosition = Vector3.zero; generated.pose.localRotation = Quaternion.identity; }
+                        }
                         if (part.custom && oldPart != null && oldPart.target != part.target)
                         {
                             var position = generated.pose.position; var rotation = generated.pose.rotation;
