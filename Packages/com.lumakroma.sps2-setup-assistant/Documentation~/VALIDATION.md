@@ -1,3 +1,27 @@
+# 1.1.0 source-only validation — 2026-09-30
+
+Baseline: 4902a77f31e37ccfb6e8b22d6e987c40a6a797bb (public 1.0.2).
+Unity was not launched, as requested. Package/static localization validation
+passes: 168 entries with all four translations, all literal localization calls
+and standard-name/category coverage. Core source compilation against installed
+Unity 2022.3.22f1 and real VRChat SDK assemblies passes without starting Unity.
+The core Editor tests also compile using the installed Unity NUnit assembly and
+Unity's .NET compatibility reference shims. This is a C# source/type check, not
+Unity import/build/EditMode validation.
+
+New Editor tests cover legacy JSON/migration/reset, deep-copy and JSON roundtrip,
+all-language/preset override preservation, UI/menu independence, invalid-language
+fallback, and pagination identity/order/parameters. Execution is pending Unity.
+
+Next exact-head gates: compile/import and all EditMode tests; five-language UI
+layout/tooltips/diagnostics; old 1.0.2 asset reopen and migration; name/language-only
+Apply preserving manually adjusted Socket poses and configuration; Undo/Redo;
+save/reload and regeneration; native build menus including all parts/customs and
+pagination in each language; unchanged parameters/defaults/persistence and
+unrelated native menus. Inspect translated terminology and font rendering.
+Fresh package/VCC import and VRC PC remain unverified. No release or publication
+is authorized by this source-only work. Earlier VRC PC gaps below remain open.
+
 # 1.0.2 candidate verification — 2026-09-22
 
 Source cd4227d97c2ef619f0666e4a4d79419b5a51b241, Unity 2022.3.22f1,

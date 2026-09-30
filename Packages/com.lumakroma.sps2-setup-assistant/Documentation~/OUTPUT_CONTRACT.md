@@ -1,3 +1,28 @@
+# 1.1.0 localization and menu names — 2026-09-30 (unreleased)
+
+- UI language is a local Editor preference. Menu language is saved per avatar in
+  the existing settings asset. Both support Japanese, English, Korean, Simplified
+  Chinese and Traditional Chinese; Japanese is the default for old and new data.
+- Every socket has an optional menu-name override. Nonblank text is preserved
+  verbatim across language changes, presets, Copy, save/reload, Apply and
+  regeneration. Blank/whitespace uses the standard name in the menu language.
+  Reset clears the override. Custom parts fall back to their authored part name.
+- Old nonstandard stored names migrate once to overrides. The historical chest
+  alias remains normalized. Clearing a migrated override must not resurrect it.
+- The assistant owns the final generated menu name. Edit it in the assistant;
+  native Socket `Name in menu` is used for ownership/build identity and is not
+  the final label. Apply or regenerate to save edited menu settings before build.
+- Build output uses the saved menu language, independent of the current Editor
+  UI language. Settings, Auto Mode, legacy compatibility, Local Only, preserved
+  native-settings container and generated pagination labels are localized.
+  Unrelated/native inner controls and authored custom names are preserved.
+- Stable IDs, build tokens, references, modes, placement, depth actions,
+  parameter names/defaults/persistence, ordering and pagination capacity remain
+  unchanged. A menu-language/override-only Apply does not reconfigure sockets.
+- Third-party exception text, native Inspector labels and internal asset/object
+  names are outside UI localization. Translation and layout review in Unity is
+  still required; source validation is not runtime certification.
+
 # 1.0.2 socket mode amendment — 2026-09-22
 
 Mouth and anus use Ring only when effective penetration is enabled; otherwise Auto.

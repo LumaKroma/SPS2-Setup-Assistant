@@ -1,3 +1,4 @@
+using static LumaKroma.Sps2SetupAssistant.Editor.Localization.Sps2Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
 {
     public static class FullSetupGenerator
     {
-        private const string UndoName = "SPS2 セットアップ";
+        private static string UndoName => L("SPS2 セットアップ");
         private const string PathName = "Guided Paths";
         public const string PackagePath = "Packages/com.lumakroma.sps2-setup-assistant";
 
@@ -31,16 +32,16 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         {
             var root = Sps2SetupStorage.Find(avatar);
             if (root != null && (root.schema != 1 || string.IsNullOrEmpty(root.identity)))
-                throw new InvalidOperationException("SPS2 生成データの形式が一致しません。");
+                throw new InvalidOperationException(L("SPS2 生成データの形式が一致しません。"));
             if (root != null) ValidateOwnership(root, true);
             return root;
         }
         private static void ValidateOwnership(Sps2SetupContext root, bool allowMissing)
         {
-            if (root.settings == null || root.sockets == null) throw new InvalidOperationException("SPS2 生成データが欠けています。");
+            if (root.settings == null || root.sockets == null) throw new InvalidOperationException(L("SPS2 生成データが欠けています。"));
             if ((root.testPlug != null && root.testPlug.transform.parent != root.transform) ||
                 (root.longTestPlug != null && root.longTestPlug.transform.parent != root.transform))
-                throw new InvalidOperationException("テストプラグが所有ルートの外へ移動されています。");
+                throw new InvalidOperationException(L("テストプラグが所有ルートの外へ移動されています。"));
             var anchors = new HashSet<Transform>();
             var ids = new HashSet<string>();
             foreach (var socket in root.sockets)
@@ -50,9 +51,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     (socket.anchor != null && (socket.anchor.parent != root.transform || !anchors.Add(socket.anchor))) ||
                     (socket.pose != null && (socket.anchor == null || socket.pose.parent != socket.anchor)) ||
                     (socket.socket != null && (socket.pose == null || socket.socket.transform != socket.pose)))
-                    throw new InvalidOperationException("Socket の所有参照が不正です。変更は行いません。");
+                    throw new InvalidOperationException(L("Socket の所有参照が不正です。変更は行いません。"));
                 if (socket.pathStops == null || socket.pathStops.Any(t => t == null ? !allowMissing : !t.IsChildOf(root.transform)))
-                    throw new InvalidOperationException("貫通経路が所有ルートの外を参照しています。");
+                    throw new InvalidOperationException(L("貫通経路が所有ルートの外を参照しています。"));
             }
         }
 
@@ -139,7 +140,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     p.second = Bone(HumanBodyBones.RightToes, HumanBodyBones.RightFoot);
                     offset = forward * h * .025f;
                     break;
-                default: throw new InvalidOperationException("Unknown socket identifier: " + part.id);
+                default: throw new InvalidOperationException(L("不明なソケット識別子: ") + part.id);
             }
             bool middle = part.id == "chest" || part.id == "hands" || part.id == "thighs" || part.id == "feet";
             if (p.first == null || (middle && p.second == null)) return null;
@@ -305,29 +306,30 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             try
             {
                 VrcFuryCompatibility.RequireVersion();
-                if (avatar == null || EditorUtility.IsPersistent(avatar)) throw new InvalidOperationException("Scene または Prefab Mode のアバターを選択してください。");
+                if (avatar == null || EditorUtility.IsPersistent(avatar)) throw new InvalidOperationException(L("Scene または Prefab Mode のアバターを選択してください。"));
                 if (!HumanoidSnapshot.TryCapture(avatar, out var snapshot, out var error)) throw new InvalidOperationException(error);
                 var old = Find(avatar);
                 if (old != null && !regenerate) ValidateOwnership(old, false);
                 var basis = BodyBasisBuilder.Build(snapshot);
                 var warnings = new List<string>();
                 settings = VrcFuryCapabilities.Current.Effective(settings, warnings);
+                FullSetupCatalog.UpgradeDisplayNames(settings);
                 if (settings.parts.GroupBy(p => p.id).Any(g => string.IsNullOrEmpty(g.Key) || g.Count() != 1))
-                    throw new InvalidOperationException("部位の識別子が重複または欠落しています。");
+                    throw new InvalidOperationException(L("部位の識別子が重複または欠落しています。"));
                 using var surface = new AvatarSurface(avatar);
-                if (!surface.HasBody) warnings.Add("体の表面を特定できませんでした。ボーンを基準に配置したため、位置と向きを確認してください。");
+                if (!surface.HasBody) warnings.Add(L("体の表面を特定できませんでした。ボーンを基準に配置したため、位置と向きを確認してください。"));
                 var placements = new Dictionary<string, Placement>();
                 foreach (var part in settings.parts.Where(p => p.included))
                 {
                     if (part.custom && old != null && part.target != null && part.target.IsChildOf(old.transform))
-                        throw new InvalidOperationException("カスタム追従先に自分の生成物は指定できません。");
+                        throw new InvalidOperationException(L("カスタム追従先に自分の生成物は指定できません。"));
                     var placement = Place(part, avatar, basis, surface);
-                    if (placement == null) warnings.Add(part.name + ": 追従先が見つからないため省きました。");
+                    if (placement == null) warnings.Add(part.name + L(": 追従先が見つからないため省きました。"));
                     else placements.Add(part.id, placement);
                 }
-                if (placements.Count == 0) throw new InvalidOperationException("生成できる部位がありません。");
+                if (placements.Count == 0) throw new InvalidOperationException(L("生成できる部位がありません。"));
                 if (old != null && old.settings.modularAvatar != settings.modularAvatar && !regenerate)
-                    throw new InvalidOperationException("追従方式の変更には再生成を使用してください。");
+                    throw new InvalidOperationException(L("追従方式の変更には再生成を使用してください。"));
                 Undo.IncrementCurrentGroup(); group = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName(UndoName);
                 var previous = old != null ? old.settings.Copy() : null;
                 // Preserve the settings referenced by saved scenes and Prefabs when edits are discarded.
@@ -373,7 +375,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     else
                     {
                         if (generated.anchor == null || generated.pose == null || generated.socket == null)
-                            throw new InvalidOperationException(part.name + ": 生成物が欠けています。再生成してください。");
+                            throw new InvalidOperationException(part.name + L(": 生成物が欠けています。再生成してください。"));
                         if (!SamePart(oldPart, part)) VrcFuryCompatibility.Configure(generated.socket, part, settings, warnings);
                         else if (previous.autoMode != settings.autoMode || previous.legacy != settings.legacy)
                             VrcFuryCompatibility.ConfigureCommon(generated.socket, settings);
@@ -399,7 +401,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                             root.oralBoundaryPath ? (socket.id == "mouth" ? 0 : 2) : -1);
                 root.settings = settings.Copy();
                 if (VrcFuryCapabilities.Current.Legacy && VrcFuryCompatibility.AutoSocketCount(avatar.gameObject) > 16)
-                    throw new InvalidOperationException("既存分を含む Auto Mode 対象が16個を超えます。Auto Mode を外すか対象を減らしてください。");
+                    throw new InvalidOperationException(L("既存分を含む Auto Mode 対象が16個を超えます。Auto Mode を外すか対象を減らしてください。"));
                 Undo.RecordObject(root.gameObject, UndoName); root.gameObject.name = RootName;
                 UpdateAuthoringIdentities(root);
                 CommitMetadata(root, metadataBefore);
@@ -460,13 +462,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             if (!settings.penetration || (mouth == null && anus == null)) return;
             var animator = avatar.GetComponent<Animator>();
             var throat = animator.GetBoneTransform(HumanBodyBones.Neck);
-            if (throat == null) { throat = animator.GetBoneTransform(HumanBodyBones.Head); warnings.Add("貫通: Neck がないため Head を使用しました。喉の通過点を確認してください。"); }
+            if (throat == null) { throat = animator.GetBoneTransform(HumanBodyBones.Head); warnings.Add(L("貫通: Neck がないため Head を使用しました。喉の通過点を確認してください。")); }
             var hips = animator.GetBoneTransform(HumanBodyBones.Hips);
-            if (throat == null || hips == null) { warnings.Add("貫通: 胴体の参照が不足しています。"); return; }
+            if (throat == null || hips == null) { warnings.Add(L("貫通: 胴体の参照が不足しています。")); return; }
             var virtualMouth = mouth == null ? Place(new SocketSettings { id = "mouth" }, avatar, basis, surface) : null;
             var virtualAnus = anus == null ? Place(new SocketSettings { id = "anus" }, avatar, basis, surface) : null;
             if ((mouth == null && virtualMouth == null) || (anus == null && virtualAnus == null))
-            { warnings.Add("貫通: 出口の位置を求められませんでした。"); return; }
+            { warnings.Add(L("貫通: 出口の位置を求められませんでした。")); return; }
             var throatCenter = throat.position;
             float reach = Vector3.Distance(throat.position, hips.position);
             if (surface.Ray(throat.position, avatar.transform.forward, reach, out var front) &&
@@ -544,9 +546,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             {
                 VrcFuryCompatibility.RequireVersion();
                 var root = Find(avatar);
-                if (root == null) throw new InvalidOperationException("先にセットアップを生成してください。");
+                if (root == null) throw new InvalidOperationException(L("先にセットアップを生成してください。"));
                 var selectedPlug = longPlug ? root.longTestPlug : root.testPlug;
-                Undo.IncrementCurrentGroup(); group = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName("SPS2 テストプラグ");
+                Undo.IncrementCurrentGroup(); group = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName(L("SPS2 テストプラグ"));
                 if (root.asset == null || selectedPlug == null)
                 {
                     root.asset = createdAsset ?? Sps2SetupStorage.Create(avatar.name);
@@ -559,14 +561,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (selectedPlug == null)
                 {
                     var material = AssetDatabase.LoadAssetAtPath<Material>(PackagePath + "/Assets/IcePop/IcePop.mat");
-                    if (material == null || material.shader == null) throw new InvalidOperationException("プラグの表示用アセットが見つかりません。");
+                    if (material == null || material.shader == null) throw new InvalidOperationException(L("プラグの表示用アセットが見つかりません。"));
                     var plug = Create(longPlug ? "SPS2 Long Test Plug" : "SPS2 Test Plug", root.transform);
                     GameObject mesh;
                     if (longPlug) mesh = LongTestPlugMesh.Create(plug.transform, root.asset, material);
                     else
                     {
                         var model = AssetDatabase.LoadAssetAtPath<GameObject>(PackagePath + "/Assets/IcePop/IcePop.fbx");
-                        if (model == null) throw new InvalidOperationException("IcePop の表示用アセットが見つかりません。");
+                        if (model == null) throw new InvalidOperationException(L("IcePop の表示用アセットが見つかりません。"));
                         mesh = UnityEngine.Object.Instantiate(model, plug.transform, false);
                         Undo.RegisterCreatedObjectUndo(mesh, UndoName);
                         mesh.transform.localRotation = Quaternion.Euler(90, 0, 0);
@@ -582,7 +584,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 {
                     var ice = AssetDatabase.LoadAssetAtPath<Material>(PackagePath + "/Assets/IcePop/IcePop.mat");
                     var stick = AssetDatabase.LoadAssetAtPath<Material>(PackagePath + "/Assets/IcePop/IcePopStick.mat");
-                    if (ice == null || stick == null) throw new InvalidOperationException("IcePop の表示用マテリアルが見つかりません。");
+                    if (ice == null || stick == null) throw new InvalidOperationException(L("IcePop の表示用マテリアルが見つかりません。"));
                     selectedPlug.transform.localScale = Vector3.one * .7f;
                     foreach (var renderer in selectedPlug.GetComponentsInChildren<Renderer>(true))
                     {
@@ -595,7 +597,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (longPlug)
                 {
                     var mouth = root.sockets.Find(s => s.id == "mouth")?.pose;
-                    if (mouth == null) throw new InvalidOperationException("貫通テストには口のソケットを生成してください。");
+                    if (mouth == null) throw new InvalidOperationException(L("貫通テストには口のソケットを生成してください。"));
                     float length = LongTestPlugMesh.Length * Mathf.Abs(selectedPlug.transform.lossyScale.z);
                     selectedPlug.transform.SetPositionAndRotation(mouth.position + mouth.forward * (length + .08f), Quaternion.LookRotation(-mouth.forward, mouth.up));
                 }

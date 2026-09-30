@@ -4,6 +4,9 @@ using UnityEngine;
 
 namespace LumaKroma.Sps2SetupAssistant
 {
+    // Persisted values: never reorder. Missing language in older settings means Japanese.
+    public enum DisplayLanguage { Japanese = 0, English = 1, Korean = 2, ChineseSimplified = 3, ChineseTraditional = 4 }
+
     [Serializable]
     public sealed class GeneratedSocket
     {
@@ -18,6 +21,8 @@ namespace LumaKroma.Sps2SetupAssistant
     [Serializable]
     public sealed class SetupSettings
     {
+        public DisplayLanguage menuLanguage;
+        public int displayNamesVersion;
         public List<SocketSettings> parts = new List<SocketSettings>();
         public bool penetration = true;
         // Missing in older snapshots: false keeps their previously enabled Collapse.
@@ -29,7 +34,8 @@ namespace LumaKroma.Sps2SetupAssistant
 
         public SetupSettings Copy()
         {
-            var copy = new SetupSettings { penetration = penetration, showInternalThickness = showInternalThickness, autoMode = autoMode,
+            var copy = new SetupSettings { menuLanguage = menuLanguage, displayNamesVersion = displayNamesVersion,
+                penetration = penetration, showInternalThickness = showInternalThickness, autoMode = autoMode,
                 legacy = legacy, localOnly = localOnly, modularAvatar = modularAvatar };
             foreach (var part in parts) copy.parts.Add(part.Copy());
             return copy;
@@ -44,6 +50,7 @@ namespace LumaKroma.Sps2SetupAssistant
     {
         public string id;
         public string name;
+        public string menuNameOverride;
         public int category;
         public bool custom;
         public bool included;
@@ -55,7 +62,7 @@ namespace LumaKroma.Sps2SetupAssistant
 
         public SocketSettings Copy()
         {
-            var copy = new SocketSettings { id = id, name = name, category = category,
+            var copy = new SocketSettings { id = id, name = name, menuNameOverride = menuNameOverride, category = category,
                 custom = custom, included = included, target = target, depth = depth,
                 range = range, units = units };
             foreach (var action in actions) copy.actions.Add(action.Copy());

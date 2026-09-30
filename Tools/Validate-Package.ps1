@@ -48,7 +48,7 @@ foreach ($relativePath in $requiredFiles) {
 
 $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
 Assert-Condition ($manifest.name -eq 'com.lumakroma.sps2-setup-assistant') 'Unexpected package ID.'
-Assert-Condition ($manifest.version -eq '1.0.2') 'Unexpected release version.'
+Assert-Condition ($manifest.version -eq '1.1.0') 'Unexpected release version.'
 Assert-Condition ($manifest.unity -eq '2022.3') 'Unexpected Unity version.'
 Assert-Condition ($manifest.license -eq 'MIT') 'Package license must be MIT.'
 Assert-Condition ($manifest.vpmDependencies.'com.vrchat.avatars' -eq '>=3.10.4 <4.0.0') 'Unexpected VRChat SDK range.'
@@ -137,4 +137,5 @@ if ($LASTEXITCODE -ne 0) {
     throw 'git diff --cached --check failed.'
 }
 
+& (Join-Path $PSScriptRoot 'Test-Localization.ps1')
 Write-Output "PASS development metadata, optional MA, data-only authoring, isolated capability adapter, 15-part catalog, display asset provenance, Undo and diff whitespace"

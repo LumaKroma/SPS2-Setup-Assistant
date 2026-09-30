@@ -1,3 +1,4 @@
+using static LumaKroma.Sps2SetupAssistant.Editor.Localization.Sps2Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -29,16 +30,16 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         {
             var p = data.FindProperty(path);
             if (p == null || p.propertyType != type)
-                throw new InvalidOperationException("VRCFury の設定構造が一致しません: " + path);
+                throw new InvalidOperationException(L("VRCFury の設定構造が一致しません: ") + path);
             return p;
         }
 
         private static void SetEnum(SerializedProperty property, string name)
         {
             if (property == null || property.propertyType != SerializedPropertyType.Enum)
-                throw new InvalidOperationException("VRCFury enum schema mismatch.");
+                throw new InvalidOperationException(L("VRCFury の列挙型構造が一致しません。"));
             int index = Array.IndexOf(property.enumNames, name);
-            if (index < 0) throw new InvalidOperationException("VRCFury enum value missing: " + name);
+            if (index < 0) throw new InvalidOperationException(L("VRCFury の列挙値がありません: ") + name);
             property.enumValueIndex = index;
         }
 
@@ -51,7 +52,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         private static SerializedObject SocketData(Component component)
         {
             if (component == null || component.GetType().FullName != SocketType)
-                throw new InvalidOperationException("所有 Socket の参照が失われています。");
+                throw new InvalidOperationException(L("所有 Socket の参照が失われています。"));
             var data = new SerializedObject(component);
             Require(data, "name", SerializedPropertyType.String);
             Require(data, "addMenuItem", SerializedPropertyType.Boolean);
@@ -61,7 +62,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         public static Component CreateSocket(GameObject pose, SocketSettings part, SetupSettings setup, List<string> warnings)
         {
             RequireVersion();
-            var wrapper = UndoComponentRegistration.Invoke(pose, "SPS2 セットアップ", () => VrcFuryApi.CreateSocket(pose));
+            var wrapper = UndoComponentRegistration.Invoke(pose, L("SPS2 セットアップ"), () => VrcFuryApi.CreateSocket(pose));
             wrapper.SetName(part.name);
             wrapper.SetMode(setup.penetration && (part.id == "mouth" || part.id == "anus") ? "Ring" : "Auto");
             if (part.id == "chest" || part.id == "handLeft" || part.id == "handRight" || part.id == "hands" ||
@@ -76,7 +77,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             RequireVersion();
             var target = SocketData(component);
             if (target.FindProperty("depthActions2")?.arraySize > 1)
-                throw new InvalidOperationException(part.name + ": 手動で追加された深度グループがあります。設定を保持するため、変更を中止しました。");
+                throw new InvalidOperationException(part.name + L(": 手動で追加された深度グループがあります。設定を保持するため、変更を中止しました。"));
             var temporary = new GameObject("SPS2 configuration staging") { hideFlags = HideFlags.HideAndDontSave };
             try
             {
@@ -93,19 +94,19 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                             case DepthActionKind.BlendShape:
                                 if (action.renderer == null || action.renderer.sharedMesh == null ||
                                     string.IsNullOrEmpty(action.shape) || action.renderer.sharedMesh.GetBlendShapeIndex(action.shape) < 0)
-                                { warnings.Add(part.name + ": BlendShape が未設定のため、このアクションを省きました。"); continue; }
+                                { warnings.Add(part.name + L(": BlendShape が未設定のため、このアクションを省きました。")); continue; }
                                 actions.AddBlendshape(action.shape, Mathf.Clamp(action.weight, 0, 100), action.renderer);
                                 break;
                             case DepthActionKind.AnimationClip:
-                                if (action.clip == null) { warnings.Add(part.name + ": Clip が未設定です。"); continue; }
+                                if (action.clip == null) { warnings.Add(part.name + L(": Clip が未設定です。")); continue; }
                                 actions.AddAnimationClip(action.clip);
                                 break;
                             case DepthActionKind.Object:
-                                if (action.target == null) { warnings.Add(part.name + ": オブジェクトが未設定です。"); continue; }
+                                if (action.target == null) { warnings.Add(part.name + L(": オブジェクトが未設定です。")); continue; }
                                 actions.AddTurnOn(action.target);
                                 if (!action.objectOn) offIndices.Add(count);
                                 break;
-                            default: throw new InvalidOperationException("Unknown depth action.");
+                            default: throw new InvalidOperationException(L("不明な深度アクションです。"));
                         }
                         count++;
                     }
@@ -122,7 +123,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                     source.ApplyModifiedPropertiesWithoutUndo();
                     source.Update();
                 }
-                Undo.RecordObject(component, "SPS2 設定反映");
+                Undo.RecordObject(component, L("SPS2 設定反映"));
                 target.FindProperty("name").stringValue = part.name;
                 SetOptionalBool(target, "enableAuto", setup.autoMode);
                 if (VrcFuryCapabilities.Current.Legacy) SetOptionalBool(target, "useLights", setup.legacy);
@@ -166,7 +167,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             var mode = Require(data, "addLight", SerializedPropertyType.Enum);
             string expected = setup.penetration ? "Ring" : "Auto";
             if (mode.enumNames[mode.enumValueIndex] == expected) return;
-            Undo.RecordObject(component, "SPS2 貫通モード");
+            Undo.RecordObject(component, L("SPS2 貫通モード"));
             SetEnum(mode, expected);
             data.ApplyModifiedProperties();
             PrefabUtility.RecordPrefabInstancePropertyModifications(component);
@@ -174,7 +175,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         public static void ConfigureCommon(Component component, SetupSettings setup)
         {
             var data = SocketData(component);
-            Undo.RecordObject(component, "SPS2 共通設定");
+            Undo.RecordObject(component, L("SPS2 共通設定"));
             SetOptionalBool(data, "enableAuto", setup.autoMode);
             if (VrcFuryCapabilities.Current.Legacy) SetOptionalBool(data, "useLights", setup.legacy);
             data.ApplyModifiedProperties();
@@ -188,19 +189,19 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
 
         public static void SetPath(Component socket, Transform[] stops, Transform avatar, bool collapseInternal = false)
         {
-            if (stops.Length > 3) throw new InvalidOperationException("Guided Path は最大3通過点です。");
+            if (stops.Length > 3) throw new InvalidOperationException(L("Guided Path は最大3通過点です。"));
             foreach (var stop in stops)
                 if (stop == null || !stop.IsChildOf(avatar) || AllSockets(stop.gameObject).Length != 0)
-                    throw new InvalidOperationException("Guided Path の参照が不正です。");
+                    throw new InvalidOperationException(L("Guided Path の参照が不正です。"));
             var data = SocketData(socket);
             var caps = VrcFuryCapabilities.Current;
             var array = data.FindProperty(caps.PathStops ? "guidedPathStops" : "guidedPath");
             if (array == null)
             {
-                if (stops.Length != 0) throw new InvalidOperationException("この版では貫通経路を利用できません。");
+                if (stops.Length != 0) throw new InvalidOperationException(L("この版では貫通経路を利用できません。"));
                 return;
             }
-            Undo.RecordObject(socket, "SPS2 貫通設定");
+            Undo.RecordObject(socket, L("SPS2 貫通設定"));
             array.arraySize = stops.Length;
             for (int i = 0; i < stops.Length; i++)
             {
@@ -225,7 +226,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         {
             if (!VrcFuryCapabilities.Current.Collapse) return;
             RequireVersion(); var data = SocketData(socket);
-            Undo.RecordObject(socket, "SPS2 体内の太さ");
+            Undo.RecordObject(socket, L("SPS2 体内の太さ"));
             var count = data.FindProperty("guidedPathStops").arraySize;
             for (int i = 0; i < count; i++)
                 Require(data, $"guidedPathStops.Array.data[{i}].shrink", SerializedPropertyType.Boolean).boolValue = collapse && i != uncollapsedSegment;
@@ -237,8 +238,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             if (!caps.Tangents) return;
             RequireVersion(); var data = SocketData(socket);
             if (segment < 0 || segment >= data.FindProperty("guidedPathStops").arraySize)
-                throw new InvalidOperationException("貫通経路の区間がありません。");
-            Undo.RecordObject(socket, "SPS2 貫通経路の接線");
+                throw new InvalidOperationException(L("貫通経路の区間がありません。"));
+            Undo.RecordObject(socket, L("SPS2 貫通経路の接線"));
             string prefix = $"guidedPathStops.Array.data[{segment}].";
             Require(data, prefix + "customizeTangentOut", SerializedPropertyType.Boolean).boolValue = true;
             Require(data, prefix + "customizeTangentIn", SerializedPropertyType.Boolean).boolValue = true;
@@ -248,7 +249,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 var previous = segment == 0 ? socket.transform :
                     Require(data, $"guidedPathStops.Array.data[{segment - 1}].transform", SerializedPropertyType.ObjectReference).objectReferenceValue as Transform;
                 if (stop == null || previous == null || Mathf.Abs(stop.lossyScale.x) < 1e-6f || Mathf.Abs(previous.lossyScale.x) < 1e-6f)
-                    throw new InvalidOperationException("経路の参照またはスケールが不正です。");
+                    throw new InvalidOperationException(L("経路の参照またはスケールが不正です。"));
                 exit /= previous.lossyScale.x; enter /= stop.lossyScale.x;
                 SetOptionalBool(data, "offsetsInLocalUnits", true);
             }
@@ -272,7 +273,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             var data = SocketData(socket);
             var property = data.FindProperty("oscId") ?? data.FindProperty("name");
             if (property.stringValue == identity) return;
-            Undo.RecordObject(socket, "SPS2 設定識別子");
+            Undo.RecordObject(socket, L("SPS2 設定識別子"));
             property.stringValue = identity;
             data.ApplyModifiedProperties();
             PrefabUtility.RecordPrefabInstancePropertyModifications(socket);
@@ -290,17 +291,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         internal static void ValidateBuildTokens(GameObject avatar, Sps2SetupContext root)
         {
             var tokens = new HashSet<string>(root.sockets.Select(s => "__SPS2_" + root.identity + "_" + s.id));
-            if (tokens.Count != root.sockets.Count) throw new InvalidOperationException("SPS2 の部位識別子が重複しています。");
+            if (tokens.Count != root.sockets.Count) throw new InvalidOperationException(L("SPS2 の部位識別子が重複しています。"));
             foreach (var socket in AllSockets(avatar))
             {
                 if (root.sockets.Any(s => s.socket == socket)) continue;
                 var data = SocketData(socket);
                 if (tokens.Contains(data.FindProperty("name").stringValue) || tokens.Contains(data.FindProperty("oscId")?.stringValue))
-                    throw new InvalidOperationException("SPS2 のビルド識別子と既存 Socket が衝突しています。");
+                    throw new InvalidOperationException(L("SPS2 のビルド識別子と既存 Socket が衝突しています。"));
             }
             foreach (var plug in avatar.GetComponentsInChildren<Component>(true).Where(c => c != null && c.GetType().FullName == PlugType))
                 if (tokens.Contains(new SerializedObject(plug).FindProperty("name")?.stringValue))
-                    throw new InvalidOperationException("SPS2 のビルド識別子と Plug 名が衝突しています。");
+                    throw new InvalidOperationException(L("SPS2 のビルド識別子と Plug 名が衝突しています。"));
         }
 
         internal static int AutoSocketCount(GameObject avatar) => AllSockets(avatar).Count(s =>
@@ -312,9 +313,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         public static Component CreateTestPlug(GameObject obj, Renderer[] renderers, string label = "SPS2 テストプラグ")
         {
             RequireVersion();
-            if (!VrcFuryCapabilities.Current.TestPlug) throw new InvalidOperationException("この版ではテストプラグを生成できません。" + VrcFuryCapabilities.UpdateGuide);
+            if (!VrcFuryCapabilities.Current.TestPlug) throw new InvalidOperationException(L("この版ではテストプラグを生成できません。") + VrcFuryCapabilities.UpdateGuide);
             var type = TypeCache.GetTypesDerivedFrom<MonoBehaviour>().SingleOrDefault(t => t.FullName == PlugType);
-            if (type == null) throw new InvalidOperationException("対応する VRCFury Plug が見つかりません。");
+            if (type == null) throw new InvalidOperationException(L("対応する VRCFury Plug が見つかりません。"));
             var plug = Undo.AddComponent(obj, type);
             var data = new SerializedObject(plug);
             Require(data, data.FindProperty("enableSps") != null ? "enableSps" : "configureSps", SerializedPropertyType.Boolean).boolValue = true;

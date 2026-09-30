@@ -97,7 +97,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             var requested = FullSetupCatalog.CreateDefault(); requested.penetration = true;
             var effective = caps.Effective(requested);
             Assert.IsTrue(effective.penetration); Assert.IsTrue(effective.showInternalThickness);
-            Assert.IsTrue(caps.Notices().Any(n => n.Contains("首付近で太さ")));
+            Assert.IsTrue(caps.Notices().Any(n => n.Contains(Localization.Sps2Localization.L("首付近で太さを0にする"))));
         }
 
         [Test]
