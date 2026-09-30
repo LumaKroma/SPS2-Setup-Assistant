@@ -1,3 +1,41 @@
+# 1.1.0 paired naming - Shared Unity validation (2026-09-30)
+
+Code revision: 82aeac4831bef0ce9a5e31c298c915735b8ca5d2, local-only.
+Unity 2022.3.22f1, VRChat SDK 3.10.4, VRCFury 1.1403.0, dedicated Issue180
+Shared project. Actual EditMode suites: 55/55 passed. Isolated saved-fixture
+regression: 68 assertions passed, covering retained legacy paths and local poses
+on Apply, retained paths on regeneration/Undo/Redo, all eight new paired names,
+unique counterpart names, stable 16 IDs including custom, regeneration and scene
+reload. Actual SDK preprocessing on the new names: 43 assertions passed, including
+native menus, pagination, owned/default/persistence parameters and unrelated menu.
+Package/localization validation (168 entries), compile and diff checks passed.
+
+The initial disposable probe renamed a Transform directly before Apply and failed:
+metadata stores relative paths, so arbitrary external renaming invalidates lookup.
+The failed evidence is retained. Restoring that isolated clone's original name
+and testing normal generator operations passed. This does not validate arbitrary
+user renaming, automated migration or external AnimationClip rewriting. Existing
+objects are not renamed by this change; new paired poses receive the new names.
+SymmetryBoneEditor was read as source, not installed or run. Matching suffix names
+is verified from that source; geometric mirroring with different parent frames
+still requires a visual test.
+
+Evidence (management checkout .codex-staging/sps2-i18n-110):
+editor-tests-82aeac4.json, naming-regression-82aeac4.json (failed probe),
+naming-regression-v2-82aeac4.json, naming-native-82aeac4.json,
+naming-save-state.json, naming-residue-audit.json, naming-close.json,
+naming-release.json. Editor PID 58572 exited normally, all scenes were saved,
+and the owned lease was formally released; shared server was left running.
+
+Earlier b328e006 validation includes 126 authoring assertions and five-language
+native/UI observations. Parameter signatures matched after replacing only the
+per-Apply settings snapshot GUID; raw parameter names are not byte-stable even
+between repeated same-language Applies. Twelve lower-window screenshots and
+English 430px layout were reviewed. Those observations are scoped to b328e006.
+Outstanding: real tooltip popup, fresh 1.1.0 installation, native-speaker review,
+actual avatar/geometric symmetry and VRC PC. The warm synthetic fixture is not
+fresh-install or real-avatar evidence. No version bump, push, PR update, package
+export or release occurred. Ring socket and Casual-only Auto remain proposals.
 # 1.1.0 source-only validation — 2026-09-30
 
 Baseline: 4902a77f31e37ccfb6e8b22d6e987c40a6a797bb (public 1.0.2).
