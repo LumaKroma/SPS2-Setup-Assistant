@@ -549,3 +549,26 @@ foldout retains display-name fields; enabling Rename opens it. Stable IDs and
 user overrides remain unchanged. Japanese standard labels are 左手の指わっか /
 右手の指わっか; English uses finger loop. Historical standard aliases are retained
 as migration inputs. Native-language quality still needs human review.
+
+
+## Real-gesture refinement of the initial loop estimate (unreleased 1.1.0)
+
+The estimated opening contour excludes ThumbProximal, which belongs to the
+palm/web rather than the hole. Its normal is the least-variance axis of the
+contour covariance, with area, rank/planarity and palm-relative direction guards;
+the signed area centroid is projected onto that fitted plane. The existing
+bounded reference pose, tip approximation and unsupported-scale guard remain.
+
+New automatic calibration follows ThumbDistal plus IndexProximal, reducing the
+reference-to-gesture rotation discrepancy measured on MANUKA. Its chosen joint
+is recorded in the existing indexPath field; no settings schema/ID is added.
+Saved IndexIntermediate calibrations continue using IndexIntermediate and are
+never silently upgraded. Uncalibrated manual capture retains IndexIntermediate;
+automatic recalibration is explicit and changes its selected frame deliberately.
+Unknown/remapped paths fail validation. Stored weights and default0.5 remain
+unchanged: a single avatar does not establish a universal tracking weight.
+
+No user Gesture, Animator controller, Avatar asset or mesh is modified. CPU
+mesh projection used during validation is diagnostic evidence only and is not
+included in the runtime estimator or package dependency contract. Other-avatar,
+visible fit and VRC PC validation remain open.

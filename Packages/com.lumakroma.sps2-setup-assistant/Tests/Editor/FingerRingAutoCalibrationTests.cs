@@ -44,6 +44,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             Assert.Throws<InvalidOperationException>(() => FingerRingAutoCalibration.EstimateGeometry(p, true, out _, out _));
         }
 
+        [Test]
+        public void PalmBaseDoesNotBiasOpeningCenterOrPlane()
+        {
+            var p = Closed();
+            FingerRingAutoCalibration.EstimateGeometry(p, true, out var center, out var rotation);
+            p[1] = new Vector3(-.05f, -.01f, .008f);
+            FingerRingAutoCalibration.EstimateGeometry(p, true, out var other, out var facing);
+            Assert.That(Vector3.Distance(center, other), Is.LessThan(.00001f));
+            Assert.That(Quaternion.Angle(rotation, facing), Is.LessThan(.01f));
+        }
+
         [TestCase(false)] [TestCase(true)]
         public void SkeletonCopyAlwaysCleansUpWithoutOriginalMutation(bool fail)
         {

@@ -19,9 +19,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             bool left = part.id == "fingerRingLeft";
             thumb = animator.GetBoneTransform(left ? HumanBodyBones.LeftThumbDistal : HumanBodyBones.RightThumbDistal);
             index = animator.GetBoneTransform(left ? HumanBodyBones.LeftIndexIntermediate : HumanBodyBones.RightIndexIntermediate);
+            index = ResolveIndexFrame(avatar.transform, index,
+                animator.GetBoneTransform(left ? HumanBodyBones.LeftIndexProximal : HumanBodyBones.RightIndexProximal), part.fingerRing);
             if (thumb == null || index == null || thumb == index)
-                throw new InvalidOperationException(L("輪ソケットにはThumbDistalとIndexIntermediateが必要です。アバターの関節マッピングを確認してください。"));
+                throw new InvalidOperationException(L("輪ソケットにはThumbDistalと校正対象のIndexProximalまたはIndexIntermediateが必要です。アバターの関節マッピングを確認してください。"));
         }
+
+        internal static Transform ResolveIndexFrame(Transform avatar, Transform intermediate, Transform proximal, FingerRingCalibration value) =>
+            value != null && value.calibrated && proximal != null &&
+            AnimationUtility.CalculateTransformPath(proximal, avatar) == value.indexPath ? proximal : intermediate;
 
         public static FingerRingCalibration Capture(Transform avatar, Transform thumb, Transform index,
             Vector3 center, Quaternion rotation, float thumbWeight)

@@ -12,6 +12,27 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
 {
     public class FingerRingCalibrationTests
     {
+        [TestCase(false)] [TestCase(true)]
+        public void SavedIndexFramePreservesIntermediateAndAcceptsAutomaticProximal(bool proximalFrame)
+        {
+            var root = new GameObject("Saved index frames");
+            try {
+                var thumb = new GameObject("Thumb").transform; thumb.SetParent(root.transform, false);
+                var proximal = new GameObject("Index base").transform; proximal.SetParent(root.transform, false);
+                var intermediate = new GameObject("Index middle").transform; intermediate.SetParent(proximal, false);
+                var chosen = proximalFrame ? proximal : intermediate;
+                var value = FingerRingCalibrationUtility.Capture(root.transform, thumb, chosen, Vector3.one * .01f, Quaternion.identity, .3f);
+                value = JsonUtility.FromJson<FingerRingCalibration>(JsonUtility.ToJson(value));
+                var resolved = FingerRingCalibrationUtility.ResolveIndexFrame(root.transform, intermediate, proximal, value);
+                Assert.That(resolved, Is.SameAs(chosen));
+                FingerRingCalibrationUtility.Validate(root.transform, thumb, resolved, value);
+                Assert.That(FingerRingCalibrationUtility.ResolveIndexFrame(root.transform, intermediate, proximal, new FingerRingCalibration()), Is.SameAs(intermediate));
+                value.indexPath = "Unknown saved path";
+                resolved = FingerRingCalibrationUtility.ResolveIndexFrame(root.transform, intermediate, proximal, value);
+                Assert.Throws<InvalidOperationException>(() => FingerRingCalibrationUtility.Validate(root.transform, thumb, resolved, value));
+            } finally { UnityEngine.Object.DestroyImmediate(root); }
+        }
+
         [TestCase(.5f)] [TestCase(2f)]
         public void UniformAvatarScaleIsStillRejected(float scale)
         {
@@ -229,7 +250,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
                 passed = true;
             } finally {
                 System.IO.Directory.CreateDirectory("Library/Issue180Validation");
-                System.IO.File.WriteAllText("Library/Issue180Validation/auto-ring-converted-runtime-v6.json", JsonUtility.ToJson(new ConvertedRuntimeResult { passed = passed, sdkSimulation = true, vrcClientVerified = false, rows = rows }, true));
+                System.IO.File.WriteAllText("Library/Issue180Validation/gesture-refinement-converted-runtime-v7.json", JsonUtility.ToJson(new ConvertedRuntimeResult { passed = passed, sdkSimulation = true, vrcClientVerified = false, rows = rows }, true));
                 UnityEngine.Object.DestroyImmediate(root);
             }
             yield return new ExitPlayMode();

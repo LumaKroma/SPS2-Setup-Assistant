@@ -911,3 +911,26 @@ The chosen fixed pose above yielded estimated gap/index-length ratios0.11720
 for both sides, plane deviations0.15464 span, normal agreement0.74493.
 These are geometry observations, not visible surface/actual Gesture acceptance.
 The runtime estimator performs no pose search. Closure guard tightened to0.2.
+
+
+## 2026-10-01 real V3 gesture refinement checkpoint
+
+Baselineccab1118; Context Check Issue180 comment5931623770. Saved RingRuntimeHost
+has MANUKA, GestureManager and MA MergeAnimator using AdvancedHandGestureV3.
+Public controller traversal maps OK.anim into both hand layers with motion-time
+parameters smoothedLeftWeight/smoothedRightWeight. Both-hand authored muscle
+curves match. A disposable Transform-only copy sampled16 poses: reference,
+OK time0/.25/.5/.75/1, open and fist on each side. Source Transform snapshot
+and scene cleanliness stayed equal. Copied renderer CPU BakeMesh plus software
+projection supplied isolated front/side observations without GPU rendering.
+
+The baseline comparison showed about5mm projected center discrepancy and
+about22-degree tilt against a diagnostic fitted finger-loop plane. A trimmed
+contour, fitted plane and IndexProximal tracking candidate at unchanged weight0.5
+reduced the sampled mean projected discrepancy to about1.7mm and maximum tilt
+to about11 degrees. These are measured comparisons on one rig, not universal
+surface guarantees; middle-finger occlusion affects the visible-hole diagnostic.
+Product source tests add palm-point independence and legacy/new saved-frame
+resolution coverage. Exact revised-head generation/runtime/native regression
+results must be recorded in the owning Issue and gesture-refinement-evidence.
+Native-language quality and VRC PC remain unverified. No release is implied.
