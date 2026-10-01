@@ -520,15 +520,15 @@ New uncalibrated, included fingerRingLeft/fingerRingRight attempt a bounded
 bone-based initial calibration before the authoring transaction. A disposable
 Transform-only copy uses the existing Humanoid Avatar through public
 HumanPoseHandler. Only the selected thumb/index muscles change: thumb stretch
-(-0.5,-0.7,-0.7), spread0.5; index stretch(-0.3,-0.8,-0.6), spread0. No source
+(-1,-0.75,-0.75), spread-0.75; index stretch(-0.25,-1,-1), spread0. No source
 Animator, scripts, constraints, renderer, pose or clip are modified/copied.
 The copy and HumanPoseHandler are disposed on success/failure. This reference
 pose is not guaranteed to match the user's runtime Gesture.
 
 Seven mapped points (Hand; thumb/index proximal, intermediate, distal) form a
 bone contour. Unmapped/distinctness failures, nonfinite values, tiny segments,
-non-unit/sheared frames, estimated tip gap >0.35 index length, area <0.08 span²,
-plane deviation >0.2 span or uncertain palm-relative normal reject estimation.
+non-unit/sheared frames, estimated tip gap >0.2 index length, area <0.08 span²,
+plane deviation >0.2 span, exterior centroid or uncertain palm-relative normal reject estimation.
 Terminal segments extend by0.6 of the preceding distal segment: this is a bounded
 bone approximation, not a finger-surface measurement. The area centroid and
 palm-relative plane normal supply center/+Z. Both joint-relative offsets are

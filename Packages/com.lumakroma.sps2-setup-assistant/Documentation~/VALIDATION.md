@@ -904,3 +904,10 @@ copy cleanup and preservation tests; exact-head Unity results are recorded in
 the owning Issue and local auto-ring-evidence. Five-language/native review and
 actual-avatar/VRC PC visual quality remain separate gates. Static compilation
 uses installed Unity2022.3.22f1/reference SDK assemblies. No release is implied.
+
+Reference-pose refinement: read-only MANUKA prefab bones were copied without
+components; public Humanoid sampling observed320 coarse and324 refined cases.
+The chosen fixed pose above yielded estimated gap/index-length ratios0.11720
+for both sides, plane deviations0.15464 span, normal agreement0.74493.
+These are geometry observations, not visible surface/actual Gesture acceptance.
+The runtime estimator performs no pose search. Closure guard tightened to0.2.

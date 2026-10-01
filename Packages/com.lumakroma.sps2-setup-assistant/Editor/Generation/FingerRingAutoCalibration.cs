@@ -20,7 +20,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             bool left = part.id == "fingerRingLeft";
             var animator = avatar.GetComponent<Animator>();
             var bones = RequiredBones(left).Select(animator.GetBoneTransform).ToArray();
-            if (bones.Any(b => b == null || !b.IsChildOf(avatar.transform)) || bones.Distinct().Count() != bones.Length)
+            if (bones.Any(b => b == null || !b.IsChildOf(avatar.transform)) || bones.Distinct().Count() != bones.Length ||
+                bones.Any(b => avatar.transform.Find(AnimationUtility.CalculateTransformPath(b, avatar.transform)) != b))
                 throw new InvalidOperationException(L(Failure));
             return WithSkeletonCopy(avatar.transform, (root, map) => {
                 using (var handler = new HumanPoseHandler(animator.avatar, root))
@@ -52,10 +53,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         {
             string side = left ? "Left " : "Right ";
             var values = new Dictionary<string, float> {
-                { "Thumb 1 Stretched", -.5f }, { "Thumb Spread", .5f },
-                { "Thumb 2 Stretched", -.7f }, { "Thumb 3 Stretched", -.7f },
-                { "Index 1 Stretched", -.3f }, { "Index Spread", 0f },
-                { "Index 2 Stretched", -.8f }, { "Index 3 Stretched", -.6f }
+                { "Thumb 1 Stretched", -1f }, { "Thumb Spread", -.75f },
+                { "Thumb 2 Stretched", -.75f }, { "Thumb 3 Stretched", -.75f },
+                { "Index 1 Stretched", -.25f }, { "Index Spread", 0f },
+                { "Index 2 Stretched", -1f }, { "Index 3 Stretched", -1f }
             };
             if (pose.muscles == null || pose.muscles.Length != HumanTrait.MuscleCount)
                 throw new InvalidOperationException(L(Failure));
@@ -107,7 +108,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             // Distal Humanoid bones mark a joint rather than the fingertip. No mesh/tip mapping is assumed.
             var thumbTip = p[3] + (p[3] - p[2]) * .6f;
             var indexTip = p[6] + (p[6] - p[5]) * .6f;
-            if (Vector3.Distance(thumbTip, indexTip) > length * .35f) Reject();
+            if (Vector3.Distance(thumbTip, indexTip) > length * .2f) Reject();
             var contour = new[] { p[4], p[5], p[6], indexTip, thumbTip, p[3], p[2], p[1] };
             var origin = contour[0]; var areaVector = Vector3.zero;
             for (int i = 1; i < contour.Length - 1; i++) areaVector += Vector3.Cross(contour[i] - origin, contour[i + 1] - origin);
@@ -128,6 +129,16 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             center = weighted / twiceArea;
             var up = Vector3.ProjectOnPlane(p[4] - center, normal);
             if (!Finite(center) || up.sqrMagnitude < span * span * .001f) Reject();
+            var xAxis = Vector3.Cross(up.normalized, normal);
+            bool inside = false;
+            for (int i = 0, j = contour.Length - 1; i < contour.Length; j = i++)
+            {
+                var a = contour[i] - center; var b = contour[j] - center;
+                float ay = Vector3.Dot(a, up.normalized), by = Vector3.Dot(b, up.normalized);
+                float ax = Vector3.Dot(a, xAxis), bx = Vector3.Dot(b, xAxis);
+                if ((ay > 0) != (by > 0) && ax + (bx - ax) * -ay / (by - ay) > 0) inside = !inside;
+            }
+            if (!inside) Reject();
             rotation = Quaternion.LookRotation(normal, up.normalized);
         }
 
