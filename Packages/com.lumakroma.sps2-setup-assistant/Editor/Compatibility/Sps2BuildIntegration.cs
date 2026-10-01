@@ -220,7 +220,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             Motion CloneMotion(Motion motion)
             {
                 if (!(motion is BlendTree original)) return motion;
-                var tree = UnityEngine.Object.Instantiate(original);
+                // Instantiate can assert on Unity's native strong references in
+                // generated animator sub-assets. Copy serialized data into a new
+                // object, then replace only the owned motion references below.
+                var tree = new BlendTree();
+                EditorUtility.CopySerialized(original, tree);
                 var children = tree.children;
                 for (int i = 0; i < children.Length; i++)
                 {
@@ -283,8 +287,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                     original.anyStateTransitions.Length != 0 || original.entryTransitions.Length != 0 ||
                     original.states[0].state.transitions.Length != 0)
                     throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
-                var machine = UnityEngine.Object.Instantiate(original);
-                var state = UnityEngine.Object.Instantiate(original.states[0].state);
+                var machine = new AnimatorStateMachine();
+                EditorUtility.CopySerialized(original, machine);
+                var state = new AnimatorState();
+                EditorUtility.CopySerialized(original.states[0].state, state);
                 state.motion = CloneMotion(state.motion);
                 var child = original.states[0]; child.state = state;
                 machine.states = new[] { child }; machine.defaultState = state;
