@@ -29,6 +29,26 @@ root bindings and internal constant-name collisions stop the build. The supporte
 observed shape is a static single-state Direct graph; other dependency shapes
 require captured native validation before support is claimed.
 
+The native Legacy and Stealth empty restoration branches have the same observed
+mixed-WD failure. Their descendant bindings do not overlap the14 owned root keys;
+Legacy and Stealth share the Light bindings with each other. Restore owned native
+non-Light baselines explicitly when Stealth is OFF. When Legacy is ON, restore
+owned Light baselines only while Stealth is OFF; otherwise keep them disabled.
+Legacy OFF retains its native disable clip. Thus the existing suppression rules
+remain: Light = native baseline AND Legacy AND NOT Stealth; other Stealth outputs
+= native baseline AND NOT Stealth. Root OFF still hides all descendants. Read
+native baseline values, including0, rather than assuming every child starts ON.
+
+Preserve native threshold0/epsilon, layer order/weights/WD, original disabling
+clips, existing foreign-socket curves and parameter drivers. Only copied empty
+branches receive owned missing baselines. No state/transition/timer/parameter is
+added. Every controlled value is defined on entry/reentry and repeated changes;
+simultaneous modes, reset/reload, root off/on and native Auto-driven root changes
+follow the same current parameters. Unsupported comparison/motion/state-machine
+shapes or unreached replacements fail closed. Validation must cover all mode
+combinations, repeated cycles and native input/foreign-path preservation, as well
+as the original14-socket OFF regression.
+
 Validation must include the regenerated actual14-socket GM ON/OFF/ON/OFF sequence,
 related native mode/reset behavior and preservation of authoring inputs. Numeric
 GM success does not replace exact-artifact VRChat PC acceptance. The source remains

@@ -143,6 +143,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             if (root.settings.legacy && legacy == null) throw new InvalidOperationException(L("後方互換性メニューがありません。"));
             if (auto != null) SetPersistence(avatar, fx, auto, true, 0);
             if (legacy != null) SetPersistence(avatar, fx, legacy, true, 1);
+            StabilizeOwnedGlobalControls(avatar, fx, root, localOnly?.control.parameter.name, legacy?.control.parameter.name);
             var requiredControls = owned.Values.Select(e => e.control).ToList();
             if (auto != null) requiredControls.Add(auto.control);
             if (legacy != null) requiredControls.Add(legacy.control);
@@ -299,6 +300,143 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             if (counts.Values.Any(count => count != 1))
                 throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
             fx.AddParameter(new AnimatorControllerParameter { name = one, type = AnimatorControllerParameterType.Float, defaultFloat = 1 });
+            fx.layers = layers;
+        }
+
+        // Native global empty branches also retain values under mixed avatar WD.
+        // Preserve native thresholds/layers/WD and add only owned missing baselines.
+        internal static void StabilizeOwnedGlobalControls(VRCAvatarDescriptor avatar,
+            AnimatorController fx, Sps2SetupContext root, string stealthParameter, string legacyParameter)
+        {
+            if (string.IsNullOrEmpty(stealthParameter)) return;
+            var prefixes = root.sockets.Select(s =>
+                AnimationUtility.CalculateTransformPath(s.pose, avatar.transform) + "/BakedSpsSocket/").ToArray();
+            var allTrees = new HashSet<BlendTree>();
+            void Collect(Motion motion)
+            {
+                if (!(motion is BlendTree tree) || !allTrees.Add(tree)) return;
+                foreach (var child in tree.children) Collect(child.motion);
+            }
+            void CollectMachine(AnimatorStateMachine machine)
+            {
+                foreach (var state in machine.states) Collect(state.state.motion);
+                foreach (var child in machine.stateMachines) CollectMachine(child.stateMachine);
+            }
+            foreach (var layer in fx.layers) CollectMachine(layer.stateMachine);
+            BlendTree Find(string parameter)
+            {
+                var found = allTrees.Where(t => t.blendParameter == parameter &&
+                    t.blendType == BlendTreeType.Simple1D).ToArray();
+                if (found.Length != 1 || fx.parameters.Count(p => p.name == parameter &&
+                    p.type == AnimatorControllerParameterType.Float) != 1)
+                    throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+                var c = found[0].children;
+                if (c.Length != 2 || c[0].threshold != 0 || c[1].threshold != float.Epsilon ||
+                    !(c[0].motion is AnimationClip) || !(c[1].motion is AnimationClip))
+                    throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+                return found[0];
+            }
+            void RequireEmpty(AnimationClip clip)
+            {
+                if (AnimationUtility.GetCurveBindings(clip).Length != 0 ||
+                    AnimationUtility.GetObjectReferenceCurveBindings(clip).Length != 0 || clip.events.Length != 0)
+                    throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+            }
+            EditorCurveBinding[] OwnedDisabledBindings(AnimationClip clip)
+            {
+                var bindings = AnimationUtility.GetCurveBindings(clip).Where(b =>
+                    prefixes.Any(prefix => b.path.StartsWith(prefix, StringComparison.Ordinal))).ToArray();
+                foreach (var b in bindings)
+                {
+                    var curve = AnimationUtility.GetEditorCurve(clip, b);
+                    if (b.type != typeof(GameObject) || b.propertyName != "m_IsActive" ||
+                        avatar.transform.Find(b.path) == null || curve == null || curve.keys.Length != 1 ||
+                        curve.keys[0].value != 0 || curve.keys[0].time != 0)
+                        throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+                }
+                if (AnimationUtility.GetObjectReferenceCurveBindings(clip).Any(b =>
+                    prefixes.Any(prefix => b.path.StartsWith(prefix, StringComparison.Ordinal))))
+                    throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+                return bindings;
+            }
+            var stealth = Find(stealthParameter);
+            var stealthEmpty = (AnimationClip)stealth.children[0].motion;
+            RequireEmpty(stealthEmpty);
+            var stealthBindings = OwnedDisabledBindings((AnimationClip)stealth.children[1].motion);
+            BlendTree legacy = string.IsNullOrEmpty(legacyParameter) ? null : Find(legacyParameter);
+            var lightBindings = legacy == null ? new EditorCurveBinding[0] :
+                OwnedDisabledBindings((AnimationClip)legacy.children[0].motion);
+            if (legacy != null) RequireEmpty((AnimationClip)legacy.children[1].motion);
+            if (lightBindings.Any(b => !stealthBindings.Contains(b)))
+                throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+            if (stealthBindings.Length == 0) return;
+            var restoreBindings = stealthBindings.Except(lightBindings).ToArray();
+            AnimationClip Values(AnimationClip template, IEnumerable<EditorCurveBinding> bindings,
+                bool restore, string name)
+            {
+                var clip = new AnimationClip(); EditorUtility.CopySerialized(template, clip); clip.name = name;
+                foreach (var binding in bindings)
+                {
+                    float baseline;
+                    if (!AnimationUtility.GetFloatValue(avatar.gameObject, binding, out baseline) ||
+                        (baseline != 0 && baseline != 1))
+                        throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+                    AnimationUtility.SetEditorCurve(clip, binding,
+                        AnimationCurve.Constant(0, 0, restore ? baseline : 0));
+                }
+                return clip;
+            }
+            var replacements = new Dictionary<BlendTree, BlendTree>();
+            var newStealth = new BlendTree(); EditorUtility.CopySerialized(stealth, newStealth);
+            var sc = newStealth.children;
+            sc[0].motion = Values(stealthEmpty, restoreBindings, true, "SPS2 Restore Stealth Outputs");
+            newStealth.children = sc; replacements.Add(stealth, newStealth);
+            if (legacy != null && lightBindings.Length != 0)
+            {
+                var empty = (AnimationClip)legacy.children[1].motion;
+                var whenLegacy = new BlendTree(); EditorUtility.CopySerialized(stealth, whenLegacy);
+                whenLegacy.name = "SPS2 Legacy Lights Respect Stealth";
+                var lc = whenLegacy.children;
+                lc[0].motion = Values(empty, lightBindings, true, "SPS2 Restore Legacy Lights");
+                lc[1].motion = Values(empty, lightBindings, false, "SPS2 Keep Stealth Lights Off");
+                whenLegacy.children = lc;
+                var newLegacy = new BlendTree(); EditorUtility.CopySerialized(legacy, newLegacy);
+                var c = newLegacy.children; c[1].motion = whenLegacy; newLegacy.children = c;
+                replacements.Add(legacy, newLegacy);
+            }
+            bool ContainsChange(Motion motion)
+            {
+                if (!(motion is BlendTree tree)) return false;
+                return replacements.ContainsKey(tree) || tree.children.Any(c => ContainsChange(c.motion));
+            }
+            var applied = new HashSet<BlendTree>();
+            Motion Copy(Motion motion)
+            {
+                if (!(motion is BlendTree tree) || !ContainsChange(tree)) return motion;
+                if (replacements.TryGetValue(tree, out var replacement))
+                { applied.Add(tree); return replacement; }
+                var clone = new BlendTree(); EditorUtility.CopySerialized(tree, clone);
+                var c = clone.children;
+                for (int i = 0; i < c.Length; i++) c[i].motion = Copy(c[i].motion);
+                clone.children = c; return clone;
+            }
+            var layers = fx.layers;
+            for (int i = 0; i < layers.Length; i++)
+            {
+                var original = layers[i].stateMachine;
+                if (!original.states.Any(s => ContainsChange(s.state.motion))) continue;
+                if (original.states.Length != 1 || original.stateMachines.Length != 0 ||
+                    original.anyStateTransitions.Length != 0 || original.entryTransitions.Length != 0 ||
+                    original.states[0].state.transitions.Length != 0)
+                    throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+                var machine = new AnimatorStateMachine(); EditorUtility.CopySerialized(original, machine);
+                var state = new AnimatorState(); EditorUtility.CopySerialized(original.states[0].state, state);
+                state.motion = Copy(state.motion);
+                var c = original.states[0]; c.state = state; machine.states = new[] { c }; machine.defaultState = state;
+                layers[i].stateMachine = machine;
+            }
+            if (replacements.Keys.Any(tree => !applied.Contains(tree)))
+                throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
             fx.layers = layers;
         }
 
