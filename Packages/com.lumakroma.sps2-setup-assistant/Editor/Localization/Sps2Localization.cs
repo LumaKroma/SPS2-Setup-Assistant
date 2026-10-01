@@ -36,6 +36,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Localization
         }
         private static readonly Dictionary<string, string[]> Translations = new Dictionary<string, string[]>
         {
+            { ": 深度アクションが再生成で削除される生成物を参照しています。参照先を生成物の外へ変更してから再生成してください。既存の設定と生成物は変更していません。", new[] { ": A depth action references a generated object that regeneration would delete. Choose a reference outside the generated hierarchy before regenerating. Existing settings and generated objects have not been changed.", ": 깊이 액션이 다시 생성할 때 삭제되는 생성 오브젝트를 참조합니다. 참조 대상을 생성된 계층 밖의 오브젝트로 변경한 뒤 다시 생성하세요. 기존 설정과 생성 오브젝트는 변경되지 않았습니다.", ": 深度动作引用了重新生成时会删除的已生成对象。请将引用目标改为生成层级以外的对象后再重新生成。现有设置和生成对象均未更改。", ": 深度動作參照了重新產生時會刪除的已產生物件。請將參照目標改為產生階層以外的物件後再重新產生。現有設定與產生物件均未變更。" } },
             { "初回生成時は指わっかを自動校正します。合わない場合は輪を閉じ、中心と前方（+Z）を調整して校正を記録してください。Auto対象外です。", new[] { "The first generation calibrates the finger loop automatically. If needed, close the loop, adjust its center and forward (+Z), then capture calibration. Excluded from Auto.", "처음 생성할 때 손가락 고리를 자동 보정합니다. 맞지 않으면 고리를 닫고 중심과 전방(+Z)을 조정한 뒤 보정을 기록하세요. Auto 대상에서 제외됩니다.", "首次生成时自动校准手指环。若不合适，请闭合指环，调整中心和前方（+Z）后记录校准。不参与Auto。", "首次產生時自動校正手指環。若不合適，請閉合指環，調整中心與前方（+Z）後記錄校正。不參與Auto。" } },
             { "自動校正し直す", new[] { "Recalibrate automatically", "자동으로 다시 보정", "重新自动校准", "重新自動校正" } },
             { "初回生成時に自動校正", new[] { "Automatic calibration on first generation", "처음 생성할 때 자동 보정", "首次生成时自动校准", "首次產生時自動校正" } },

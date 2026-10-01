@@ -1,5 +1,20 @@
 # 1.1.0 localization and menu names — 2026-09-30 (unreleased)
 
+## Regeneration protects saved Depth Action references
+
+Before replacing an existing setup, regeneration checks every saved Object and
+renderer reference in Depth Actions, including excluded parts, disabled Depth and
+fields retained while another action kind is selected. If a reference points into
+the generated hierarchy that will be destroyed, regeneration stops with guidance
+before creating a settings snapshot, recording Undo or changing any generated object.
+The original settings, references and hierarchy remain intact. No automatic path
+remapping is performed; choose a reference outside the hierarchy being replaced.
+Ordinary Apply with the same part membership is unchanged. This regeneration guard
+does not add a guarantee for ordinary Apply that removes a referenced part.
+References under test Plugs that regeneration preserves by reparenting
+remain supported, as do ordinary avatar objects/renderers and persistent clips.
+This guard changes only authoring rejection; generated runtime behavior is unchanged.
+
 ## Paired adjustment Transform names
 
 New standard left/right adjustment children use `SPS_EarSocket_L/R`,

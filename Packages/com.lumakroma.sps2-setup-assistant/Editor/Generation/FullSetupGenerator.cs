@@ -330,6 +330,26 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             return new GeneratedSocket { id = part.id, anchor = anchor.transform, pose = pose.transform, socket = socket };
         }
 
+        internal static void ValidateRegenerationReferences(Sps2SetupContext old, SetupSettings settings)
+        {
+            if (old == null || old.gameObject == null) return;
+            bool RetainedByPlug(Transform target, GameObject plug) =>
+                plug != null && plug != old.gameObject && target.IsChildOf(plug.transform);
+            bool WillBeDestroyed(Transform target) => target != null && target.IsChildOf(old.transform)
+                && !RetainedByPlug(target, old.testPlug) && !RetainedByPlug(target, old.longTestPlug);
+
+            // Dormant fields are still saved input. Check both reference fields, regardless
+            // of inclusion, depth enablement or the currently selected action kind.
+            foreach (var part in settings.parts)
+            {
+                if (part?.actions == null) continue;
+                foreach (var action in part.actions)
+                    if (action != null && (WillBeDestroyed(action.target != null ? action.target.transform : null)
+                        || WillBeDestroyed(action.renderer != null ? action.renderer.transform : null)))
+                        throw new InvalidOperationException(part.name + L(": 深度アクションが再生成で削除される生成物を参照しています。参照先を生成物の外へ変更してから再生成してください。既存の設定と生成物は変更していません。"));
+            }
+        }
+
         public static bool Apply(VRCAvatarDescriptor avatar, SetupSettings settings, bool regenerate,
             out Sps2SetupContext root, out string message)
         {
@@ -342,6 +362,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (avatar == null || EditorUtility.IsPersistent(avatar)) throw new InvalidOperationException(L("Scene または Prefab Mode のアバターを選択してください。"));
                 if (!HumanoidSnapshot.TryCapture(avatar, out var snapshot, out var error)) throw new InvalidOperationException(error);
                 var old = Find(avatar);
+                if (regenerate) ValidateRegenerationReferences(old, settings);
                 if (old != null && !regenerate) ValidateOwnership(old, false);
                 var basis = BodyBasisBuilder.Build(snapshot);
                 var warnings = new List<string>();
