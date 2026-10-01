@@ -1,5 +1,6 @@
 using System.Collections.Generic;
 using UnityEditor;
+using UnityEngine;
 
 namespace LumaKroma.Sps2SetupAssistant.Editor.Localization
 {
@@ -9,8 +10,21 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Localization
         public static readonly string[] LanguageNames = { "日本語", "English", "한국어", "简体中文", "繁體中文" };
         public static DisplayLanguage UiLanguage
         {
-            get => Normalize((DisplayLanguage)EditorPrefs.GetInt(PreferenceKey, 0));
+            get => EditorPrefs.HasKey(PreferenceKey) ? Normalize((DisplayLanguage)EditorPrefs.GetInt(PreferenceKey)) : DefaultLanguage;
             set => EditorPrefs.SetInt(PreferenceKey, (int)Normalize(value));
+        }
+        public static DisplayLanguage DefaultLanguage => FromSystemLanguage(Application.systemLanguage);
+        public static DisplayLanguage FromSystemLanguage(SystemLanguage language)
+        {
+            switch (language)
+            {
+                case SystemLanguage.Japanese: return DisplayLanguage.Japanese;
+                case SystemLanguage.Korean: return DisplayLanguage.Korean;
+                case SystemLanguage.ChineseTraditional: return DisplayLanguage.ChineseTraditional;
+                case SystemLanguage.Chinese:
+                case SystemLanguage.ChineseSimplified: return DisplayLanguage.ChineseSimplified;
+                default: return DisplayLanguage.English;
+            }
         }
         public static DisplayLanguage Normalize(DisplayLanguage language) =>
             (int)language >= 0 && (int)language < LanguageNames.Length ? language : DisplayLanguage.Japanese;
@@ -22,6 +36,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Localization
         }
         private static readonly Dictionary<string, string[]> Translations = new Dictionary<string, string[]>
         {
+            { "名前", new[] { "Name", "이름", "名称", "名稱" } },
+            { "メニュー表示設定", new[] { "Menu display settings", "메뉴 표시 설정", "菜单显示设置", "選單顯示設定" } },
+            { "表示名変更", new[] { "Rename", "이름 변경", "修改名称", "修改名稱" } },
+            { "オフにするとメニュー言語の標準名へ戻ります。", new[] { "Turn off to restore the standard name in the menu language.", "끄면 메뉴 언어의 기본 이름으로 돌아갑니다.", "关闭后恢复为菜单语言的标准名称。", "關閉後恢復為選單語言的標準名稱。" } },
             { "左手の指輪", new[] { "Left finger ring", "왼손 손가락 고리", "左手指环", "左手指環" } },
             { "右手の指輪", new[] { "Right finger ring", "오른손 손가락 고리", "右手指环", "右手指環" } },
             { "既存のポーズ操作で親指と人差し指の輪を閉じ、中心と前方（+Z）を合わせて校正を記録してください。輪ソケットはAuto対象外です。ジェスチャーは変更しません。", new[] { "Close the thumb–index ring with your existing pose controls. Align its center and forward (+Z), then capture calibration. Ring sockets are excluded from Auto. Gestures are preserved.", "기존 포즈 도구로 엄지와 검지가 만드는 고리를 닫고 중심과 전방(+Z)을 맞춘 뒤 보정을 기록하세요. 고리 소켓은 Auto 대상에서 제외됩니다. 제스처는 유지됩니다.", "用现有姿势工具让拇指和食指闭合成环，调整中心和前方（+Z），然后记录校准。指环插槽不参与Auto。手势保持不变。", "用現有姿勢工具讓拇指和食指閉合成環，調整中心和前方（+Z），然後記錄校正。指環插槽不參與Auto。手勢保持不變。" } },

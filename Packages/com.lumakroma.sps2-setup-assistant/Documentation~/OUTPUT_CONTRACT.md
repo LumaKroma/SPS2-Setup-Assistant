@@ -499,3 +499,16 @@ Nonuniform scaled/rotated bone chains can additionally introduce shear, for whic
 one scalar or a quaternion cannot describe the complete frame. This remains
 unsupported; no scale-support expansion or avatar transform modification is made.
 No distribution format is changed here.
+
+
+### Issue 180 compact display settings (unreleased 1.1.0)
+The UI language uses the system language only when no explicit Editor preference
+exists. New setup defaults use the system language independently of that preference.
+Japanese, English, Korean and Simplified/Traditional Chinese are supported;
+unsupported system languages use English. Existing serialized settings retain
+their menu language (missing legacy language remains Japanese).
+Menu language lives in an initially collapsed display section. Each included socket
+shows its effective menu name beside Depth actions and Rename. Rename reveals the
+override field; turning it off clears the override and restores the translated
+standard name. Existing overrides remain enabled; IDs, pose paths and Auto behavior
+are unchanged. Window draft/expanded state supports serialization and Undo.

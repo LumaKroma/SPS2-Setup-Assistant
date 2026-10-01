@@ -11,6 +11,77 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
 {
     public class LocalizationTests
     {
+        [TestCase(SystemLanguage.Japanese, DisplayLanguage.Japanese)]
+        [TestCase(SystemLanguage.English, DisplayLanguage.English)]
+        [TestCase(SystemLanguage.Korean, DisplayLanguage.Korean)]
+        [TestCase(SystemLanguage.Chinese, DisplayLanguage.ChineseSimplified)]
+        [TestCase(SystemLanguage.ChineseSimplified, DisplayLanguage.ChineseSimplified)]
+        [TestCase(SystemLanguage.ChineseTraditional, DisplayLanguage.ChineseTraditional)]
+        [TestCase(SystemLanguage.German, DisplayLanguage.English)]
+        [TestCase(SystemLanguage.Unknown, DisplayLanguage.English)]
+        public void SystemLanguageMappingHasSupportedAndFallbackDefaults(SystemLanguage system, DisplayLanguage expected)
+            => Assert.That(Sps2Localization.FromSystemLanguage(system), Is.EqualTo(expected));
+
+        [Test]
+        public void FirstUiPreferenceAndNewSetupUseSystemButSavedChoicesRemain()
+        {
+            const string key = "LumaKroma.Sps2SetupAssistant.UiLanguage";
+            bool existed = UnityEditor.EditorPrefs.HasKey(key);
+            int previous = UnityEditor.EditorPrefs.GetInt(key);
+            try
+            {
+                UnityEditor.EditorPrefs.DeleteKey(key);
+                Assert.That(Sps2Localization.UiLanguage, Is.EqualTo(Sps2Localization.DefaultLanguage));
+                Assert.That(UnityEditor.EditorPrefs.HasKey(key), Is.False);
+                Sps2Localization.UiLanguage = DisplayLanguage.ChineseTraditional;
+                Assert.That(Sps2Localization.UiLanguage, Is.EqualTo(DisplayLanguage.ChineseTraditional));
+                Assert.That(FullSetupCatalog.CreateDefault().menuLanguage, Is.EqualTo(Sps2Localization.DefaultLanguage));
+                var saved = FullSetupCatalog.CreateDefault(); saved.menuLanguage = DisplayLanguage.Korean;
+                var loaded = JsonUtility.FromJson<SetupSettings>(JsonUtility.ToJson(saved));
+                FullSetupCatalog.UpgradeDisplayNames(loaded);
+                Assert.That(loaded.menuLanguage, Is.EqualTo(DisplayLanguage.Korean));
+                var old = JsonUtility.FromJson<SetupSettings>("{}");
+                Assert.That(old.menuLanguage, Is.EqualTo(DisplayLanguage.Japanese));
+            }
+            finally { if(existed) UnityEditor.EditorPrefs.SetInt(key,previous); else UnityEditor.EditorPrefs.DeleteKey(key); }
+        }
+
+        [Test]
+        public void RenameWindowUndoReloadAndOffRestoreTranslatedStandard()
+        {
+            var window = ScriptableObject.CreateInstance<Sps2SetupAssistantWindow>();
+            UnityEditor.Undo.IncrementCurrentGroup(); int group = UnityEditor.Undo.GetCurrentGroup();
+            try
+            {
+                window.DraftSettings.menuLanguage = DisplayLanguage.English;
+                var mouth = window.DraftSettings.parts[0]; mouth.menuNameOverride = "Stored custom";
+                Assert.That(window.IsNameEditing(mouth), Is.True);
+                window.SetNameEditing(mouth,false); UnityEditor.Undo.FlushUndoRecordObjects();
+                Assert.That(SocketDisplayNames.Resolve(mouth,DisplayLanguage.English), Is.EqualTo("Mouth"));
+                UnityEditor.Undo.PerformUndo();
+                mouth=window.DraftSettings.parts[0];
+                Assert.That(mouth.menuNameOverride, Is.EqualTo("Stored custom"));
+                Assert.That(window.IsNameEditing(mouth), Is.True);
+                UnityEditor.Undo.PerformRedo(); mouth=window.DraftSettings.parts[0];
+                Assert.That(window.IsNameEditing(mouth), Is.False);
+                window.SetNameEditing(mouth,true);
+                Assert.That(mouth.menuNameOverride, Is.EqualTo("Mouth"));
+                mouth.menuNameOverride=""; // Empty field stays editable while typing.
+                Assert.That(window.IsNameEditing(mouth), Is.True);
+                string draft=JsonUtility.ToJson(window);
+                Assert.That(draft, Does.Contain("nameEditors"));
+                JsonUtility.FromJsonOverwrite(draft,window);
+                mouth=window.DraftSettings.parts[0]; Assert.That(window.IsNameEditing(mouth),Is.True);
+                mouth.menuNameOverride="User name";
+                window.DraftSettings.menuLanguage=DisplayLanguage.Korean;
+                Assert.That(SocketDisplayNames.Resolve(mouth,DisplayLanguage.Korean),Is.EqualTo("User name"));
+                window.SetNameEditing(mouth,false);
+                Assert.That(SocketDisplayNames.Resolve(mouth,DisplayLanguage.Korean),Is.EqualTo(Sps2Localization.L("口",DisplayLanguage.Korean)));
+                Assert.That(JsonUtility.FromJson<SetupSettings>(JsonUtility.ToJson(window.DraftSettings.Copy())).parts[0].menuNameOverride,Is.Empty);
+            }
+            finally { UnityEditor.Undo.RevertAllDownToGroup(group); UnityEngine.Object.DestroyImmediate(window); }
+        }
+
         [TestCase(DisplayLanguage.Japanese, "左手の指輪", "右手の指輪", "親指の重み")]
         [TestCase(DisplayLanguage.English, "Left finger ring", "Right finger ring", "Thumb weight")]
         [TestCase(DisplayLanguage.Korean, "왼손 손가락 고리", "오른손 손가락 고리", "엄지 가중치")]

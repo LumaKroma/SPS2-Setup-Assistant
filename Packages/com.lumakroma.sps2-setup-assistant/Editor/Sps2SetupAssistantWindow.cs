@@ -16,6 +16,21 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         [SerializeField] private VRCAvatarDescriptor descriptor;
         [SerializeField] private SetupSettings settings;
         [SerializeField] private string avatarId;
+        [SerializeField] private bool menuDisplayExpanded;
+        [SerializeField] private System.Collections.Generic.List<string> nameEditors = new System.Collections.Generic.List<string>();
+        internal SetupSettings DraftSettings => settings;
+        internal bool IsNameEditing(SocketSettings part) => nameEditors.Contains(part.id) || !string.IsNullOrWhiteSpace(part.menuNameOverride);
+        internal void SetNameEditing(SocketSettings part, bool enabled)
+        {
+            Change(() => {
+                if (enabled)
+                {
+                    if (!nameEditors.Contains(part.id)) nameEditors.Add(part.id);
+                    if (string.IsNullOrWhiteSpace(part.menuNameOverride)) part.menuNameOverride = SocketDisplayNames.Resolve(part, settings.menuLanguage);
+                }
+                else { nameEditors.Remove(part.id); part.menuNameOverride = ""; }
+            });
+        }
         private Vector2 scroll;
         private string ringHandleId;
         private string message;
@@ -75,7 +90,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         public void BindAvatar(VRCAvatarDescriptor next)
         {
-            descriptor = next; avatarId = null;
+            descriptor = next; avatarId = null; nameEditors.Clear();
             try { settings = FullSetupGenerator.Find(next)?.settings.Copy() ?? FullSetupCatalog.CreateDefault(); message = null; }
             catch (Exception e) { settings = FullSetupCatalog.CreateDefault(); SetMessage(e.Message, false); }
             FullSetupCatalog.UpgradeDisplayNames(settings);
@@ -92,8 +107,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 GUILayout.Space(10);
                 var uiLanguage = (DisplayLanguage)EditorGUILayout.Popup(L("画面の言語"), (int)UiLanguage, LanguageNames);
                 if (uiLanguage != UiLanguage) { UiLanguage = uiLanguage; VrcFuryCapabilities.Refresh(); message = null; Repaint(); }
-                var menuLanguage = (DisplayLanguage)EditorGUILayout.Popup(L("メニューの言語"), (int)Normalize(settings.menuLanguage), LanguageNames);
-                if (menuLanguage != settings.menuLanguage) Change(() => settings.menuLanguage = menuLanguage);
+                menuDisplayExpanded = EditorGUILayout.Foldout(menuDisplayExpanded,
+                    L("メニュー表示設定") + " · " + LanguageNames[(int)Normalize(settings.menuLanguage)], true);
+                if (menuDisplayExpanded)
+                {
+                    var menuLanguage = (DisplayLanguage)EditorGUILayout.Popup(L("メニューの言語"), (int)Normalize(settings.menuLanguage), LanguageNames);
+                    if (menuLanguage != settings.menuLanguage) Change(() => settings.menuLanguage = menuLanguage);
+                }
                 var next = (VRCAvatarDescriptor)EditorGUILayout.ObjectField(L("アバター"), descriptor, typeof(VRCAvatarDescriptor), true);
                 if (next != descriptor) Change(() => BindAvatar(next));
                 scroll = EditorGUILayout.BeginScrollView(scroll);
@@ -200,34 +220,38 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    bool included = EditorGUILayout.ToggleLeft(part.custom ? L("使用") : SocketDisplayNames.Standard(part, UiLanguage), part.included, GUILayout.MinWidth(part.custom ? 55 : 140));
+                    string standard = SocketDisplayNames.Standard(part, UiLanguage);
+                    string currentName = SocketDisplayNames.Resolve(part, settings.menuLanguage);
+                    bool included = EditorGUILayout.ToggleLeft(new GUIContent(currentName, standard + " · " + currentName), part.included, GUILayout.MinWidth(60), GUILayout.ExpandWidth(true));
                     if (included != part.included) Change(() => part.included = included);
-                    if (part.custom)
-                    {
-                        string name = EditorGUILayout.TextField(part.name);
-                        if (name != part.name) Change(() => part.name = name);
-                    }
                     if (part.included)
                     {
                         using (new EditorGUI.DisabledScope(!VrcFuryCapabilities.Current.Depth))
                         {
-                        bool depth = EditorGUILayout.ToggleLeft(L("深度アクション"), part.depth && VrcFuryCapabilities.Current.Depth, GUILayout.MinWidth(114));
+                        bool depth = EditorGUILayout.ToggleLeft(L("深度アクション"), part.depth && VrcFuryCapabilities.Current.Depth, GUILayout.Width(EditorStyles.toggle.CalcSize(new GUIContent(L("深度アクション"))).x + 4));
                         if (VrcFuryCapabilities.Current.Depth && depth != part.depth) Change(() => { part.depth = depth; if (depth && part.actions.Count == 0) part.actions.Add(new DepthActionSettings()); });
                         }
+                    }
+                    if (part.included)
+                    {
+                        bool editing = IsNameEditing(part);
+                        bool nextEditing = EditorGUILayout.ToggleLeft(new GUIContent(L("表示名変更"), L("オフにするとメニュー言語の標準名へ戻ります。")), editing,
+                            GUILayout.Width(EditorStyles.toggle.CalcSize(new GUIContent(L("表示名変更"))).x + 4));
+                        if (nextEditing != editing) SetNameEditing(part, nextEditing);
                     }
                     if (part.custom && GUILayout.Button("−", GUILayout.Width(24))) Change(() => settings.parts.Remove(part));
                 }
                 if (part.custom)
                 {
+                    string name = EditorGUILayout.TextField(L("名前"), part.name);
+                    if (name != part.name) Change(() => part.name = name);
                     var target = (Transform)EditorGUILayout.ObjectField(L("追従先"), part.target, typeof(Transform), true);
                     if (target != part.target) Change(() => part.target = target);
                 }
-                if (part.included)
+                if (part.included && IsNameEditing(part))
                 {
                     var customName = EditorGUILayout.TextField(new GUIContent(L("メニュー表示名"), L("空欄で標準名を使用します。個別名は言語変更後も保持されます。")), part.menuNameOverride ?? "");
                     if (customName != (part.menuNameOverride ?? "")) Change(() => part.menuNameOverride = customName);
-                    EditorGUILayout.LabelField(L("表示名プレビュー"), SocketDisplayNames.Resolve(part, settings.menuLanguage));
-                    if (!string.IsNullOrWhiteSpace(part.menuNameOverride) && GUILayout.Button(L("標準名に戻す"))) Change(() => part.menuNameOverride = "");
                 }
                 if (part.included && part.IsFingerRing) DrawFingerRing(part);
                 if (!part.included || !part.depth || !VrcFuryCapabilities.Current.Depth) return;

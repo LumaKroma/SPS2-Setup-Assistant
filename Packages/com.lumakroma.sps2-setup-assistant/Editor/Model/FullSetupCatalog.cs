@@ -1,4 +1,5 @@
 using System;
+using LumaKroma.Sps2SetupAssistant.Editor.Localization;
 using UnityEngine;
 using VRC.SDK3.Avatars.Components;
 
@@ -10,7 +11,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
 
         public static SetupSettings CreateDefault()
         {
-            var setup = new SetupSettings { displayNamesVersion = 1 };
+            var setup = new SetupSettings { displayNamesVersion = 1, menuLanguage = Sps2Localization.DefaultLanguage };
             Add(setup, "mouth", "口", 0); Add(setup, "earLeft", "左耳", 0); Add(setup, "earRight", "右耳", 0);
             Add(setup, "nippleLeft", "左乳首", 1); Add(setup, "nippleRight", "右乳首", 1); Add(setup, "chest", "胸", 1);
             Add(setup, "handLeft", "左手", 2); Add(setup, "handRight", "右手", 2); Add(setup, "hands", "両手", 2);
