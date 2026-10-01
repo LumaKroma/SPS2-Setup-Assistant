@@ -104,20 +104,77 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             } finally { UnityEngine.Object.DestroyImmediate(root); }
         }
 
-        [Test]
-        public void LegacyAndPresetsDoNotEnableRingsOrChangeAuto()
+        [TestCase(false)] [TestCase(true)]
+        public void LegacyUpgradeAndReloadPreserveManualRingSelection(bool autoMode)
         {
             var settings = JsonUtility.FromJson<SetupSettings>("{\"autoMode\":true,\"parts\":[{\"id\":\"handLeft\",\"included\":true}]}");
+            settings.autoMode = autoMode;
             FullSetupCatalog.UpgradeDisplayNames(settings);
-            foreach (var preset in new[] { 0, 1, 2 }) {
-                FullSetupCatalog.ApplyPreset(settings, preset);
-                Assert.That(settings.parts.Where(p=>p.IsFingerRing).Count(), Is.EqualTo(2));
-                Assert.That(settings.parts.Where(p=>p.IsFingerRing).All(p=>!p.included), Is.True);
-                Assert.That(settings.autoMode, Is.True);
-            }
+            Assert.That(settings.parts.Count(p=>p.IsFingerRing), Is.EqualTo(2));
+            Assert.That(settings.parts.Where(p=>p.IsFingerRing).All(p=>!p.included), Is.True);
+            Assert.That(FullSetupCatalog.CreateDefault().parts.Where(p=>p.IsFingerRing).All(p=>!p.included), Is.True);
+            FullSetupCatalog.ApplyPreset(settings, 2);
+            settings.parts.Single(p=>p.id=="fingerRingLeft").included=false;
             settings.parts.Single(p=>p.id=="fingerRingLeft").fingerRing.thumbOffset=Vector3.one;
-            var copy=settings.Copy();copy.parts.Single(p=>p.id=="fingerRingLeft").fingerRing.thumbOffset=Vector3.zero;
+            var saved=JsonUtility.ToJson(settings);
+            var restored=JsonUtility.FromJson<SetupSettings>(saved).Copy();
+            FullSetupCatalog.UpgradeDisplayNames(restored);
+            Assert.That(JsonUtility.ToJson(restored), Is.EqualTo(saved));
+            Assert.That(restored.autoMode, Is.EqualTo(autoMode));
+            Assert.That(restored.parts.Single(p=>p.id=="fingerRingLeft").included, Is.False);
+            Assert.That(restored.parts.Single(p=>p.id=="fingerRingRight").included, Is.True);
+            FullSetupCatalog.ApplyPreset(restored, 0);
+            restored.parts.Single(p=>p.id=="fingerRingLeft").included=true;
+            saved=JsonUtility.ToJson(restored);
+            var copy=JsonUtility.FromJson<SetupSettings>(saved).Copy();
+            FullSetupCatalog.UpgradeDisplayNames(copy);
+            Assert.That(JsonUtility.ToJson(copy), Is.EqualTo(saved));
+            Assert.That(copy.parts.Single(p=>p.id=="fingerRingLeft").included, Is.True);
+            Assert.That(copy.parts.Single(p=>p.id=="fingerRingRight").included, Is.False);
+            copy.parts.Single(p=>p.id=="fingerRingLeft").fingerRing.thumbOffset=Vector3.zero;
             Assert.That(settings.parts.Single(p=>p.id=="fingerRingLeft").fingerRing.thumbOffset,Is.EqualTo(Vector3.one));
+        }
+
+        [TestCase(0, false)] [TestCase(0, true)]
+        [TestCase(1, false)] [TestCase(1, true)]
+        [TestCase(2, false)] [TestCase(2, true)]
+        public void PresetsControlBothRingsAndPreserveSavedData(int preset, bool autoMode)
+        {
+            var settings=FullSetupCatalog.CreateDefault(); settings.autoMode=autoMode;
+            settings.parts.Add(new SocketSettings { id="custom-on", custom=true, included=true, category=2 });
+            settings.parts.Add(new SocketSettings { id="custom-off", custom=true, included=false, category=2 });
+            int side=0;
+            foreach(var ring in settings.parts.Where(p=>p.IsFingerRing)) {
+                ring.included=side==0; ring.menuNameOverride="Saved ring "+side; ring.depth=true;
+                ring.fingerRing=new FingerRingCalibration { calibrated=true, thumbWeight=side==0?.3f:.7f,
+                    thumbPath="Hand/Thumb"+side, indexPath="Hand/Index"+side,
+                    thumbOffset=new Vector3(.01f,.02f,.03f), indexOffset=new Vector3(-.02f,.04f,.01f),
+                    thumbRotation=Quaternion.Euler(15,30,45), indexRotation=Quaternion.Euler(-20,60,10),
+                    center=new Vector3(.3f,.4f,.5f), euler=new Vector3(10,20,30) };
+                side++;
+            }
+            var before=settings.Copy();
+            string[][] expected={
+                new[]{"mouth","chest","handLeft","handRight","hands","vagina","anus"},
+                new[]{"mouth","nippleLeft","nippleRight","chest","handLeft","handRight","hands","vagina","anus","footLeft","footRight","feet"},
+                new[]{"mouth","earLeft","earRight","nippleLeft","nippleRight","chest","handLeft","handRight","hands","vagina","anus","thighs","footLeft","footRight","feet"}
+            };
+            foreach(var current in new[]{2,0,1,2,preset}) {
+                FullSetupCatalog.ApplyPreset(settings,current);
+                Assert.That(settings.parts.Where(p=>p.IsFingerRing).Select(p=>p.included), Is.EqualTo(new[]{current==2,current==2}));
+                Assert.That(settings.parts.Where(p=>!p.custom&&!p.IsFingerRing&&p.included).Select(p=>p.id), Is.EquivalentTo(expected[current]));
+                Assert.That(settings.autoMode, Is.EqualTo(autoMode));
+                foreach(var part in settings.parts) {
+                    var original=before.parts.Single(p=>p.id==part.id);
+                    if(part.custom) Assert.That(part.included, Is.EqualTo(original.included));
+                    var normalized=part.Copy(); normalized.included=original.included;
+                    Assert.That(JsonUtility.ToJson(normalized), Is.EqualTo(JsonUtility.ToJson(original)), part.id);
+                }
+                var saved=JsonUtility.ToJson(settings);
+                settings=JsonUtility.FromJson<SetupSettings>(saved).Copy();
+                FullSetupCatalog.UpgradeDisplayNames(settings);
+                Assert.That(JsonUtility.ToJson(settings), Is.EqualTo(saved));
+            }
         }
 
         [TestCase(0f)] [TestCase(.3f)] [TestCase(.5f)] [TestCase(1f)]

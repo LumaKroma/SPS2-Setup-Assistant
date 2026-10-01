@@ -47,7 +47,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
             if (preset < 0 || preset > 2) throw new ArgumentOutOfRangeException(nameof(preset));
             foreach (var part in setup.parts)
             {
-                if (part.custom || part.IsFingerRing) continue;
+                if (part.custom) continue;
+                if (part.IsFingerRing)
+                {
+                    part.included = preset == 2;
+                    continue;
+                }
                 bool casual = part.id == "mouth" || part.id == "chest" || part.category == 2 || part.id == "vagina" || part.id == "anus";
                 bool fullOnly = part.id == "earLeft" || part.id == "earRight" || part.id == "thighs";
                 part.included = casual || preset == 2 || (preset == 1 && !fullOnly);
