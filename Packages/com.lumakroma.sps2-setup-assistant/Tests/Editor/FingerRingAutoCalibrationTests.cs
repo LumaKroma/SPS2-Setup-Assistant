@@ -25,7 +25,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             Assert.That(Vector3.Dot(rotation * Vector3.forward, Vector3.forward), Is.GreaterThan(.999f));
             var mirror = points.Select(v => new Vector3(-v.x, v.y, v.z)).ToArray();
             FingerRingAutoCalibration.EstimateGeometry(mirror, false, out var other, out var facing);
-            Assert.That(Vector3.Distance(center, other), Is.LessThan(.00001f));
+            Assert.That(Vector3.Distance(new Vector3(-center.x, center.y, center.z), other), Is.LessThan(.00001f));
             var mirroredRotation = new Quaternion(rotation.x, -rotation.y, -rotation.z, rotation.w);
             Assert.That(Quaternion.Angle(mirroredRotation, facing), Is.LessThan(.01f));
             var turn = Quaternion.Euler(40, 75, -30); var offset = new Vector3(2, 3, -4);
@@ -53,7 +53,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             FingerRingAutoCalibration.EstimateGeometry(p, true, out var center, out var rotation);
             p[1] = new Vector3(-.05f, -.01f, .008f);
             FingerRingAutoCalibration.EstimateGeometry(p, true, out var other, out var facing);
-            Assert.That(Vector3.Distance(new Vector3(-center.x, center.y, center.z), other), Is.LessThan(.00001f));
+            Assert.That(Vector3.Distance(center, other), Is.LessThan(.00001f));
             Assert.That(Quaternion.Angle(rotation, facing), Is.LessThan(.01f));
         }
 
