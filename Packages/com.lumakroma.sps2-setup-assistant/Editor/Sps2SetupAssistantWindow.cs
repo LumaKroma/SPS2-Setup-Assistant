@@ -108,7 +108,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 if (uiLanguage != UiLanguage) { UiLanguage = uiLanguage; VrcFuryCapabilities.Refresh(); message = null; Repaint(); }
                 var menuLanguage = (DisplayLanguage)EditorGUILayout.Popup(L("メニューの言語"), (int)Normalize(settings.menuLanguage), LanguageNames);
                 if (menuLanguage != settings.menuLanguage) Change(() => settings.menuLanguage = menuLanguage);
-                menuDisplayExpanded = EditorGUILayout.Foldout(menuDisplayExpanded, L("メニュー表示設定"), true);
                 var next = (VRCAvatarDescriptor)EditorGUILayout.ObjectField(L("アバター"), descriptor, typeof(VRCAvatarDescriptor), true);
                 if (next != descriptor) Change(() => BindAvatar(next));
                 scroll = EditorGUILayout.BeginScrollView(scroll);
@@ -243,7 +242,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     var target = (Transform)EditorGUILayout.ObjectField(L("追従先"), part.target, typeof(Transform), true);
                     if (target != part.target) Change(() => part.target = target);
                 }
-                if (menuDisplayExpanded && part.included && IsNameEditing(part))
+                if (part.included && IsNameEditing(part))
                 {
                     var customName = EditorGUILayout.TextField(new GUIContent(L("メニュー表示名"), L("空欄で標準名を使用します。個別名は言語変更後も保持されます。")), part.menuNameOverride ?? "");
                     if (customName != (part.menuNameOverride ?? "")) Change(() => part.menuNameOverride = customName);

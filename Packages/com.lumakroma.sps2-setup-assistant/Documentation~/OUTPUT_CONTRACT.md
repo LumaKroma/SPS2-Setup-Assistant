@@ -507,11 +507,12 @@ exists. New setup defaults use the system language independently of that prefere
 Japanese, English, Korean and Simplified/Traditional Chinese are supported;
 unsupported system languages use English. Existing serialized settings retain
 their menu language (missing legacy language remains Japanese).
-Menu language lives in an initially collapsed display section. Each included socket
-shows its effective menu name beside Depth actions and Rename. Rename reveals the
+Menu language stays visible above the avatar field. Each included socket
+shows its effective menu name beside Depth actions and Rename. Rename directly reveals the
 override field; turning it off clears the override and restores the translated
 standard name. Existing overrides remain enabled; IDs, pose paths and Auto behavior
-are unchanged. Window draft/expanded state supports serialization and Undo.
+are unchanged. Window draft supports serialization and Undo. No separate display
+foldout is shown; its legacy serialized bool is retained but no longer gates fields.
 
 
 ## Automatic initial finger-loop calibration amendment (unreleased 1.1.0)
@@ -546,7 +547,7 @@ semantics and native Auto exclusion/16 limit stay unchanged. Scaled rigs remain 
 Actual-avatar appearance, actual Gesture match and VRC PC remain human gates.
 
 The menu-language row is always visible in its original top position. Menu display
-foldout retains display-name fields; enabling Rename opens it. Stable IDs and
+fields appear directly when Rename is enabled; no display foldout is shown. Stable IDs and
 user overrides remain unchanged. Japanese standard labels are 左手の指わっか /
 右手の指わっか; English uses finger loop. Historical standard aliases are retained
 as migration inputs. Native-language quality still needs human review.
