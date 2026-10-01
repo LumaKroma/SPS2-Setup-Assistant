@@ -24,7 +24,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             var mirror = points.Select(v => new Vector3(-v.x, v.y, v.z)).ToArray();
             FingerRingAutoCalibration.EstimateGeometry(mirror, false, out var other, out var facing);
             Assert.That(Vector3.Distance(center, other), Is.LessThan(.00001f));
-            Assert.That(Quaternion.Angle(rotation, facing), Is.LessThan(.01f));
+            var mirroredRotation = new Quaternion(rotation.x, -rotation.y, -rotation.z, rotation.w);
+            Assert.That(Quaternion.Angle(mirroredRotation, facing), Is.LessThan(.01f));
             var turn = Quaternion.Euler(40, 75, -30); var offset = new Vector3(2, 3, -4);
             FingerRingAutoCalibration.EstimateGeometry(points.Select(v => offset + turn * v).ToArray(), true, out other, out facing);
             Assert.That(Vector3.Distance(other, offset + turn * center), Is.LessThan(.00001f));
