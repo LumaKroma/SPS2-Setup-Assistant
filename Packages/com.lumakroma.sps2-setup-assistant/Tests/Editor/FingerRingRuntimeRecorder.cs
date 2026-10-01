@@ -12,7 +12,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
     public static class FingerRingRuntimeRecorder
     {
         private const string Pending = "LumaKroma.Issue180.RingRuntimePending";
-        private const string Output = "Library/Issue180Validation/gesture-refinement-runtime-v7.json";
+        private const string Output = "Library/Issue180Validation/gesture-refinement-runtime-v8.json";
         private static TestRunnerApi api;
         public static int CountAuto(GameObject avatar) => Compatibility.VrcFuryCompatibility.AutoSocketCount(avatar);
         static FingerRingRuntimeRecorder()
