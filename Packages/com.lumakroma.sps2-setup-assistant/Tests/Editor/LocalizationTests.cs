@@ -82,8 +82,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             finally { UnityEditor.Undo.RevertAllDownToGroup(group); UnityEngine.Object.DestroyImmediate(window); }
         }
 
-        [TestCase(DisplayLanguage.Japanese, "左手の指輪", "右手の指輪", "親指の重み")]
-        [TestCase(DisplayLanguage.English, "Left finger ring", "Right finger ring", "Thumb weight")]
+        [TestCase(DisplayLanguage.Japanese, "左手の指わっか", "右手の指わっか", "親指の重み")]
+        [TestCase(DisplayLanguage.English, "Left finger loop", "Right finger loop", "Thumb weight")]
         [TestCase(DisplayLanguage.Korean, "왼손 손가락 고리", "오른손 손가락 고리", "엄지 가중치")]
         [TestCase(DisplayLanguage.ChineseSimplified, "左手指环", "右手指环", "拇指权重")]
         [TestCase(DisplayLanguage.ChineseTraditional, "左手指環", "右手指環", "拇指權重")]

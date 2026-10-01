@@ -891,3 +891,16 @@ shear. No scaled-rig support claim follows from these rejection tests.
 Public API documentation: https://creators.vrchat.com/common-components/constraints/constraints-api/
 Remaining human gates include actual-avatar visual calibration, translation
 quality and exact-revision VRC PC. Fresh install and tooltip display remain open.
+
+
+## 2026-10-01 automatic initial finger-loop calibration / UI correction
+
+Baseline1eaafa9; approved Context Check Issue180 comment5928921248. Public
+HumanPoseHandler Get/Set on an isolated Transform-only synthetic skeleton was
+observed through the Shared entry; source local position/rotation stayed equal.
+This reference rig did not close under the measured muscle values, so its
+anatomical suitability is NOT asserted. New source adds geometry rejection,
+copy cleanup and preservation tests; exact-head Unity results are recorded in
+the owning Issue and local auto-ring-evidence. Five-language/native review and
+actual-avatar/VRC PC visual quality remain separate gates. Static compilation
+uses installed Unity2022.3.22f1/reference SDK assemblies. No release is implied.

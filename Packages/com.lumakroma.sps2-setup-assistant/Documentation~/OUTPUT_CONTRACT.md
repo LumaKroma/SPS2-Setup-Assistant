@@ -512,3 +512,40 @@ shows its effective menu name beside Depth actions and Rename. Rename reveals th
 override field; turning it off clears the override and restores the translated
 standard name. Existing overrides remain enabled; IDs, pose paths and Auto behavior
 are unchanged. Window draft/expanded state supports serialization and Undo.
+
+
+## Automatic initial finger-loop calibration amendment (unreleased 1.1.0)
+
+New uncalibrated, included fingerRingLeft/fingerRingRight attempt a bounded
+bone-based initial calibration before the authoring transaction. A disposable
+Transform-only copy uses the existing Humanoid Avatar through public
+HumanPoseHandler. Only the selected thumb/index muscles change: thumb stretch
+(-0.5,-0.7,-0.7), spread0.5; index stretch(-0.3,-0.8,-0.6), spread0. No source
+Animator, scripts, constraints, renderer, pose or clip are modified/copied.
+The copy and HumanPoseHandler are disposed on success/failure. This reference
+pose is not guaranteed to match the user's runtime Gesture.
+
+Seven mapped points (Hand; thumb/index proximal, intermediate, distal) form a
+bone contour. Unmapped/distinctness failures, nonfinite values, tiny segments,
+non-unit/sheared frames, estimated tip gap >0.35 index length, area <0.08 span²,
+plane deviation >0.2 span or uncertain palm-relative normal reject estimation.
+Terminal segments extend by0.6 of the preceding distal segment: this is a bounded
+bone approximation, not a finger-surface measurement. The area centroid and
+palm-relative plane normal supply center/+Z. Both joint-relative offsets are
+captured on the posed copy, then values and original paths are carried back.
+Thumb weight is preserved, not inferred from a single closed pose.
+
+Existing saved/manual calibration is never automatically replaced; pending
+manual inputs require explicit capture. Automatic retry is explicit in UI.
+Generation failure commits no estimate/output. Successful initial calibration
+returns to the window draft and settings snapshot. Regeneration with unchanged
+ring calibration also retains its pose-local manual position/rotation/scale;
+explicit recapture replaces that adjustment frame. Other regeneration semantics
+and native Auto exclusion/16 limit stay unchanged. Scaled rigs remain unsupported.
+Actual-avatar appearance, actual Gesture match and VRC PC remain human gates.
+
+The menu-language row is always visible in its original top position. Menu display
+foldout retains display-name fields; enabling Rename opens it. Stable IDs and
+user overrides remain unchanged. Japanese standard labels are 左手の指わっか /
+右手の指わっか; English uses finger loop. Historical standard aliases are retained
+as migration inputs. Native-language quality still needs human review.

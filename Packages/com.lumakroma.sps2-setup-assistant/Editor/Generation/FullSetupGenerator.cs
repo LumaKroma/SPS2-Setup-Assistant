@@ -356,6 +356,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 {
                     if (part.custom && old != null && part.target != null && part.target.IsChildOf(old.transform))
                         throw new InvalidOperationException(L("カスタム追従先に自分の生成物は指定できません。"));
+                    if (part.IsFingerRing && (part.fingerRing == null || !part.fingerRing.calibrated))
+                    {
+                        // Preserve pending manual inputs; only pristine initial settings are automatic.
+                        var value = part.fingerRing;
+                        if (value != null && (!string.IsNullOrEmpty(value.thumbPath) || !string.IsNullOrEmpty(value.indexPath) || value.center != Vector3.zero || value.euler != Vector3.zero))
+                            throw new InvalidOperationException(L("輪を閉じて中心と前方を合わせ、生成前に校正を記録してください。"));
+                        var saved = old?.settings.parts.Find(p => p.id == part.id)?.fingerRing;
+                        part.fingerRing = saved != null && saved.calibrated ? saved.Copy() : FingerRingAutoCalibration.Estimate(avatar, part);
+                    }
                     var placement = Place(part, avatar, basis, surface);
                     if (placement == null) warnings.Add(part.name + L(": 追従先が見つからないため省きました。"));
                     else placements.Add(part.id, placement);
@@ -369,6 +378,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 // existing adjustment paths merely because this package was upgraded.
                 var previousPoseNames = old?.sockets.Where(s => s.pose != null)
                     .ToDictionary(s => s.id, s => s.pose.name) ?? new Dictionary<string, string>();
+                var previousRingPoses = old?.sockets.Where(s => s.pose != null && previous.parts.Any(p => p.id == s.id && p.IsFingerRing))
+                    .ToDictionary(s => s.id, s => (position: s.pose.localPosition, rotation: s.pose.localRotation, scale: s.pose.localScale));
                 // Preserve the settings referenced by saved scenes and Prefabs when edits are discarded.
                 var asset = createdAsset = Sps2SetupStorage.Create(avatar.name);
                 var identity = Sps2SetupStorage.Identity(asset);
@@ -411,7 +422,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     if (generated == null)
                     {
                         previousPoseNames.TryGetValue(part.id, out var previousPoseName);
-                        root.sockets.Add(CreatePart(root, part, placements[part.id], settings, warnings, previousPoseName));
+                        var created = CreatePart(root, part, placements[part.id], settings, warnings, previousPoseName);
+                        if (part.IsFingerRing && oldPart != null && JsonUtility.ToJson(oldPart.fingerRing) == JsonUtility.ToJson(part.fingerRing) && previousRingPoses != null && previousRingPoses.TryGetValue(part.id, out var adjustment))
+                        {
+                            created.pose.localPosition = adjustment.position;
+                            created.pose.localRotation = adjustment.rotation;
+                            created.pose.localScale = adjustment.scale;
+                        }
+                        root.sockets.Add(created);
                         structureChanged = true;
                     }
                     else

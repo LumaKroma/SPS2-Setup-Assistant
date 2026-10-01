@@ -32,7 +32,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
         {
             foreach (var id in new[] { "fingerRingLeft", "fingerRingRight" })
                 if (!setup.parts.Exists(p => p.id == id))
-                    setup.parts.Add(new SocketSettings { id = id, name = id == "fingerRingLeft" ? "左手の指輪" : "右手の指輪", category = 2, included = false });
+                    setup.parts.Add(new SocketSettings { id = id, name = id == "fingerRingLeft" ? "左手の指わっか" : "右手の指わっか", category = 2, included = false });
         }
 
         private static void Add(SetupSettings setup, string id, string name, int category)

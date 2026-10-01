@@ -25,6 +25,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             Change(() => {
                 if (enabled)
                 {
+                    menuDisplayExpanded = true;
                     if (!nameEditors.Contains(part.id)) nameEditors.Add(part.id);
                     if (string.IsNullOrWhiteSpace(part.menuNameOverride)) part.menuNameOverride = SocketDisplayNames.Resolve(part, settings.menuLanguage);
                 }
@@ -107,13 +108,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 GUILayout.Space(10);
                 var uiLanguage = (DisplayLanguage)EditorGUILayout.Popup(L("画面の言語"), (int)UiLanguage, LanguageNames);
                 if (uiLanguage != UiLanguage) { UiLanguage = uiLanguage; VrcFuryCapabilities.Refresh(); message = null; Repaint(); }
-                menuDisplayExpanded = EditorGUILayout.Foldout(menuDisplayExpanded,
-                    L("メニュー表示設定") + " · " + LanguageNames[(int)Normalize(settings.menuLanguage)], true);
-                if (menuDisplayExpanded)
-                {
-                    var menuLanguage = (DisplayLanguage)EditorGUILayout.Popup(L("メニューの言語"), (int)Normalize(settings.menuLanguage), LanguageNames);
-                    if (menuLanguage != settings.menuLanguage) Change(() => settings.menuLanguage = menuLanguage);
-                }
+                var menuLanguage = (DisplayLanguage)EditorGUILayout.Popup(L("メニューの言語"), (int)Normalize(settings.menuLanguage), LanguageNames);
+                if (menuLanguage != settings.menuLanguage) Change(() => settings.menuLanguage = menuLanguage);
+                menuDisplayExpanded = EditorGUILayout.Foldout(menuDisplayExpanded, L("メニュー表示設定"), true);
                 var next = (VRCAvatarDescriptor)EditorGUILayout.ObjectField(L("アバター"), descriptor, typeof(VRCAvatarDescriptor), true);
                 if (next != descriptor) Change(() => BindAvatar(next));
                 scroll = EditorGUILayout.BeginScrollView(scroll);
@@ -248,7 +245,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     var target = (Transform)EditorGUILayout.ObjectField(L("追従先"), part.target, typeof(Transform), true);
                     if (target != part.target) Change(() => part.target = target);
                 }
-                if (part.included && IsNameEditing(part))
+                if (menuDisplayExpanded && part.included && IsNameEditing(part))
                 {
                     var customName = EditorGUILayout.TextField(new GUIContent(L("メニュー表示名"), L("空欄で標準名を使用します。個別名は言語変更後も保持されます。")), part.menuNameOverride ?? "");
                     if (customName != (part.menuNameOverride ?? "")) Change(() => part.menuNameOverride = customName);
@@ -267,7 +264,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         {
             if (part.fingerRing == null) part.fingerRing = new FingerRingCalibration();
             var value = part.fingerRing;
-            EditorGUILayout.HelpBox(L("既存のポーズ操作で親指と人差し指の輪を閉じ、中心と前方（+Z）を合わせて校正を記録してください。輪ソケットはAuto対象外です。ジェスチャーは変更しません。"), MessageType.Info);
+            EditorGUILayout.HelpBox(L("初回生成時は指わっかを自動校正します。合わない場合は輪を閉じ、中心と前方（+Z）を調整して校正を記録してください。Auto対象外です。"), MessageType.Info);
             float weight = EditorGUILayout.Slider(L("親指の重み"), value.thumbWeight, 0, 1);
             if (weight != value.thumbWeight) Change(() => value.thumbWeight = weight);
             var center = EditorGUILayout.Vector3Field(L("中心（アバターローカル）"), value.center);
@@ -275,6 +272,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             if (center != value.center || rotation != value.euler) Change(() => { value.center = center; value.euler = rotation; value.calibrated = false; });
             using (new EditorGUI.DisabledScope(descriptor == null || EditorApplication.isPlayingOrWillChangePlaymode))
             {
+                if (GUILayout.Button(L("自動校正し直す")))
+                {
+                    try { var capture = FingerRingAutoCalibration.Estimate(descriptor, part); Change(() => part.fingerRing = capture); SetMessage(L("校正を記録しました。変更を反映すると設定に保存されます。"), true); }
+                    catch (Exception error) { SetMessage(error.Message, false); }
+                }
                 if (GUILayout.Button(L("選択Transformを中心に使う")))
                 {
                     var selected = Selection.activeTransform;
@@ -296,7 +298,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     } catch (Exception error) { SetMessage(error.Message, false); }
                 }
             }
-            EditorGUILayout.LabelField(value.calibrated ? L("校正記録済み") : L("生成前に校正が必要です"));
+            EditorGUILayout.LabelField(value.calibrated ? L("校正記録済み") : L("初回生成時に自動校正"));
         }
 
         private void DrawRingHandle(SceneView view)
@@ -381,7 +383,16 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         private void Apply(bool regenerate)
         {
-            bool ok = FullSetupGenerator.Apply(descriptor, settings, regenerate, out _, out var result); SetMessage(result, ok);
+            bool ok = FullSetupGenerator.Apply(descriptor, settings, regenerate, out var root, out var result);
+            if (ok)
+                Change(() => {
+                    foreach (var part in settings.parts.Where(p => p.IsFingerRing && (p.fingerRing == null || !p.fingerRing.calibrated)))
+                    {
+                        var saved = root.settings.parts.Find(p => p.id == part.id)?.fingerRing;
+                        if (saved != null && saved.calibrated) part.fingerRing = saved.Copy();
+                    }
+                });
+            SetMessage(result, ok);
         }
         private void SetMessage(string text, bool success) { message = text; messageType = success ? MessageType.Warning : MessageType.Error; Repaint(); }
         private void DrawCompatibility()

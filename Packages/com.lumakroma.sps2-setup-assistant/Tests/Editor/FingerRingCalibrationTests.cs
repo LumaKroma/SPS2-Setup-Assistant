@@ -229,7 +229,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
                 passed = true;
             } finally {
                 System.IO.Directory.CreateDirectory("Library/Issue180Validation");
-                System.IO.File.WriteAllText("Library/Issue180Validation/ring-converted-runtime-v4.json", JsonUtility.ToJson(new ConvertedRuntimeResult { passed = passed, sdkSimulation = true, vrcClientVerified = false, rows = rows }, true));
+                System.IO.File.WriteAllText("Library/Issue180Validation/auto-ring-converted-runtime-v6.json", JsonUtility.ToJson(new ConvertedRuntimeResult { passed = passed, sdkSimulation = true, vrcClientVerified = false, rows = rows }, true));
                 UnityEngine.Object.DestroyImmediate(root);
             }
             yield return new ExitPlayMode();
