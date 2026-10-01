@@ -52,9 +52,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         {
             ValidateFrame(thumb); ValidateFrame(index);
             if (value == null || !value.calibrated)
-                throw new InvalidOperationException(L("輪を閉じて中心と前方を合わせ、生成前に校正を記録してください。"));
+                throw new InvalidOperationException(L("未完了の指わっか調整が残っています。設定を保持して処理を中止しました。該当する指わっかをオフにしてください。"));
             if (AnimationUtility.CalculateTransformPath(thumb, avatar) != value.thumbPath || AnimationUtility.CalculateTransformPath(index, avatar) != value.indexPath)
-                throw new InvalidOperationException(L("指の関節パスが変わりました。校正を記録し直してください。"));
+                throw new InvalidOperationException(L("指の関節パスが変わりました。設定を保持して処理を中止しました。該当する指わっかをオフにしてください。"));
             if (!Finite(value.center) || !Finite(value.euler) || !Finite(value.thumbOffset) || !Finite(value.indexOffset) || !Finite(value.thumbRotation) || !Finite(value.indexRotation) ||
                 float.IsNaN(value.thumbWeight) || float.IsInfinity(value.thumbWeight) || value.thumbWeight < 0 || value.thumbWeight > 1)
                 throw new InvalidOperationException(L("保存された指の校正値が無効です。"));

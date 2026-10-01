@@ -10,7 +10,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
 {
     public static class FingerRingAutoCalibration
     {
-        private const string Failure = "指わっかを自動推定できませんでした。輪を閉じた姿勢で手動校正してください。";
+        private const string Failure = "指わっかを自動配置できませんでした。手指のHumanoid設定を確認するか、この指わっかをオフにしてください。";
 
         public static FingerRingCalibration Estimate(VRCAvatarDescriptor avatar, SocketSettings part)
         {

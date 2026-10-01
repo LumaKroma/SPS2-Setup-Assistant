@@ -448,19 +448,19 @@ fingerRingLeft/fingerRingRight are separate from palm sockets, default OFF,
 and untouched by existing presets. Native Auto stays OFF for these IDs;
 legacy/custom Auto behavior and the all-avatar 16-socket guard are unchanged.
 
-A user closes the reference pose using their existing gesture tools, sets the
-ring center and +Z forward direction via avatar-local fields/Scene handles,
-then explicitly captures two coincident joint-local frames. ThumbDistal and
-IndexIntermediate are the initial Humanoid mapping; the user must verify actual
-joint positions. No gesture clip is edited. An uncalibrated included ring blocks
-generation. Capture stores relative position/rotation offsets and joint paths;
-regeneration never recalibrates against the current pose. UI capture is a draft
-until Apply; recapture replaces the adjustment frame. Ordinary unchanged Apply
-preserves manual pose. Disabling removes generated objects while keeping settings.
+Initial included loops use automatic calibration as specified below. The Setup
+window presents the same enabled, display-name and depth-action controls as other
+sockets. Loop-specific weight, center, rotation, calibration buttons and Scene
+handles are not exposed. Saved calibration remains serialized, including legacy
+IndexIntermediate joint paths, weights and manually adjusted poses. UI removal
+does not delete or silently replace this data. Ordinary Apply and regeneration
+reuse a valid saved calibration; disabling keeps settings while removing output.
+No gesture clip is edited. Automatic estimation failure leaves output unchanged
+and shows localized guidance to check Humanoid finger mapping or disable the loop.
 
 A two-source ParentConstraint blends the calibrated frames with thumb weight
 [0,1], initial 0.5. This is not the midpoint between anatomical joints: both
-frames coincide with the user-selected center at capture for every weight.
+frames coincide with the calibrated center at capture for every weight.
 There is no Hand-fixed rotation or cross-product normal, and therefore no
 collinear-normal fallback. Open hands continue following; no gesture detection
 or automatic activation is added. Actual visible behavior remains a validation
@@ -477,8 +477,8 @@ ApplyConfigurationChanges; its result must be recorded before claiming an SDK
 simulation PASS. All Play Mode results use a persistent public TestRunner callback
 across domain reload. SDK simulation does not certify the VRChat client.
 
-Ring instructions, fields, actions, status/error messages and standard left/right
-names use the existing Japanese/English/Korean/Simplified/Traditional catalog.
+Ring common controls, error messages and standard left/right names use the
+existing Japanese/English/Korean/Simplified/Traditional catalog.
 An authored menu-name override still wins in every language; stable IDs, pose names
 and calibration values are unaffected. Automated translation completeness is not
 native-speaker approval. Actual-avatar aesthetics and VRC PC remain human gates.
@@ -535,13 +535,14 @@ palm-relative plane normal supply center/+Z. Both joint-relative offsets are
 captured on the posed copy, then values and original paths are carried back.
 Thumb weight is preserved, not inferred from a single closed pose.
 
-Existing saved/manual calibration is never automatically replaced; pending
-manual inputs require explicit capture. Automatic retry is explicit in UI.
+Existing saved/manual calibration is never automatically replaced. Legacy pending
+manual inputs fail closed and remain intact; guidance allows the affected loop
+to be disabled. There is no calibration or automatic-retry control in the UI.
 Generation failure commits no estimate/output. Successful initial calibration
 returns to the window draft and settings snapshot. Regeneration with unchanged
 ring calibration also retains its pose-local manual position/rotation/scale;
-explicit recapture replaces that adjustment frame. Other regeneration semantics
-and native Auto exclusion/16 limit stay unchanged. Scaled rigs remain unsupported.
+the underlying explicit capture API remains for compatibility. Other regeneration
+semantics and native Auto exclusion/16 limit stay unchanged. Scaled rigs remain unsupported.
 Actual-avatar appearance, actual Gesture match and VRC PC remain human gates.
 
 The menu-language row is always visible in its original top position. Menu display
@@ -563,8 +564,8 @@ New automatic calibration follows ThumbDistal plus IndexProximal, reducing the
 reference-to-gesture rotation discrepancy measured on MANUKA. Its chosen joint
 is recorded in the existing indexPath field; no settings schema/ID is added.
 Saved IndexIntermediate calibrations continue using IndexIntermediate and are
-never silently upgraded. Uncalibrated manual capture retains IndexIntermediate;
-automatic recalibration is explicit and changes its selected frame deliberately.
+never silently upgraded. The underlying uncalibrated capture API retains
+IndexIntermediate; the Setup window exposes no manual/recalibration controls.
 Unknown/remapped paths fail validation. Stored weights and default0.5 remain
 unchanged: a single avatar does not establish a universal tracking weight.
 

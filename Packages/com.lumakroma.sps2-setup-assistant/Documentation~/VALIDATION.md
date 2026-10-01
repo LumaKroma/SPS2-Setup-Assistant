@@ -934,3 +934,17 @@ Product source tests add palm-point independence and legacy/new saved-frame
 resolution coverage. Exact revised-head generation/runtime/native regression
 results must be recorded in the owning Issue and gesture-refinement-evidence.
 Native-language quality and VRC PC remain unverified. No release is implied.
+
+
+## Finger-loop UI simplification (unreleased 1.1.0, Issue180)
+
+User-approved 2026-10-01: remove loop-only weight/center/rotation/capture and Scene
+handle UI; retain common enabled/name/depth controls and serialized calibration.
+Automatic and legacy-pending/path-change failures give five-language guidance
+without pointing to removed controls. Tracking/calibration algorithms, default
+weights, settings schema and saved-data preservation are unchanged.
+
+Exact resulting revision, five-language 430px captures, initial/existing-generation
+regressions and latest user-state restoration are recorded in Issue180 completion
+evidence. Earlier 101-test and converted-runtime results remain pinned to their
+own revision; UI evidence does not certify mother-tongue quality or VRC PC.

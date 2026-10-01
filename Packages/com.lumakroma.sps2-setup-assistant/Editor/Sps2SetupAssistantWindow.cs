@@ -33,7 +33,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             });
         }
         private Vector2 scroll;
-        private string ringHandleId;
         private string message;
         private MessageType messageType;
         private GUIStyle titleStyle;
@@ -56,13 +55,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         {
             if (settings == null || settings.parts.Count == 0) settings = FullSetupCatalog.CreateDefault();
             FullSetupCatalog.UpgradeDisplayNames(settings);
-            SceneView.duringSceneGui += DrawRingHandle;
             Undo.undoRedoPerformed += Repaint;
             EditorApplication.hierarchyChanged += RecoverAvatar;
             EditorApplication.playModeStateChanged += PlayModeChanged;
             EditorApplication.delayCall += RecoverAvatar;
         }
-        private void OnDisable() { SceneView.duringSceneGui -= DrawRingHandle; Undo.undoRedoPerformed -= Repaint; EditorApplication.hierarchyChanged -= RecoverAvatar; EditorApplication.playModeStateChanged -= PlayModeChanged; EditorApplication.delayCall -= RecoverAvatar; }
+        private void OnDisable() { Undo.undoRedoPerformed -= Repaint; EditorApplication.hierarchyChanged -= RecoverAvatar; EditorApplication.playModeStateChanged -= PlayModeChanged; EditorApplication.delayCall -= RecoverAvatar; }
         private void PlayModeChanged(PlayModeStateChange state)
         {
             if (state == PlayModeStateChange.ExitingEditMode) RememberAvatar();
@@ -250,7 +248,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     var customName = EditorGUILayout.TextField(new GUIContent(L("メニュー表示名"), L("空欄で標準名を使用します。個別名は言語変更後も保持されます。")), part.menuNameOverride ?? "");
                     if (customName != (part.menuNameOverride ?? "")) Change(() => part.menuNameOverride = customName);
                 }
-                if (part.included && part.IsFingerRing) DrawFingerRing(part);
                 if (!part.included || !part.depth || !VrcFuryCapabilities.Current.Depth) return;
                 using (new EditorGUI.DisabledScope(!part.included))
                 {
@@ -260,66 +257,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 }
             }
         }
-        private void DrawFingerRing(SocketSettings part)
-        {
-            if (part.fingerRing == null) part.fingerRing = new FingerRingCalibration();
-            var value = part.fingerRing;
-            EditorGUILayout.HelpBox(L("初回生成時は指わっかを自動校正します。合わない場合は輪を閉じ、中心と前方（+Z）を調整して校正を記録してください。Auto対象外です。"), MessageType.Info);
-            float weight = EditorGUILayout.Slider(L("親指の重み"), value.thumbWeight, 0, 1);
-            if (weight != value.thumbWeight) Change(() => value.thumbWeight = weight);
-            var center = EditorGUILayout.Vector3Field(L("中心（アバターローカル）"), value.center);
-            var rotation = EditorGUILayout.Vector3Field(L("回転（アバターローカル）"), value.euler);
-            if (center != value.center || rotation != value.euler) Change(() => { value.center = center; value.euler = rotation; value.calibrated = false; });
-            using (new EditorGUI.DisabledScope(descriptor == null || EditorApplication.isPlayingOrWillChangePlaymode))
-            {
-                if (GUILayout.Button(L("自動校正し直す")))
-                {
-                    try { var capture = FingerRingAutoCalibration.Estimate(descriptor, part); Change(() => part.fingerRing = capture); SetMessage(L("校正を記録しました。変更を反映すると設定に保存されます。"), true); }
-                    catch (Exception error) { SetMessage(error.Message, false); }
-                }
-                if (GUILayout.Button(L("選択Transformを中心に使う")))
-                {
-                    var selected = Selection.activeTransform;
-                    if (selected != null && selected.IsChildOf(descriptor.transform)) Change(() => {
-                        value.center = descriptor.transform.InverseTransformPoint(selected.position);
-                        value.euler = (Quaternion.Inverse(descriptor.transform.rotation) * selected.rotation).eulerAngles;
-                        value.calibrated = false;
-                    });
-                    else SetMessage(L("このアバター内のTransformを選択してください。"), false);
-                }
-                if (GUILayout.Button(ringHandleId == part.id ? L("校正ハンドルを隠す") : L("Sceneで中心を調整"))) { ringHandleId = ringHandleId == part.id ? null : part.id; SceneView.RepaintAll(); }
-                if (GUILayout.Button(L("輪を閉じた姿勢の校正を記録")))
-                {
-                    try {
-                        FingerRingCalibrationUtility.Bones(descriptor, part, out var thumb, out var index);
-                        var capture = FingerRingCalibrationUtility.Capture(descriptor.transform, thumb, index,
-                            descriptor.transform.TransformPoint(value.center), descriptor.transform.rotation * Quaternion.Euler(value.euler), value.thumbWeight);
-                        Change(() => part.fingerRing = capture); SetMessage(L("校正を記録しました。変更を反映すると設定に保存されます。"), true);
-                    } catch (Exception error) { SetMessage(error.Message, false); }
-                }
-            }
-            EditorGUILayout.LabelField(value.calibrated ? L("校正記録済み") : L("初回生成時に自動校正"));
-        }
-
-        private void DrawRingHandle(SceneView view)
-        {
-            if (descriptor == null || settings == null || EditorApplication.isPlayingOrWillChangePlaymode) return;
-            var part = settings.parts.FirstOrDefault(p => p.id == ringHandleId && p.included && p.IsFingerRing);
-            if (part?.fingerRing == null) return;
-            var value = part.fingerRing;
-            var position = descriptor.transform.TransformPoint(value.center);
-            var rotation = descriptor.transform.rotation * Quaternion.Euler(value.euler);
-            EditorGUI.BeginChangeCheck();
-            position = Handles.PositionHandle(position, rotation);
-            rotation = Handles.RotationHandle(rotation, position);
-            Handles.ArrowHandleCap(0, position, rotation, HandleUtility.GetHandleSize(position) * .2f, EventType.Repaint);
-            if (EditorGUI.EndChangeCheck()) Change(() => {
-                value.center = descriptor.transform.InverseTransformPoint(position);
-                value.euler = (Quaternion.Inverse(descriptor.transform.rotation) * rotation).eulerAngles;
-                value.calibrated = false;
-            });
-        }
-
         private void DrawRange(SocketSettings part)
         {
             float min = FullSetupCatalog.DistanceToSlider(part.range.x), max = FullSetupCatalog.DistanceToSlider(part.range.y);

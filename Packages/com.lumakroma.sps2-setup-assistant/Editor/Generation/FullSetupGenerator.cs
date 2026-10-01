@@ -361,7 +361,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                         // Preserve pending manual inputs; only pristine initial settings are automatic.
                         var value = part.fingerRing;
                         if (value != null && (!string.IsNullOrEmpty(value.thumbPath) || !string.IsNullOrEmpty(value.indexPath) || value.center != Vector3.zero || value.euler != Vector3.zero))
-                            throw new InvalidOperationException(L("輪を閉じて中心と前方を合わせ、生成前に校正を記録してください。"));
+                            throw new InvalidOperationException(L("未完了の指わっか調整が残っています。設定を保持して処理を中止しました。該当する指わっかをオフにしてください。"));
                         var saved = old?.settings.parts.Find(p => p.id == part.id)?.fingerRing;
                         part.fingerRing = saved != null && saved.calibrated ? saved.Copy() : FingerRingAutoCalibration.Estimate(avatar, part);
                     }
