@@ -135,6 +135,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 SetPersistence(avatar, fx, entry, false, 0);
                 owned.Add(socket.id, entry);
             }
+            StabilizeOwnedSocketToggles(avatar, fx, root, owned.ToDictionary(p => p.Key, p => p.Value.control.parameter.name));
             var auto = Unique(entries, AutoLabel, false);
             var legacy = Unique(entries, LegacyLabel, false);
             var localOnly = Unique(entries, LocalOnlyLabel, root.settings.localOnly);
@@ -194,6 +195,105 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             Paginate(menu, language);
             Paginate(settingsMenu, language);
             // Final SDK validation runs after native parameter compression; do not reject its pre-compression cost here.
+        }
+
+        // Native Direct Blend Trees otherwise rely on Write Defaults to restore
+        // zero-weight socket clips. Mixed avatar WD can retain their last ON value.
+        // Keep native menu/Auto/exclusivity parameters and clips; give each owned
+        // native toggle branch an explicit baseline at parameter zero.
+        internal static void StabilizeOwnedSocketToggles(VRCAvatarDescriptor avatar,
+            AnimatorController fx, Sps2SetupContext root, IReadOnlyDictionary<string, string> parameters)
+        {
+            string one = "__SPS2_" + root.identity + "_ExplicitToggleOne";
+            if (fx.parameters.Any(p => p.name == one))
+                throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+            var byParameter = parameters.ToDictionary(p => p.Value, p => p.Key);
+            var counts = parameters.Keys.ToDictionary(id => id, id => 0);
+            var layers = fx.layers;
+            bool ContainsOwned(Motion motion)
+            {
+                if (!(motion is BlendTree tree)) return false;
+                return tree.children.Any(child =>
+                    (tree.blendType == BlendTreeType.Direct && byParameter.ContainsKey(child.directBlendParameter)) ||
+                    ContainsOwned(child.motion));
+            }
+            Motion CloneMotion(Motion motion)
+            {
+                if (!(motion is BlendTree original)) return motion;
+                var tree = UnityEngine.Object.Instantiate(original);
+                var children = tree.children;
+                for (int i = 0; i < children.Length; i++)
+                {
+                    var child = children[i];
+                    if (tree.blendType == BlendTreeType.Direct && byParameter.TryGetValue(child.directBlendParameter, out var id))
+                    {
+                        var parameter = fx.parameters.Single(p => p.name == child.directBlendParameter);
+                        var socket = root.sockets.Single(s => s.id == id);
+                        if (parameter.type != AnimatorControllerParameterType.Float || socket.pose == null ||
+                            !(child.motion is AnimationClip on))
+                            throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+                        string prefix = AnimationUtility.CalculateTransformPath(socket.pose, avatar.transform) + "/";
+                        var bindings = AnimationUtility.GetCurveBindings(on);
+                        var activation = bindings.Where(b => b.type == typeof(GameObject) && b.propertyName == "m_IsActive" &&
+                            b.path.StartsWith(prefix, StringComparison.Ordinal) && b.path.EndsWith("/BakedSpsSocket", StringComparison.Ordinal)).ToArray();
+                        if (activation.Length != 1 || avatar.transform.Find(activation[0].path) == null ||
+                            AnimationUtility.GetObjectReferenceCurveBindings(on).Length != 0 || ++counts[id] != 1)
+                            throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+                        var off = new AnimationClip { name = "SPS2 Explicit Off " + id };
+                        foreach (var binding in bindings)
+                        {
+                            float value;
+                            if (binding.type == typeof(Animator) && binding.path == "")
+                            {
+                                var baseline = fx.parameters.SingleOrDefault(p => p.name == binding.propertyName);
+                                if (baseline == null || baseline.type != AnimatorControllerParameterType.Float)
+                                    throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+                                value = baseline.defaultFloat;
+                            }
+                            else if (!AnimationUtility.GetFloatValue(avatar.gameObject, binding, out value))
+                                throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+                            if (binding.Equals(activation[0]) && value != 0)
+                                throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+                            AnimationUtility.SetEditorCurve(off, binding, AnimationCurve.Constant(0, 0, value));
+                        }
+                        var toggle = new BlendTree { name = "SPS2 Explicit Toggle " + id,
+                            blendType = BlendTreeType.Simple1D, blendParameter = child.directBlendParameter,
+                            useAutomaticThresholds = false };
+                        toggle.children = new[] {
+                            new ChildMotion { motion = off, threshold = 0, timeScale = 1 },
+                            new ChildMotion { motion = on, threshold = 1, timeScale = 1 }
+                        };
+                        child.motion = toggle;
+                        child.directBlendParameter = one;
+                    }
+                    else child.motion = CloneMotion(child.motion);
+                    children[i] = child;
+                }
+                tree.children = children;
+                return tree;
+            }
+            for (int i = 0; i < layers.Length; i++)
+            {
+                var original = layers[i].stateMachine;
+                if (!original.states.Any(s => ContainsOwned(s.state.motion))) continue;
+                // The observed native optimizer puts toggle branches in a single
+                // static state. Refuse unknown stateful graphs instead of changing
+                // shared transition targets or silently guessing a new contract.
+                if (original.states.Length != 1 || original.stateMachines.Length != 0 ||
+                    original.anyStateTransitions.Length != 0 || original.entryTransitions.Length != 0 ||
+                    original.states[0].state.transitions.Length != 0)
+                    throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+                var machine = UnityEngine.Object.Instantiate(original);
+                var state = UnityEngine.Object.Instantiate(original.states[0].state);
+                state.motion = CloneMotion(state.motion);
+                var child = original.states[0]; child.state = state;
+                machine.states = new[] { child }; machine.defaultState = state;
+                layers[i].stateMachine = machine;
+            }
+            if (counts.Values.Any(count => count != 1))
+                throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+            fx.AddParameter(new AnimatorControllerParameter { name = one, type = AnimatorControllerParameterType.Float, defaultFloat = 1 });
+            fx.layers = layers;
         }
 
         private static void PruneEmptyMenus(VRCExpressionsMenu menu, HashSet<VRCExpressionsMenu> seen)
