@@ -228,7 +228,7 @@ not imply an automatic standalone Prefab asset export.
 
 Casual selects mouth, chest middle, both hands and their middle, vagina and anus
 (7). Default adds both feet, their middle and both nipples (12). Full adds ears
-and thigh middle (15). Presets change fixed-part inclusion only; custom parts,
+and thigh middle plus both optional finger loops (17). Presets change fixed-part inclusion only; custom parts,
 depth values and inactive action-type inputs survive switching.
 
 Automatic placement uses avatar-aligned Humanoid measurements plus temporary
@@ -376,7 +376,7 @@ not directly edited.
 The SPS2 menu begins in this order: 設定, 口, 胸, 膣, 肛門, 右手, 左手,
 両手. Remaining generated fixed/custom sockets follow directly in catalog order;
 there is no その他 submenu. Excluded sockets are omitted. Each page has at most
-eight controls including 次へ. Full selects 15 sockets and uses three pages.
+eight controls including 次へ. Full selects 17 sockets and uses three pages.
 設定 contains Auto Mode and Legacy Compatibility when included.
 The authoring Local Only checkbox is unchecked by default. Checking it exposes
 the existing native Stealth control under 設定 as Local Only; unchecking removes
@@ -460,7 +460,10 @@ are not claims that every release passed Unity/VRChat tests; see VALIDATION.md.
 This is a local prototype with revision-specific Editor evidence and open VRC PC
 and actual-avatar visual gates. Optional IDs
 fingerRingLeft/fingerRingRight are separate from palm sockets, default OFF,
-and untouched by existing presets. Native Auto stays OFF for these IDs;
+with Full explicitly including both and Casual/Default excluding both. Presets
+change inclusion only; saved calibration, weights, offsets, rotations, menu names,
+depth settings and custom parts remain intact. Manual selection persists until
+another preset is applied. Native Auto stays OFF for these IDs;
 legacy/custom Auto behavior and the all-avatar 16-socket guard are unchanged.
 
 Initial included loops use automatic calibration as specified below. The Setup

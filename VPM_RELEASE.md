@@ -1,5 +1,38 @@
 # VPM release handoff
 
+## Current 1.1.0 preparation (2026-10-02, unpublished)
+
+The current distribution is the official VPMPackageAutoInstaller (VPAI)
+unitypackage plus VCC/ALCOM. Do not build a new legacy Assets-edition archive
+with Prepare-UnityPackage.ps1. Historical archives and releases stay immutable.
+
+Build the VPM ZIP through Tools/Build-VpmPackage.ps1 in two fresh directories and
+compare SHA-256. The official observed VPAI creator is version 1.1.6, source
+965a08e896ce39790fd0d46bcb89d2ffba99ea13. Prepare a fresh configuration with
+com.lumakroma.sps2-setup-assistant = 1.1.0, lilToon >=1.0.0, Unity 2022.3,
+includePrerelease=false and silentIfInstalled=false. Repository URLs are the
+SPS2 listing below, https://vcc.vrcfury.com/ and
+https://lilxyzw.github.io/vpm-repos/vpm.json. Use its official creator.mjs;
+audit the three installer entries (folder, DLL and configuration), their GUIDs,
+configuration and DLL bytes. Include the VPAI and semver.net licenses in the
+customer ZIP; do not include private evidence, avatars or source repositories.
+
+This installer resolves published packages. A local archive audit does not prove
+fresh installation of unpublished 1.1.0. Actual VPAI/VCC/ALCOM delivery remains a
+separate check after explicitly approved publication. No upload, push, merge or
+listing change is authorized by this preparation.
+
+The manifest deliberately has no legacyFolders/legacyFiles. VPAI supports those
+VPM fields, but path-first removal can delete user additions. Migration deletion
+is not implemented or approved here. Back up the entire project and inspect
+Assets/LumaKroma/SPS2SetupAssistant before any separately performed migration;
+preserve user changes and Assets/SPS2Settings. Do not install both editions.
+
+See Docs/RELEASE_110_VALIDATION.md for exact validation and remaining limits.
+The following 1.0.x sections are historical procedures, not current 1.1.0
+authorization or a requirement to produce an Assets-edition package.
+
+
 ## Native unitypackage distribution
 
 The 1.0.1 unitypackage addition is owner-approved (2026-09-20). Keep the published

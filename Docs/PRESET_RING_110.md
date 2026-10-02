@@ -11,3 +11,6 @@ Preset changes modify only fixed-part inclusion. All saved ring calibration fram
 The first same-Editor pilot admits two existing C# paths only. Package documentation bytes remain outside that reviewed synchronization scope; retain this root development contract as the active amendment and fold its wording into packaged documentation at the next separately reviewed package-content synchronization before release. This documentation gate does not authorize a broader live overwrite.
 
 Focused regression covers every preset with both Auto flag values, repeated Full/Casual/Default sequences, both ring sides, ordinary/custom memberships, calibration/name preservation and manual selections through copy/JSON/upgrade. Native-language, other-avatar and VRC PC acceptance remain separate.
+
+
+2026-10-02 local release preparation: this approved preset wording is now folded into OUTPUT_CONTRACT.md after the dedicated Editor was normally closed and its lease released. No live package overwrite was performed. Product code is unchanged from b042e16.
