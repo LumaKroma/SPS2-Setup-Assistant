@@ -22,6 +22,19 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
         public void SystemLanguageMappingHasSupportedAndFallbackDefaults(SystemLanguage system, DisplayLanguage expected)
             => Assert.That(Sps2Localization.FromSystemLanguage(system), Is.EqualTo(expected));
 
+        [TestCase(DisplayLanguage.Japanese, "指わっか", "手動")]
+        [TestCase(DisplayLanguage.English, "Finger rings", "manually")]
+        [TestCase(DisplayLanguage.Korean, "손가락 링", "수동")]
+        [TestCase(DisplayLanguage.ChineseSimplified, "指环", "手动")]
+        [TestCase(DisplayLanguage.ChineseTraditional, "指環", "手動")]
+        public void ScaleWarningNamesFingerRingsInEveryLanguage(DisplayLanguage language, string subject, string adjustment)
+        {
+            const string message = "指わっかの階層に非一様または負のscaleがあります。生成は続行しますが、この指わっかの位置・向き・サイズは保証されません。生成後に確認し、手動で調整してください。";
+            Assert.That(Sps2Localization.L(message, language), Does.StartWith(subject));
+            Assert.That(Sps2Localization.L(message, language), Does.Contain(adjustment));
+            if (language != DisplayLanguage.Japanese) Assert.That(Sps2Localization.L(message, language), Is.Not.EqualTo(message));
+        }
+
         [Test]
         public void FirstUiPreferenceAndNewSetupUseSystemButSavedChoicesRemain()
         {

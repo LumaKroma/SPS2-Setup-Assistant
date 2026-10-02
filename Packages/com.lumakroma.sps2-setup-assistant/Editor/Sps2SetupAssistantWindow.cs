@@ -324,7 +324,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 Change(() => {
                     foreach (var part in settings.parts.Where(p => p.IsFingerRing && (p.fingerRing == null || !p.fingerRing.calibrated)))
                     {
-                        var saved = root.settings.parts.Find(p => p.id == part.id)?.fingerRing;
+                        var saved = root?.settings.parts.Find(p => p.id == part.id)?.fingerRing;
                         if (saved != null && saved.calibrated) part.fingerRing = saved.Copy();
                     }
                 });

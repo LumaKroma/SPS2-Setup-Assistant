@@ -1,5 +1,13 @@
 # Changelog
 
+## 1.1.1 - Unreleased
+
+- Support authored positive uniform scale for finger rings, preserving legacy unit-scale calibration and refreshing native distances on Apply.
+- Generate with yellow, five-language manual-adjustment guidance for nonuniform/negative scale. Finger-ring position, orientation and size are not guaranteed; initial placement uses the current finger frames, while saved calibration is reused.
+- Skip only a finger ring whose coordinate transform cannot be safely inverted. Preserve its saved calibration and continue other valid parts. If nothing remains, or the avatar root itself cannot be safely inverted, keep existing output/settings unchanged and report a yellow notice.
+- Reapply after hierarchy scale changes. Runtime scale animation is outside this patch; palm/Auto policy is unchanged.
+- The warning-only revision has offline compile/package/localization checks. Its Unity tests are pending; the earlier strict-scale candidate's native results do not certify this revision. See Documentation~/VALIDATION.md.
+
 ## 1.1.0 - Unreleased
 
 - Setup UI and generated menus support Japanese, English, Korean, Simplified Chinese and Traditional Chinese. Menu language is independent of UI language; per-Socket overrides survive presets, saved settings and regeneration.

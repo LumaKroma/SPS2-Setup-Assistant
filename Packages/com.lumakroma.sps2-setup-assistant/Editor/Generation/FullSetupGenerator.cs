@@ -364,6 +364,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 var old = Find(avatar);
                 if (regenerate) ValidateRegenerationReferences(old, settings);
                 if (old != null && !regenerate) ValidateOwnership(old, false);
+                // A singular avatar root cannot safely place any generated child.
+                // Return a warning without touching existing output or saved data.
+                if (settings.parts.Any(p => p.included && p.IsFingerRing) && !FingerRingCalibrationUtility.CanUseFrame(avatar.transform))
+                {
+                    root = old; message = L("アバターの座標変換が0scaleなどで退化しているため、安全に配置できません。既存の設定と生成物は変更していません。scaleを確認してください。"); return true;
+                }
                 var basis = BodyBasisBuilder.Build(snapshot);
                 var warnings = new List<string>();
                 settings = VrcFuryCapabilities.Current.Effective(settings, warnings);
@@ -373,22 +379,61 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 using var surface = new AvatarSurface(avatar);
                 if (!surface.HasBody) warnings.Add(L("体の表面を特定できませんでした。ボーンを基準に配置したため、位置と向きを確認してください。"));
                 var placements = new Dictionary<string, Placement>();
+                int skippedRings = 0;
                 foreach (var part in settings.parts.Where(p => p.included))
                 {
                     if (part.custom && old != null && part.target != null && part.target.IsChildOf(old.transform))
                         throw new InvalidOperationException(L("カスタム追従先に自分の生成物は指定できません。"));
-                    if (part.IsFingerRing && (part.fingerRing == null || !part.fingerRing.calibrated))
+                    Placement placement;
+                    if (part.IsFingerRing)
                     {
-                        // Preserve pending manual inputs; only pristine initial settings are automatic.
                         var value = part.fingerRing;
-                        if (value != null && (!string.IsNullOrEmpty(value.thumbPath) || !string.IsNullOrEmpty(value.indexPath) || value.center != Vector3.zero || value.euler != Vector3.zero))
-                            throw new InvalidOperationException(L("未完了の指わっか調整が残っています。設定を保持して処理を中止しました。該当する指わっかをオフにしてください。"));
+                        bool pristine = value == null || (!value.calibrated && string.IsNullOrEmpty(value.thumbPath) && string.IsNullOrEmpty(value.indexPath) && value.center == Vector3.zero && value.euler == Vector3.zero);
                         var saved = old?.settings.parts.Find(p => p.id == part.id)?.fingerRing;
-                        part.fingerRing = saved != null && saved.calibrated ? saved.Copy() : FingerRingAutoCalibration.Estimate(avatar, part);
+                        // Restore saved calibration before a scale-related skip so it
+                        // survives partial Apply/regeneration and selects the saved joint.
+                        if (pristine && saved != null && saved.calibrated) part.fingerRing = saved.Copy();
+                        FingerRingCalibrationUtility.Bones(avatar, part, out var thumb, out var index);
+                        if (!FingerRingCalibrationUtility.CanUseFrame(thumb) || !FingerRingCalibrationUtility.CanUseFrame(index))
+                        {
+                            warnings.Add(part.name + ": " + L("指わっかのscaleが0または座標変換が無効なため、この指わっかの生成を省略しました。他の生成可能な部位は続行します。保存済みの校正は保持します。"));
+                            skippedRings++; continue;
+                        }
+                        bool bestEffort = !FingerRingCalibrationUtility.HasGuaranteedScale(thumb) || !FingerRingCalibrationUtility.HasGuaranteedScale(index);
+                        if (bestEffort) warnings.Add(part.name + ": " + L("指わっかの階層に非一様または負のscaleがあります。生成は続行しますが、この指わっかの位置・向き・サイズは保証されません。生成後に確認し、手動で調整してください。"));
+                        var calibrationBefore = part.fingerRing;
+                        try
+                        {
+                            if (part.fingerRing == null || !part.fingerRing.calibrated)
+                            {
+                                if (!pristine) throw new InvalidOperationException(L("未完了の指わっか調整が残っています。設定を保持して処理を中止しました。該当する指わっかをオフにしてください。"));
+                                part.fingerRing = bestEffort
+                                    ? FingerRingCalibrationUtility.CaptureProvisional(avatar.transform, thumb, index, part.fingerRing?.thumbWeight ?? .5f)
+                                    : FingerRingAutoCalibration.Estimate(avatar, part);
+                                if (bestEffort) warnings.Add(part.name + ": " + L("指わっかは現在の指の姿勢を基準に仮配置しました。位置・向き・サイズを手動で調整してください。"));
+                            }
+                            placement = Place(part, avatar, basis, surface);
+                            // Ensure no invalid native distance reaches the mutation phase.
+                            FingerRingCalibrationUtility.NativeOffset(placement.first, part.fingerRing.thumbOffset);
+                            FingerRingCalibrationUtility.NativeOffset(placement.second, part.fingerRing.indexOffset);
+                        }
+                        catch (FingerRingCalibrationUtility.UnusableFrameException)
+                        {
+                            part.fingerRing = calibrationBefore;
+                            warnings.Add(part.name + ": " + L("指わっかのscaleが0または座標変換が無効なため、この指わっかの生成を省略しました。他の生成可能な部位は続行します。保存済みの校正は保持します。"));
+                            skippedRings++; continue;
+                        }
                     }
-                    var placement = Place(part, avatar, basis, surface);
+                    else placement = Place(part, avatar, basis, surface);
                     if (placement == null) warnings.Add(part.name + L(": 追従先が見つからないため省きました。"));
                     else placements.Add(part.id, placement);
+                }
+                if (placements.Count == 0 && skippedRings > 0)
+                {
+                    root = old;
+                    warnings.Add(L("生成できる部位が残らないため、既存の設定と生成物は変更していません。"));
+                    message = string.Join("\n", warnings.Distinct());
+                    return true;
                 }
                 if (placements.Count == 0) throw new InvalidOperationException(L("生成できる部位がありません。"));
                 if (old != null && old.settings.modularAvatar != settings.modularAvatar && !regenerate)
@@ -460,7 +505,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                         if (!SamePart(oldPart, part)) VrcFuryCompatibility.Configure(generated.socket, part, settings, warnings);
                         else if (previous.autoMode != settings.autoMode || previous.legacy != settings.legacy)
                             VrcFuryCompatibility.ConfigureCommon(generated.socket, settings, !part.IsFingerRing);
-                        if (part.IsFingerRing && JsonUtility.ToJson(oldPart?.fingerRing) != JsonUtility.ToJson(part.fingerRing))
+                        if (part.IsFingerRing)
                         {
                             var placement = placements[part.id];
                             Undo.RecordObject(generated.anchor, UndoName);

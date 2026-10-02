@@ -34,6 +34,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             Assert.That(Quaternion.Angle(facing, turn * rotation), Is.LessThan(.05f));
         }
 
+        [TestCase(.5f)] [TestCase(2f)]
+        public void UniformScalePreservesEstimatedCenterAndFacing(float scale)
+        {
+            FingerRingAutoCalibration.EstimateGeometry(Closed(), true, out var center, out var facing);
+            var turn = Quaternion.Euler(40, 75, -30); var offset = new Vector3(2, 3, -4);
+            FingerRingAutoCalibration.EstimateGeometry(Closed().Select(v => offset + turn * (v * scale)).ToArray(),
+                true, out var actual, out var rotation);
+            Assert.That(Vector3.Distance(actual, offset + turn * (center * scale)), Is.LessThan(.00001f));
+            Assert.That(Quaternion.Angle(rotation, turn * facing), Is.LessThan(.05f));
+        }
+
         [TestCase("open")] [TestCase("collinear")] [TestCase("nan")] [TestCase("nonplanar")] [TestCase("missing")]
         public void UnsafeGeometryDoesNotReturnCalibration(string kind)
         {

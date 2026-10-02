@@ -482,11 +482,17 @@ frames coincide with the calibrated center at capture for every weight.
 There is no Hand-fixed rotation or cross-product normal, and therefore no
 collinear-normal fallback. Open hands continue following; no gesture detection
 or automatic activation is added. Actual visible behavior remains a validation
-question. Missing joints, changed joint paths, invalid values or non-unit world
-joint scale fail closed in this prototype. Joint world matrices must also match
-their unit rigid rotation frames, so compensated nonuniform ancestor scale cannot
-hide shear behind a lossyScale value near one. Non-finite scale and saved UI
-center/rotation values are rejected. Scaled rigs need further observation.
+question. Missing joints, changed joint paths and invalid saved values retain their
+existing validation. Positive uniform scale is the accuracy-supported path. Every
+ancestor is inspected so compensating scales do not hide nonuniform scale or
+reflections. Invertible nonuniform/negative/sheared frames allow generation with
+a yellow warning that only the finger ring's position/orientation/size is not
+guaranteed and requires manual adjustment. A singular/nonfinite finger frame is
+skipped before inverse calculations; other valid parts continue and its stored
+calibration is retained. No valid placements means a warning-only no-op. A singular
+avatar root also returns without changing existing data. These are successful
+warning outcomes (the setup window already displays successful messages in yellow),
+not partial exception rollback or suppression of unrelated SDK/data errors.
 
 Native tracking, generated-avatar SDK conversion and persistence/Auto regression
 have exact-revision evidence in VALIDATION.md and the owning Issue. Converted
@@ -503,21 +509,34 @@ native-speaker approval. Actual-avatar aesthetics and VRC PC remain human gates.
 
 ### Scale boundary
 
-A fixed positive uniform scale of the entire avatar is mathematically different
-from nonuniform bone scale: it preserves angles and has one scale factor. A future
-extension could potentially capture/rescale the offset consistently, but both
-native and converted constraints and later avatar-scale changes require real
-observation. The current prototype still rejects non-unit whole-avatar scale.
+Calibration stores joint-local positions with InverseTransformPoint and evaluates
+them with TransformPoint. Legacy unit-scale saves already represent these local
+coordinates and do not require a schema migration. Rotation blending is unchanged.
 
-The current offset is a world-distance vector expressed in joint rotation axes:
-`d = inverse(R) * (center - jointPosition)`. If a rig changes uniform scale after
-capture, joint positions scale but the saved distance does not; the desired offset
-and saved offset then differ. Merely removing the scale guard is insufficient.
-Nonuniform scaled/rotated bone chains can additionally introduce shear, for which
-one scalar or a quaternion cannot describe the complete frame. This remains
-unsupported; no scale-support expansion or avatar transform modification is made.
-No distribution format is changed here.
+Observed Unity ParentConstraint translation offsets are world distances expressed
+in source rotation axes: native evaluation does not multiply them by source scale.
+Configure therefore multiplies each saved local offset by that joint's current
+positive uniform world scale. Ordinary Apply refreshes these constraint distances,
+including when saved calibration is unchanged, while preserving manual pose/size.
 
+For invertible nonuniform/negative scale, a saved calibration is reused. A pristine
+initial ring uses the midpoint and blended rotation of the current finger frames;
+the user is explicitly told to adjust this provisional placement manually. This
+path does not run the Humanoid closed-pose estimator on a deformed skeleton.
+Native offsets use inverse(sourceRotation) * TransformVector(localOffset) so the
+current finite frame can be represented; its geometry/orientation/size is not
+certified. The positive-uniform branch retains its tested scalar calculation.
+
+Both native offsets are validated before components are added or modified. Only
+numeric frame failures are converted to per-ring skips; unrelated validation or
+SDK errors still use their existing error handling. Partial Apply/regeneration
+retains the skipped ring's saved calibration. With no safe placements the setup
+window accepts a null/new-root no-op without changing existing assets or output.
+
+After editing root, ancestor or joint scale, Apply or regenerate the setup. Runtime
+scale animation is not supported. Source avatar transforms are never corrected
+automatically. The warning-only revision requires new Unity/native verification;
+prior native/SDK results apply to the preceding strict-scale candidate.
 
 ### Issue 180 compact display settings (unreleased 1.1.0)
 The UI language uses the system language only when no explicit Editor preference
@@ -546,7 +565,7 @@ pose is not guaranteed to match the user's runtime Gesture.
 
 Seven mapped points (Hand; thumb/index proximal, intermediate, distal) form a
 bone contour. Unmapped/distinctness failures, nonfinite values, tiny segments,
-non-unit/sheared frames, estimated tip gap >0.2 index length, area <0.08 span²,
+degenerate frames, estimated tip gap >0.2 index length, area <0.08 span²,
 plane deviation >0.2 span, exterior centroid or uncertain palm-relative normal reject estimation.
 Terminal segments extend by0.6 of the preceding distal segment: this is a bounded
 bone approximation, not a finger-surface measurement. The area centroid and

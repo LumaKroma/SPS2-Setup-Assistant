@@ -33,28 +33,96 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             } finally { UnityEngine.Object.DestroyImmediate(root); }
         }
 
-        [TestCase(.5f)] [TestCase(2f)]
-        public void UniformAvatarScaleIsStillRejected(float scale)
+        [TestCase(.5f, 1f, 1f)] [TestCase(2f, 1f, 1f)]
+        [TestCase(1f, .5f, 1f)] [TestCase(1f, 2f, 1f)]
+        [TestCase(1f, 1f, .5f)] [TestCase(1f, 1f, 2f)]
+        [TestCase(2f, .5f, 1.3f)]
+        public void UniformHierarchyScalePreservesSavedCenterAndFollowing(float rootScale, float parentScale, float jointScale)
         {
-            var root = new GameObject("Scaled avatar");
+            var parent = new GameObject("Scaled ancestor");
+            try {
+                parent.transform.localScale = Vector3.one * parentScale;
+                parent.transform.SetPositionAndRotation(new Vector3(2, 3, -4), Quaternion.Euler(20, 30, 40));
+                var root = new GameObject("Avatar").transform; root.SetParent(parent.transform, false);
+                root.localScale = Vector3.one * rootScale;
+                var thumb = new GameObject("Thumb").transform; thumb.SetParent(root, false);
+                var index = new GameObject("Index").transform; index.SetParent(root, false);
+                thumb.localPosition = new Vector3(.1f, .02f, .04f); thumb.localRotation = Quaternion.Euler(170, -85, 120);
+                index.localPosition = new Vector3(-.03f, .07f, -.06f); index.localRotation = Quaternion.Euler(-95, 35, 60);
+                thumb.localScale = Vector3.one * jointScale;
+                index.localScale = Vector3.one / jointScale;
+                var localCenter = new Vector3(.025f, .03f, .015f);
+                var center = root.TransformPoint(localCenter); var rotation = root.rotation * Quaternion.Euler(40, -25, 75);
+                var value = FingerRingCalibrationUtility.Capture(root, thumb, index, center, rotation, .3f);
+                value = JsonUtility.FromJson<FingerRingCalibration>(JsonUtility.ToJson(value));
+                FingerRingCalibrationUtility.Validate(root, thumb, index, value);
+                FingerRingCalibrationUtility.Evaluate(thumb, index, value, out var actual, out var facing);
+                Assert.That(Vector3.Distance(actual, center), Is.LessThan(.00001f));
+                Assert.That(Quaternion.Angle(facing, rotation), Is.LessThan(.05f));
+                root.localScale *= 1.5f;
+                FingerRingCalibrationUtility.Validate(root, thumb, index, value);
+                FingerRingCalibrationUtility.Evaluate(thumb, index, value, out actual, out facing);
+                Assert.That(Vector3.Distance(actual, root.TransformPoint(localCenter)), Is.LessThan(.00001f));
+                Assert.That(Quaternion.Angle(facing, rotation), Is.LessThan(.05f));
+            } finally { UnityEngine.Object.DestroyImmediate(parent); }
+        }
+
+        [Test]
+        public void LegacyUnitScaleOffsetsRemainCompatibleAfterReloadAndRescale()
+        {
+            var root = new GameObject("Legacy saved avatar");
             try {
                 var thumb = new GameObject("Thumb").transform; thumb.SetParent(root.transform, false);
                 var index = new GameObject("Index").transform; index.SetParent(root.transform, false);
-                root.transform.localScale = Vector3.one * scale;
-                Assert.Throws<InvalidOperationException>(() => FingerRingCalibrationUtility.Capture(root.transform, thumb, index, Vector3.zero, Quaternion.identity, .5f));
+                thumb.localPosition = new Vector3(.1f, .02f, .04f); thumb.localRotation = Quaternion.Euler(40, 50, 60);
+                index.localPosition = new Vector3(-.03f, .07f, -.06f); index.localRotation = Quaternion.Euler(-30, 60, 20);
+                var center = new Vector3(.025f, .03f, .015f); var rotation = Quaternion.Euler(40, -25, 75);
+                // Build the pre-1.1.1 representation independently of Capture.
+                var old = new FingerRingCalibration { calibrated = true, thumbWeight = .3f,
+                    thumbPath = "Thumb", indexPath = "Index",
+                    thumbOffset = Quaternion.Inverse(thumb.rotation) * (center - thumb.position),
+                    indexOffset = Quaternion.Inverse(index.rotation) * (center - index.position),
+                    thumbRotation = Quaternion.Inverse(thumb.rotation) * rotation,
+                    indexRotation = Quaternion.Inverse(index.rotation) * rotation,
+                    center = center, euler = rotation.eulerAngles };
+                old = JsonUtility.FromJson<FingerRingCalibration>(JsonUtility.ToJson(old));
+                foreach (var scale in new[] { 1f, .5f, 2f }) {
+                    root.transform.localScale = Vector3.one * scale;
+                    FingerRingCalibrationUtility.Validate(root.transform, thumb, index, old);
+                    FingerRingCalibrationUtility.Evaluate(thumb, index, old, out var actual, out var facing);
+                    Assert.That(Vector3.Distance(actual, center * scale), Is.LessThan(.00001f));
+                    Assert.That(Quaternion.Angle(facing, rotation), Is.LessThan(.05f));
+                }
             } finally { UnityEngine.Object.DestroyImmediate(root); }
         }
 
+        [TestCase(-1f, -1f, -1f)] [TestCase(2f, 1f, 1f)]
+        public void CompensatedUnsafeAncestorScaleRequiresWarning(float x, float y, float z)
+        {
+            var parent = new GameObject("Unsafe ancestor");
+            try {
+                parent.transform.localScale = new Vector3(x, y, z);
+                var root = new GameObject("Compensated avatar").transform; root.SetParent(parent.transform, false);
+                root.localScale = new Vector3(1/x, 1/y, 1/z);
+                var thumb = new GameObject("Thumb").transform; thumb.SetParent(root, false);
+                var index = new GameObject("Index").transform; index.SetParent(root, false);
+                Assert.That(FingerRingCalibrationUtility.CanUseFrame(thumb), Is.True);
+                Assert.That(FingerRingCalibrationUtility.HasGuaranteedScale(thumb), Is.False);
+                Assert.DoesNotThrow(() => FingerRingCalibrationUtility.Capture(root, thumb, index, Vector3.zero, Quaternion.identity, .5f));
+            } finally { UnityEngine.Object.DestroyImmediate(parent); }
+        }
+
+
         [TestCase(float.NaN, 1f, 1f)] [TestCase(float.PositiveInfinity, 1f, 1f)]
         [TestCase(float.NegativeInfinity, 1f, 1f)] [TestCase(0f, 1f, 1f)]
-        [TestCase(-1f, 1f, 1f)] [TestCase(2f, 1f, .5f)]
+        [TestCase(0f, 0f, 0f)]
         public void UnsafeScaleValuesFailClosed(float x, float y, float z)
         {
             Assert.Throws<InvalidOperationException>(() => FingerRingCalibrationUtility.ValidateScale(new Vector3(x, y, z)));
         }
 
         [Test]
-        public void CompensatedNonuniformBoneChainCannotHideShear()
+        public void ShearedFrameIsUsableButOutsideAccuracyGuarantee()
         {
             var root = new GameObject("Sheared avatar");
             try {
@@ -64,7 +132,61 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
                 thumb.localRotation = Quaternion.Euler(0, 0, 45);
                 thumb.localScale = new Vector3(1 / Mathf.Sqrt(2.5f), 1 / Mathf.Sqrt(2.5f), 1);
                 var index = new GameObject("Index").transform; index.SetParent(root.transform, false);
-                Assert.Throws<InvalidOperationException>(() => FingerRingCalibrationUtility.Capture(root.transform, thumb, index, Vector3.zero, Quaternion.identity, .5f));
+                Assert.That(FingerRingCalibrationUtility.CanUseFrame(thumb), Is.True);
+                Assert.That(FingerRingCalibrationUtility.HasGuaranteedScale(thumb), Is.False);
+                Assert.DoesNotThrow(() => FingerRingCalibrationUtility.Capture(root.transform, thumb, index, Vector3.zero, Quaternion.identity, .5f));
+            } finally { UnityEngine.Object.DestroyImmediate(root); }
+        }
+
+        [TestCase(2f, 1f, .5f)] [TestCase(-1f, 1f, 1f)] [TestCase(-1f, -1f, -1f)]
+        public void UnguaranteedScaleCapturesFiniteCurrentPoseAndNativeDistances(float x, float y, float z)
+        {
+            var root = new GameObject("Best effort avatar");
+            try {
+                root.transform.localScale = new Vector3(x, y, z);
+                root.transform.rotation = Quaternion.Euler(20, 30, 40);
+                var thumb = new GameObject("Thumb").transform; thumb.SetParent(root.transform, false);
+                var index = new GameObject("Index").transform; index.SetParent(root.transform, false);
+                thumb.localPosition = new Vector3(.1f, .02f, .04f); thumb.localRotation = Quaternion.Euler(70, 25, 10);
+                index.localPosition = new Vector3(-.03f, .07f, -.06f); index.localRotation = Quaternion.Euler(-40, 15, 60);
+                var beforeThumb = thumb.localPosition; var beforeIndex = index.localPosition;
+                Assert.That(FingerRingCalibrationUtility.HasGuaranteedScale(thumb), Is.False);
+                var expected = thumb.position * .5f + index.position * .5f;
+                var expectedFacing = Quaternion.Lerp(index.rotation, thumb.rotation, .3f);
+                var value = FingerRingCalibrationUtility.CaptureProvisional(root.transform, thumb, index, .3f);
+                value = JsonUtility.FromJson<FingerRingCalibration>(JsonUtility.ToJson(value));
+                FingerRingCalibrationUtility.Validate(root.transform, thumb, index, value);
+                FingerRingCalibrationUtility.Evaluate(thumb, index, value, out var actual, out var rotation);
+                Assert.That(Vector3.Distance(actual, expected), Is.LessThan(.00001f));
+                Assert.That(Quaternion.Angle(rotation, expectedFacing), Is.LessThan(.05f));
+                var target = new GameObject("Target"); target.transform.SetParent(root.transform, false);
+                FingerRingCalibrationUtility.Configure(target, thumb, index, value);
+                var constraint = target.GetComponent<ParentConstraint>();
+                var predictedThumb = thumb.position + thumb.rotation * constraint.GetTranslationOffset(0);
+                var predictedIndex = index.position + index.rotation * constraint.GetTranslationOffset(1);
+                Assert.That(Vector3.Distance(predictedThumb, expected), Is.LessThan(.00001f));
+                Assert.That(Vector3.Distance(predictedIndex, expected), Is.LessThan(.00001f));
+                Assert.That(thumb.localPosition, Is.EqualTo(beforeThumb));
+                Assert.That(index.localPosition, Is.EqualTo(beforeIndex));
+            } finally { UnityEngine.Object.DestroyImmediate(root); }
+        }
+
+        [TestCase(0f, 1f, 1f)] [TestCase(0f, 0f, 0f)]
+        public void DegenerateFrameCannotCreateConstraintOrOverwriteCalibration(float x, float y, float z)
+        {
+            var root = new GameObject("Degenerate finger");
+            try {
+                var thumb = new GameObject("Thumb").transform; thumb.SetParent(root.transform, false);
+                var index = new GameObject("Index").transform; index.SetParent(root.transform, false);
+                var value = FingerRingCalibrationUtility.Capture(root.transform, thumb, index, Vector3.one * .01f, Quaternion.identity, .5f);
+                string before = JsonUtility.ToJson(value);
+                thumb.localScale = new Vector3(x, y, z);
+                Assert.That(FingerRingCalibrationUtility.CanUseFrame(thumb), Is.False);
+                var target = new GameObject("Target"); target.transform.SetParent(root.transform, false);
+                Assert.Throws<FingerRingCalibrationUtility.UnusableFrameException>(() => FingerRingCalibrationUtility.Configure(target, thumb, index, value));
+                Assert.That(target.GetComponent<ParentConstraint>(), Is.Null);
+                Assert.That(JsonUtility.ToJson(value), Is.EqualTo(before));
+                Assert.That(FingerRingCalibrationUtility.CanUseFrame(index), Is.True);
             } finally { UnityEngine.Object.DestroyImmediate(root); }
         }
 
@@ -204,6 +326,113 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             } finally { UnityEngine.Object.DestroyImmediate(root); }
         }
 
+        [UnityTest, Explicit("Scale candidate gate: requires the existing persistent Play Mode result recorder.")]
+        public IEnumerator UniformScaleNativeConstraintMatchesSavedCalibration() => CheckScaledConstraint(false);
+
+        [UnityTest, Explicit("Requires persistent Play Mode recording; SDK simulation is not VRC-client evidence.")]
+        public IEnumerator UniformScaleConvertedConstraintMatchesSavedCalibration() => CheckScaledConstraint(true);
+
+        private IEnumerator CheckScaledConstraint(bool converted)
+        {
+            yield return new EnterPlayMode();
+            foreach (var scales in new[] { new Vector3(.5f, 1, 1), new Vector3(2, 1, 1), new Vector3(2, .75f, 1.3f) }) {
+                var parent = new GameObject("ScaleNativeAncestor");
+                try {
+                    parent.SetActive(false);
+                    parent.transform.localScale = Vector3.one * scales.y;
+                    var root = new GameObject("Avatar").transform; root.SetParent(parent.transform, false);
+                    root.localScale = Vector3.one * scales.x;
+                    var thumb = new GameObject("Thumb").transform; thumb.SetParent(root, false);
+                    var index = new GameObject("Index").transform; index.SetParent(root, false);
+                    thumb.localPosition = new Vector3(.04f, 1, .03f); thumb.localRotation = Quaternion.Euler(80, 125, -35);
+                    index.localPosition = new Vector3(-.03f, 1.04f, .02f); index.localRotation = Quaternion.Euler(-45, 10, 65);
+                    thumb.localScale = Vector3.one * scales.z; index.localScale = Vector3.one / scales.z;
+                    var target = new GameObject("Socket"); target.transform.SetParent(root, false);
+                    target.AddComponent<ParentConstraint>();
+                    var center = root.TransformPoint(new Vector3(.01f, 1.025f, .065f));
+                    var facing = root.rotation * Quaternion.Euler(20, 35, 80);
+                    var saved = FingerRingCalibrationUtility.Capture(root, thumb, index, center, facing, .3f);
+                    saved = JsonUtility.FromJson<FingerRingCalibration>(JsonUtility.ToJson(saved));
+                    target.transform.SetPositionAndRotation(center, facing);
+                    FingerRingCalibrationUtility.Configure(target, thumb, index, saved);
+                    if (converted) {
+                        var descriptor = root.gameObject.AddComponent<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>();
+                        Assert.That(VRC.SDK3.Avatars.AvatarDynamicsSetup.DoConvertUnityConstraints(new IConstraint[] { target.GetComponent<ParentConstraint>() }, descriptor, false), Is.False);
+                        var constraint = target.GetComponent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
+                        Assert.That(constraint != null && target.GetComponent<ParentConstraint>() == null, Is.True);
+                        Assert.That(Vector3.Distance(constraint.Sources[0].ParentPositionOffset, saved.thumbOffset * thumb.lossyScale.x), Is.LessThan(.00001f));
+                        constraint.ApplyConfigurationChanges();
+                    }
+                    parent.SetActive(true);
+                    var initialThumb = thumb.localRotation; var initialIndex = index.localRotation;
+                    for (int stage = 0; stage < (converted ? 3 : 5); stage++) {
+                        if (stage == 1) { thumb.localRotation = Quaternion.Euler(110, -40, 170); index.localRotation = Quaternion.Euler(15, 100, -80); }
+                        if (stage == 2) { thumb.localRotation = initialThumb; index.localRotation = initialIndex; }
+                        if (stage == 3) {
+                            root.localScale *= 1.5f;
+                            FingerRingCalibrationUtility.Configure(target, thumb, index, saved);
+                        }
+                        if (stage == 4) {
+                            thumb.localScale *= 1.2f; index.localScale *= .8f;
+                            FingerRingCalibrationUtility.Configure(target, thumb, index, saved);
+                        }
+                        for (int frame = 0; frame < 4; frame++) yield return null;
+                        FingerRingCalibrationUtility.Evaluate(thumb, index, saved, out var expected, out var rotation);
+                        var rigid = Vector3.Lerp(index.position + index.rotation * saved.indexOffset,
+                            thumb.position + thumb.rotation * saved.thumbOffset, saved.thumbWeight);
+                        System.IO.File.AppendAllText("Library/Issue180Validation/scale-111-warning-native-v1.jsonl",
+                            JsonUtility.ToJson(new ScaleOffsetObservation { converted = converted, stage = stage, rootScale = root.lossyScale.x,
+                                thumbScale = thumb.lossyScale.x, indexScale = index.lossyScale.x,
+                                scaledError = Vector3.Distance(target.transform.position, expected),
+                                rigidError = Vector3.Distance(target.transform.position, rigid) }) + "\n");
+                        Assert.That(Vector3.Distance(target.transform.position, expected), Is.LessThan(.0001f), "Position " + scales + " stage " + stage);
+                        Assert.That(Quaternion.Angle(target.transform.rotation, rotation), Is.LessThan(.1f), "Facing " + scales + " stage " + stage);
+                        Assert.That(target.transform.localScale, Is.EqualTo(Vector3.one), "Constraint must preserve authored socket size");
+                        if (stage == 0 || stage == 2) Assert.That(Vector3.Distance(target.transform.position, center), Is.LessThan(.0001f));
+                    }
+                } finally { UnityEngine.Object.DestroyImmediate(parent); }
+            }
+            yield return new ExitPlayMode();
+        }
+
+        [UnityTest, Explicit("Warning-only scales: finite native/SDK output, not an accuracy guarantee.")]
+        public IEnumerator WarningScaleNativeAndConvertedConstraintsStayFinite()
+        {
+            yield return new EnterPlayMode();
+            foreach (var scale in new[] { new Vector3(2, 1, .5f), new Vector3(-1, 1, 1), new Vector3(-1, -1, -1) })
+                foreach (bool converted in new[] { false, true }) {
+                    var root = new GameObject("WarningScaleRuntime"); root.SetActive(false);
+                    try {
+                        root.transform.localScale = scale;
+                        var thumb = new GameObject("Thumb").transform; thumb.SetParent(root.transform, false);
+                        var index = new GameObject("Index").transform; index.SetParent(root.transform, false);
+                        thumb.localPosition = new Vector3(.04f, 1, .03f); thumb.localRotation = Quaternion.Euler(80, 125, -35);
+                        index.localPosition = new Vector3(-.03f, 1.04f, .02f); index.localRotation = Quaternion.Euler(-45, 10, 65);
+                        var target = new GameObject("Ring"); target.transform.SetParent(root.transform, false);
+                        target.AddComponent<ParentConstraint>();
+                        var saved = FingerRingCalibrationUtility.CaptureProvisional(root.transform, thumb, index, .3f);
+                        FingerRingCalibrationUtility.Evaluate(thumb, index, saved, out var position, out var rotation);
+                        target.transform.SetPositionAndRotation(position, rotation);
+                        FingerRingCalibrationUtility.Configure(target, thumb, index, saved);
+                        if (converted) {
+                            var descriptor = root.AddComponent<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>();
+                            Assert.That(VRC.SDK3.Avatars.AvatarDynamicsSetup.DoConvertUnityConstraints(new IConstraint[] { target.GetComponent<ParentConstraint>() }, descriptor, false), Is.False);
+                            var constraint = target.GetComponent<VRC.SDK3.Dynamics.Constraint.Components.VRCParentConstraint>();
+                            Assert.That(constraint != null, Is.True); constraint.ApplyConfigurationChanges();
+                        }
+                        root.SetActive(true);
+                        for (int stage = 0; stage < 2; stage++) {
+                            if (stage == 1) { thumb.localRotation = Quaternion.Euler(110, -40, 170); index.localRotation = Quaternion.Euler(15, 100, -80); }
+                            for (int frame = 0; frame < 8; frame++) yield return null;
+                            var p = target.transform.position; var q = target.transform.rotation;
+                            Assert.That(new[] { p.x, p.y, p.z, q.x, q.y, q.z, q.w }.All(v => !float.IsNaN(v) && !float.IsInfinity(v)), Is.True, scale + " converted=" + converted + " stage=" + stage);
+                            Assert.That(target.transform.localScale, Is.EqualTo(Vector3.one));
+                        }
+                    } finally { UnityEngine.Object.DestroyImmediate(root); }
+                }
+            yield return new ExitPlayMode();
+        }
+
         [UnityTest, Explicit("Requires a persistent Play Mode evidence callback across domain reload; excluded from the transient MCP EditMode callback.")]
         public IEnumerator NativeParentConstraintMovesThenReturnsToCalibration()
         {
@@ -278,7 +507,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
                     Assert.That(constraints[side].Sources.Count, Is.EqualTo(2));
                     Assert.That(constraints[side].Sources[0].SourceTransform, Is.SameAs(thumbs[side]));
                     Assert.That(constraints[side].Sources[0].Weight, Is.EqualTo(values[side].thumbWeight));
-                    Assert.That(constraints[side].Sources[0].ParentPositionOffset, Is.EqualTo(values[side].thumbOffset));
+                    Assert.That(Vector3.Distance(constraints[side].Sources[0].ParentPositionOffset, values[side].thumbOffset * thumbs[side].lossyScale.x), Is.LessThan(.000001f));
                     constraints[side].ApplyConfigurationChanges();
                 }
                 root.SetActive(true);
@@ -307,11 +536,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
                 passed = true;
             } finally {
                 System.IO.Directory.CreateDirectory("Library/Issue180Validation");
-                System.IO.File.WriteAllText("Library/Issue180Validation/gesture-refinement-converted-runtime-v9.json", JsonUtility.ToJson(new ConvertedRuntimeResult { passed = passed, sdkSimulation = true, vrcClientVerified = false, rows = rows }, true));
+                System.IO.File.WriteAllText("Library/Issue180Validation/scale-111-warning-unit-converted-v1.json", JsonUtility.ToJson(new ConvertedRuntimeResult { passed = passed, sdkSimulation = true, vrcClientVerified = false, rows = rows }, true));
                 UnityEngine.Object.DestroyImmediate(root);
             }
             yield return new ExitPlayMode();
         }
+
+        [Serializable] private sealed class ScaleOffsetObservation { public bool converted; public int stage; public float rootScale, thumbScale, indexScale, scaledError, rigidError; }
 
         [Serializable] private sealed class ConvertedRow { public string stage; public int side; public float positionError, rotationError; }
         [Serializable] private sealed class ConvertedRuntimeResult { public bool passed, sdkSimulation, vrcClientVerified; public System.Collections.Generic.List<ConvertedRow> rows; }

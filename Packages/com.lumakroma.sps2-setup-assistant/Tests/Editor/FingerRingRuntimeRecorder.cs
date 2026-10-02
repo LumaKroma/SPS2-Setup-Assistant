@@ -12,7 +12,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
     public static class FingerRingRuntimeRecorder
     {
         private const string Pending = "LumaKroma.Issue180.RingRuntimePending";
-        private const string Output = "Library/Issue180Validation/gesture-refinement-runtime-v9.json";
+        private const string DefaultOutput = "Library/Issue180Validation/gesture-refinement-runtime-v9.json";
+        private static string Output => SessionState.GetString(Pending + ".Output", DefaultOutput);
         private static TestRunnerApi api;
         public static int CountAuto(GameObject avatar) => Compatibility.VrcFuryCompatibility.AutoSocketCount(avatar);
         static FingerRingRuntimeRecorder()
@@ -25,17 +26,34 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             api = ScriptableObject.CreateInstance<TestRunnerApi>();
             api.RegisterCallbacks(new Recorder());
         }
-        public static void Start()
+        public static void Start() => Start(DefaultOutput, null);
+        public static void StartScalePatch() => Start("Library/Issue180Validation/scale-111-native-r2.json", new[] {
+            "LumaKroma.Sps2SetupAssistant.Editor.Tests.FingerRingCalibrationTests.UniformScaleNativeConstraintMatchesSavedCalibration",
+            "LumaKroma.Sps2SetupAssistant.Editor.Tests.FingerRingCalibrationTests.UniformScaleConvertedConstraintMatchesSavedCalibration"
+        });
+        public static void StartScaleUnitRegression() => Start("Library/Issue180Validation/scale-111-unit-r3.json", new[] {
+            "LumaKroma.Sps2SetupAssistant.Editor.Tests.FingerRingCalibrationTests.ConvertedParentConstraintsFollowBothMirroredFrames"
+        });
+        public static void StartScaleRegression() => Start("Library/Issue180Validation/scale-111-regression-r2.json", null, new[] {
+            "^LumaKroma\\.Sps2SetupAssistant\\.Editor\\.Tests\\.(FingerRingCalibrationTests|FingerRingAutoCalibrationTests|FullSetupSettingsTests|LocalizationTests)(\\.|$)"
+        });
+        public static void StartScaleWarningRegression() => Start("Library/Issue180Validation/scale-111-warning-regression-v1.json", null, new[] {
+            "^LumaKroma\\.Sps2SetupAssistant\\.Editor\\.Tests\\.(FingerRingCalibrationTests|FingerRingAutoCalibrationTests|FullSetupSettingsTests|LocalizationTests)(\\.|$)"
+        });
+        private static void Start(string output, string[] testNames, string[] groupNames = null)
         {
-            if (Application.isPlaying || SessionState.GetBool(Pending, false) || File.Exists(Output))
+            if (Application.isPlaying || SessionState.GetBool(Pending, false) || File.Exists(output))
                 throw new InvalidOperationException("Runtime test already running or prior evidence exists.");
             for (int i=0;i<UnityEngine.SceneManagement.SceneManager.sceneCount;i++)
                 if (UnityEngine.SceneManagement.SceneManager.GetSceneAt(i).isDirty)
                     throw new InvalidOperationException("Save and audit every scene before this test.");
+            SessionState.SetString(Pending + ".Output", output);
             SessionState.SetBool(Pending, true);
             Register();
             api.Execute(new ExecutionSettings(new Filter {
                 testMode = TestMode.EditMode,
+                testNames = testNames,
+                groupNames = groupNames,
                 assemblyNames = new[] { "LumaKroma.Sps2SetupAssistant.Editor.Tests", "LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.Tests" }
             }));
         }

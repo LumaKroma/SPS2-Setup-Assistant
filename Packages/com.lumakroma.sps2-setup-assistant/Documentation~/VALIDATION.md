@@ -1,3 +1,68 @@
+# 1.1.1 yellow-warning revision (2026-10-02, unpublished)
+
+The user requested yellow-only scale guidance after the strict-scale candidate
+was tested. The earlier ZIP SHA256 613dd6400a81be10591c16358bcb7a542eb48708e8a173febd0041ac3a62b5a2
+is superseded and must not be published as this revision.
+
+Implemented: invertible nonuniform/negative/sheared frames produce finite current-
+pose placement or reuse saved calibration; non-invertible finger frames are skipped;
+no safe output is a warning-only no-op. Manual adjustment and lack of position,
+orientation and size guarantees are explicit in all five languages. The positive-
+uniform scalar offset path and old unit-scale settings representation are retained.
+
+Offline compile, localization/package/source checks and candidate ZIP byte matching
+are recorded under task-3/sps2-scale-111/warning-revision. Unity/native tests have
+NOT run for this revision while RMS owns the shared runtime. Prepared coverage:
+- Existing positive-uniform, legacy, save/reload, native/SDK and generation checks.
+- Negative/nonuniform/sheared and compensated ancestor frames, finite provisional
+  placement, correct authored native offsets and no source-transform mutation.
+- Zero-axis/all-zero frame rejection before constraint creation and saved-calibration
+  preservation; mixed valid/skipped generation and no-output/no-change integration.
+- Five-language finger-ring subject and manual-adjustment guidance.
+
+Historical strict-scale candidate evidence follows and is not a PASS claim for the
+warning-only revision. VRC-client behavior and runtime scale animation remain outside
+the verified scope. No release, push or upload is authorized/performed.
+
+---
+
+# 1.1.1 scale patch candidate (2026-10-02, unpublished)
+
+Baseline a27de786638c73c50935900d73f5fb1c0e5702d9 plus the local scale patch.
+The exact tested product file hashes and raw results are retained in
+`C:/Users/konoh/Documents/Codex/2026-10-02/task-3/sps2-scale-111/`.
+
+- Initial native test failed: using joint-local offsets directly gave 0.023097621m
+  error at scale 0.5; the native world-distance expectation differed by 3.84e-9m.
+- Fixed native and SDK-converted PlayMode scale tracking: 2 passed, 0 failed.
+  Covers root 0.5/2, combined ancestor/joint scale, motion/return, preserved socket
+  scale, and native reconfiguration after changing root/joint scale.
+- Related regression: 124 passed and 1 failed initially. The remaining unit-scale
+  SDK test compared floating vectors exactly; after correcting its expected native
+  distance and applying a 1e-6m tolerance, that one test passed on rerun.
+  The product code was unchanged between these runs. Aggregate: 125 distinct tests
+  covered successfully; this is a combined result, not a new 125-test single run.
+  The passing follow/return/reactivation samples had maximum error 1.1781e-8m and
+  zero measured rotation error. The existing 1e-4m motion limit was not relaxed.
+- Generation: 7 cases / 177 checks passed on disposable Transform-only copies.
+  Covers root/ancestor/hand scale 0.5 and 2, both rings plus a palm socket, legacy
+  unit-scale saved calibration, JSON reload, Apply after rescale, regeneration,
+  retained manual local position/rotation/size and generated SDK conversion.
+  The source prefab's skeleton transforms remained unchanged.
+- Five-language warning subjects, unsafe scales, compensated unsafe ancestors,
+  old settings and geometry scale invariance are covered by the related tests.
+
+Only authored positive uniform scale is supported. Apply/regenerate after editing
+hierarchy scale. Runtime scale animation, VRC-client scale behavior and subjective
+avatar appearance have not been certified. No runtime scripts or dependency
+changes were added. No release/push/upload was performed.
+
+The original saved scene configuration was restored clean, test recording and
+Play stopped, and the owned Editor was closed normally before releasing its lease.
+Historical checkpoints follow; their older limitations describe those revisions.
+
+---
+
 # Finger-ring prototype checkpoint (2026-09-30)
 
 Current code fix: 3a71771fce4c2f1a416085c532290090ef735e3f, local-only.
