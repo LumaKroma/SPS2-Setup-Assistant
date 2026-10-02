@@ -10,15 +10,28 @@ no safe output is a warning-only no-op. Manual adjustment and lack of position,
 orientation and size guarantees are explicit in all five languages. The positive-
 uniform scalar offset path and old unit-scale settings representation are retained.
 
-Offline compile, localization/package/source checks and candidate ZIP byte matching
-are recorded under task-3/sps2-scale-111/warning-revision. Unity/native tests have
-NOT run for this revision while RMS owns the shared runtime. Prepared coverage:
-- Existing positive-uniform, legacy, save/reload, native/SDK and generation checks.
-- Negative/nonuniform/sheared and compensated ancestor frames, finite provisional
-  placement, correct authored native offsets and no source-transform mutation.
-- Zero-axis/all-zero frame rejection before constraint creation and saved-calibration
-  preservation; mixed valid/skipped generation and no-output/no-change integration.
-- Five-language finger-ring subject and manual-adjustment guidance.
+Verified on local commit f6bb05149b71bd619028d305e079920bb7ba40a8:
+- Related Unity regression: 128 passed, 0 failed, 0 skipped in one run. Includes
+  positive-uniform native/SDK tracking, legacy settings, mirrored/nonuniform finite
+  native/SDK output, shear/compensated ancestors, zero-frame guards and five-language
+  manual-adjustment wording. This current-revision run replaces the old aggregate.
+- Warning generation: 62 checks passed. Fresh nonuniform/negative generation,
+  partial zero-thumb skips with right-ring/palm continuation, saved calibration
+  across Apply/regeneration, only-invalid selection preserving old output/settings,
+  singular-root no-change and first-generation no-output creating no empty setup.
+- Positive-uniform generation: all 7 cases / 177 checks passed again. Covers root,
+  ancestor and hand scale 0.5/2, old unit-scale saved frames, JSON reload, ordinary
+  Apply after rescale, manual position/rotation/size, regeneration and SDK conversion.
+- Source prefab skeleton transforms were unchanged. Original saved scene setup
+  was restored clean; Play/recording stopped, Editor PID 59768 exited normally and
+  its lease was released. Shared server PID 31084 was preserved.
+- Product/tests and the generation probe compiled offline. The existing package
+  check and 206 localization entries with four translations each passed.
+
+Raw results, tested file hashes and the superseding local ZIP are retained under
+task-3/sps2-scale-111/warning-revision. Final documentation-only changes do not
+alter the tested product/test C# bytes. Nonuniform/negative scale remains an explicit
+manual-adjustment path without position/orientation/size accuracy guarantees.
 
 Historical strict-scale candidate evidence follows and is not a PASS claim for the
 warning-only revision. VRC-client behavior and runtime scale animation remain outside

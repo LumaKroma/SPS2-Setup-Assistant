@@ -6,7 +6,7 @@
 - Generate with yellow, five-language manual-adjustment guidance for nonuniform/negative scale. Finger-ring position, orientation and size are not guaranteed; initial placement uses the current finger frames, while saved calibration is reused.
 - Skip only a finger ring whose coordinate transform cannot be safely inverted. Preserve its saved calibration and continue other valid parts. If nothing remains, or the avatar root itself cannot be safely inverted, keep existing output/settings unchanged and report a yellow notice.
 - Reapply after hierarchy scale changes. Runtime scale animation is outside this patch; palm/Auto policy is unchanged.
-- The warning-only revision has offline compile/package/localization checks. Its Unity tests are pending; the earlier strict-scale candidate's native results do not certify this revision. See Documentation~/VALIDATION.md.
+- The warning-only revision passed 128 related Unity tests, 62 warning/skip/no-change generation checks and 177 positive-uniform generation checks across 7 cases. Offline compile/package checks and 206 five-language entries also passed. See Documentation~/VALIDATION.md.
 
 ## 1.1.0 - Unreleased
 

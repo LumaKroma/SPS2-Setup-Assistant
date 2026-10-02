@@ -535,8 +535,9 @@ window accepts a null/new-root no-op without changing existing assets or output.
 
 After editing root, ancestor or joint scale, Apply or regenerate the setup. Runtime
 scale animation is not supported. Source avatar transforms are never corrected
-automatically. The warning-only revision requires new Unity/native verification;
-prior native/SDK results apply to the preceding strict-scale candidate.
+automatically. The warning-only revision has Unity/native/SDK finite-output and generation
+evidence in VALIDATION.md; this is not an accuracy guarantee for nonuniform or
+negative scale and does not certify the VRC client.
 
 ### Issue 180 compact display settings (unreleased 1.1.0)
 The UI language uses the system language only when no explicit Editor preference
