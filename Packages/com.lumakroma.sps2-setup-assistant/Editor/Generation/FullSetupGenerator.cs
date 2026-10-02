@@ -1,3 +1,4 @@
+using static LumaKroma.Sps2SetupAssistant.Editor.Localization.Sps2Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -14,7 +15,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
 {
     public static class FullSetupGenerator
     {
-        private const string UndoName = "SPS2 セットアップ";
+        private static string UndoName => L("SPS2 セットアップ");
         private const string PathName = "Guided Paths";
         public const string PackagePath = "Packages/com.lumakroma.sps2-setup-assistant";
 
@@ -31,16 +32,16 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         {
             var root = Sps2SetupStorage.Find(avatar);
             if (root != null && (root.schema != 1 || string.IsNullOrEmpty(root.identity)))
-                throw new InvalidOperationException("SPS2 生成データの形式が一致しません。");
+                throw new InvalidOperationException(L("SPS2 生成データの形式が一致しません。"));
             if (root != null) ValidateOwnership(root, true);
             return root;
         }
         private static void ValidateOwnership(Sps2SetupContext root, bool allowMissing)
         {
-            if (root.settings == null || root.sockets == null) throw new InvalidOperationException("SPS2 生成データが欠けています。");
+            if (root.settings == null || root.sockets == null) throw new InvalidOperationException(L("SPS2 生成データが欠けています。"));
             if ((root.testPlug != null && root.testPlug.transform.parent != root.transform) ||
                 (root.longTestPlug != null && root.longTestPlug.transform.parent != root.transform))
-                throw new InvalidOperationException("テストプラグが所有ルートの外へ移動されています。");
+                throw new InvalidOperationException(L("テストプラグが所有ルートの外へ移動されています。"));
             var anchors = new HashSet<Transform>();
             var ids = new HashSet<string>();
             foreach (var socket in root.sockets)
@@ -50,9 +51,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     (socket.anchor != null && (socket.anchor.parent != root.transform || !anchors.Add(socket.anchor))) ||
                     (socket.pose != null && (socket.anchor == null || socket.pose.parent != socket.anchor)) ||
                     (socket.socket != null && (socket.pose == null || socket.socket.transform != socket.pose)))
-                    throw new InvalidOperationException("Socket の所有参照が不正です。変更は行いません。");
+                    throw new InvalidOperationException(L("Socket の所有参照が不正です。変更は行いません。"));
                 if (socket.pathStops == null || socket.pathStops.Any(t => t == null ? !allowMissing : !t.IsChildOf(root.transform)))
-                    throw new InvalidOperationException("貫通経路が所有ルートの外を参照しています。");
+                    throw new InvalidOperationException(L("貫通経路が所有ルートの外を参照しています。"));
             }
         }
 
@@ -67,6 +68,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
 
         private static Placement Place(SocketSettings part, VRCAvatarDescriptor avatar, BodyBasis basis, AvatarSurface surface)
         {
+            if (part.IsFingerRing)
+            {
+                if (!VrcFuryCapabilities.Current.AutoMode) throw new InvalidOperationException(L("輪ソケットにはAuto対象外を明示できるVRCFuryが必要です。"));
+                FingerRingCalibrationUtility.Bones(avatar, part, out var thumb, out var index);
+                FingerRingCalibrationUtility.Validate(avatar.transform, thumb, index, part.fingerRing);
+                FingerRingCalibrationUtility.Evaluate(thumb, index, part.fingerRing, out var center, out var rotation);
+                return new Placement { first = thumb, second = index, position = center, rotation = rotation };
+            }
             var animator = avatar.GetComponent<Animator>();
             Transform Bone(params HumanBodyBones[] candidates) => candidates.Select(animator.GetBoneTransform).FirstOrDefault(t => t != null);
             var p = new Placement();
@@ -139,7 +148,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     p.second = Bone(HumanBodyBones.RightToes, HumanBodyBones.RightFoot);
                     offset = forward * h * .025f;
                     break;
-                default: throw new InvalidOperationException("Unknown socket identifier: " + part.id);
+                default: throw new InvalidOperationException(L("不明なソケット識別子: ") + part.id);
             }
             bool middle = part.id == "chest" || part.id == "hands" || part.id == "thighs" || part.id == "feet";
             if (p.first == null || (middle && p.second == null)) return null;
@@ -276,13 +285,38 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             constraint.constraintActive = true;
         }
 
-        private static GeneratedSocket CreatePart(Sps2SetupContext root, SocketSettings part, Placement placement, SetupSettings setup, List<string> warnings)
+        internal static string SocketPoseName(string id, string existingName = null)
+        {
+            // Saved paths and external animation bindings take priority over new naming.
+            if (existingName != null) return existingName;
+            switch (id)
+            {
+                case "earLeft": return "SPS_EarSocket_L";
+                case "earRight": return "SPS_EarSocket_R";
+                case "nippleLeft": return "SPS_NippleSocket_L";
+                case "nippleRight": return "SPS_NippleSocket_R";
+                case "fingerRingLeft": return "SPS_FingerRingSocket_L";
+                case "fingerRingRight": return "SPS_FingerRingSocket_R";
+                case "handLeft": return "SPS_HandSocket_L";
+                case "handRight": return "SPS_HandSocket_R";
+                case "footLeft": return "SPS_FootSocket_L";
+                case "footRight": return "SPS_FootSocket_R";
+                default: return "Socket Pose";
+            }
+        }
+
+        private static GeneratedSocket CreatePart(Sps2SetupContext root, SocketSettings part, Placement placement, SetupSettings setup, List<string> warnings, string existingPoseName)
         {
             var anchor = Create(part.id, root.transform);
             anchor.transform.SetPositionAndRotation(
                 placement.second == null ? placement.first.position : (placement.first.position + placement.second.position) * .5f,
                 placement.second == null ? placement.first.rotation : Quaternion.Slerp(placement.first.rotation, placement.second.rotation, .5f));
-            if (placement.second != null || placement.followTransform || part.custom)
+            if (part.IsFingerRing)
+            {
+                anchor.transform.SetPositionAndRotation(placement.position, placement.rotation);
+                FingerRingCalibrationUtility.Configure(anchor, placement.first, placement.second, part.fingerRing);
+            }
+            else if (placement.second != null || placement.followTransform || part.custom)
                 Constrain(anchor, placement.first, placement.second);
             else
             {
@@ -290,10 +324,30 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (!AttachmentBackendRegistry.TryApply(backend, anchor, placement.bone, out var error))
                     throw new InvalidOperationException(error);
             }
-            var pose = Create("Socket Pose", anchor.transform);
+            var pose = Create(SocketPoseName(part.id, existingPoseName), anchor.transform);
             pose.transform.SetPositionAndRotation(placement.position, placement.rotation);
             var socket = VrcFuryCompatibility.CreateSocket(pose, part, setup, warnings);
             return new GeneratedSocket { id = part.id, anchor = anchor.transform, pose = pose.transform, socket = socket };
+        }
+
+        internal static void ValidateRegenerationReferences(Sps2SetupContext old, SetupSettings settings)
+        {
+            if (old == null || old.gameObject == null) return;
+            bool RetainedByPlug(Transform target, GameObject plug) =>
+                plug != null && plug != old.gameObject && target.IsChildOf(plug.transform);
+            bool WillBeDestroyed(Transform target) => target != null && target.IsChildOf(old.transform)
+                && !RetainedByPlug(target, old.testPlug) && !RetainedByPlug(target, old.longTestPlug);
+
+            // Dormant fields are still saved input. Check both reference fields, regardless
+            // of inclusion, depth enablement or the currently selected action kind.
+            foreach (var part in settings.parts)
+            {
+                if (part?.actions == null) continue;
+                foreach (var action in part.actions)
+                    if (action != null && (WillBeDestroyed(action.target != null ? action.target.transform : null)
+                        || WillBeDestroyed(action.renderer != null ? action.renderer.transform : null)))
+                        throw new InvalidOperationException(part.name + L(": 深度アクションが再生成で削除される生成物を参照しています。参照先を生成物の外へ変更してから再生成してください。既存の設定と生成物は変更していません。"));
+            }
         }
 
         public static bool Apply(VRCAvatarDescriptor avatar, SetupSettings settings, bool regenerate,
@@ -305,31 +359,93 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             try
             {
                 VrcFuryCompatibility.RequireVersion();
-                if (avatar == null || EditorUtility.IsPersistent(avatar)) throw new InvalidOperationException("Scene または Prefab Mode のアバターを選択してください。");
+                if (avatar == null || EditorUtility.IsPersistent(avatar)) throw new InvalidOperationException(L("Scene または Prefab Mode のアバターを選択してください。"));
                 if (!HumanoidSnapshot.TryCapture(avatar, out var snapshot, out var error)) throw new InvalidOperationException(error);
                 var old = Find(avatar);
+                if (regenerate) ValidateRegenerationReferences(old, settings);
                 if (old != null && !regenerate) ValidateOwnership(old, false);
+                // A singular avatar root cannot safely place any generated child.
+                // Return a warning without touching existing output or saved data.
+                if (settings.parts.Any(p => p.included && p.IsFingerRing) && !FingerRingCalibrationUtility.CanUseFrame(avatar.transform))
+                {
+                    root = old; message = L("アバターの座標変換が0scaleなどで退化しているため、安全に配置できません。既存の設定と生成物は変更していません。scaleを確認してください。"); return true;
+                }
                 var basis = BodyBasisBuilder.Build(snapshot);
                 var warnings = new List<string>();
                 settings = VrcFuryCapabilities.Current.Effective(settings, warnings);
+                FullSetupCatalog.UpgradeDisplayNames(settings);
                 if (settings.parts.GroupBy(p => p.id).Any(g => string.IsNullOrEmpty(g.Key) || g.Count() != 1))
-                    throw new InvalidOperationException("部位の識別子が重複または欠落しています。");
+                    throw new InvalidOperationException(L("部位の識別子が重複または欠落しています。"));
                 using var surface = new AvatarSurface(avatar);
-                if (!surface.HasBody) warnings.Add("体の表面を特定できませんでした。ボーンを基準に配置したため、位置と向きを確認してください。");
+                if (!surface.HasBody) warnings.Add(L("体の表面を特定できませんでした。ボーンを基準に配置したため、位置と向きを確認してください。"));
                 var placements = new Dictionary<string, Placement>();
+                int skippedRings = 0;
                 foreach (var part in settings.parts.Where(p => p.included))
                 {
                     if (part.custom && old != null && part.target != null && part.target.IsChildOf(old.transform))
-                        throw new InvalidOperationException("カスタム追従先に自分の生成物は指定できません。");
-                    var placement = Place(part, avatar, basis, surface);
-                    if (placement == null) warnings.Add(part.name + ": 追従先が見つからないため省きました。");
+                        throw new InvalidOperationException(L("カスタム追従先に自分の生成物は指定できません。"));
+                    Placement placement;
+                    if (part.IsFingerRing)
+                    {
+                        var value = part.fingerRing;
+                        bool pristine = value == null || (!value.calibrated && string.IsNullOrEmpty(value.thumbPath) && string.IsNullOrEmpty(value.indexPath) && value.center == Vector3.zero && value.euler == Vector3.zero);
+                        var saved = old?.settings.parts.Find(p => p.id == part.id)?.fingerRing;
+                        // Restore saved calibration before a scale-related skip so it
+                        // survives partial Apply/regeneration and selects the saved joint.
+                        if (pristine && saved != null && saved.calibrated) part.fingerRing = saved.Copy();
+                        FingerRingCalibrationUtility.Bones(avatar, part, out var thumb, out var index);
+                        if (!FingerRingCalibrationUtility.CanUseFrame(thumb) || !FingerRingCalibrationUtility.CanUseFrame(index))
+                        {
+                            warnings.Add(part.name + ": " + L("指わっかのscaleが0または座標変換が無効なため、この指わっかの生成を省略しました。他の生成可能な部位は続行します。保存済みの校正は保持します。"));
+                            skippedRings++; continue;
+                        }
+                        bool bestEffort = !FingerRingCalibrationUtility.HasGuaranteedScale(thumb) || !FingerRingCalibrationUtility.HasGuaranteedScale(index);
+                        if (bestEffort) warnings.Add(part.name + ": " + L("指わっかの階層に非一様または負のscaleがあります。生成は続行しますが、この指わっかの位置・向き・サイズは保証されません。生成後に確認し、手動で調整してください。"));
+                        var calibrationBefore = part.fingerRing;
+                        try
+                        {
+                            if (part.fingerRing == null || !part.fingerRing.calibrated)
+                            {
+                                if (!pristine) throw new InvalidOperationException(L("未完了の指わっか調整が残っています。設定を保持して処理を中止しました。該当する指わっかをオフにしてください。"));
+                                part.fingerRing = bestEffort
+                                    ? FingerRingCalibrationUtility.CaptureProvisional(avatar.transform, thumb, index, part.fingerRing?.thumbWeight ?? .5f)
+                                    : FingerRingAutoCalibration.Estimate(avatar, part);
+                                if (bestEffort) warnings.Add(part.name + ": " + L("指わっかは現在の指の姿勢を基準に仮配置しました。位置・向き・サイズを手動で調整してください。"));
+                            }
+                            placement = Place(part, avatar, basis, surface);
+                            // Ensure no invalid native distance reaches the mutation phase.
+                            FingerRingCalibrationUtility.NativeOffset(placement.first, part.fingerRing.thumbOffset);
+                            FingerRingCalibrationUtility.NativeOffset(placement.second, part.fingerRing.indexOffset);
+                        }
+                        catch (FingerRingCalibrationUtility.UnusableFrameException)
+                        {
+                            part.fingerRing = calibrationBefore;
+                            warnings.Add(part.name + ": " + L("指わっかのscaleが0または座標変換が無効なため、この指わっかの生成を省略しました。他の生成可能な部位は続行します。保存済みの校正は保持します。"));
+                            skippedRings++; continue;
+                        }
+                    }
+                    else placement = Place(part, avatar, basis, surface);
+                    if (placement == null) warnings.Add(part.name + L(": 追従先が見つからないため省きました。"));
                     else placements.Add(part.id, placement);
                 }
-                if (placements.Count == 0) throw new InvalidOperationException("生成できる部位がありません。");
+                if (placements.Count == 0 && skippedRings > 0)
+                {
+                    root = old;
+                    warnings.Add(L("生成できる部位が残らないため、既存の設定と生成物は変更していません。"));
+                    message = string.Join("\n", warnings.Distinct());
+                    return true;
+                }
+                if (placements.Count == 0) throw new InvalidOperationException(L("生成できる部位がありません。"));
                 if (old != null && old.settings.modularAvatar != settings.modularAvatar && !regenerate)
-                    throw new InvalidOperationException("追従方式の変更には再生成を使用してください。");
+                    throw new InvalidOperationException(L("追従方式の変更には再生成を使用してください。"));
                 Undo.IncrementCurrentGroup(); group = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName(UndoName);
                 var previous = old != null ? old.settings.Copy() : null;
+                // Capture before regeneration destroys the previous hierarchy. Do not rename
+                // existing adjustment paths merely because this package was upgraded.
+                var previousPoseNames = old?.sockets.Where(s => s.pose != null)
+                    .ToDictionary(s => s.id, s => s.pose.name) ?? new Dictionary<string, string>();
+                var previousRingPoses = old?.sockets.Where(s => s.pose != null && previous.parts.Any(p => p.id == s.id && p.IsFingerRing))
+                    .ToDictionary(s => s.id, s => (position: s.pose.localPosition, rotation: s.pose.localRotation, scale: s.pose.localScale));
                 // Preserve the settings referenced by saved scenes and Prefabs when edits are discarded.
                 var asset = createdAsset = Sps2SetupStorage.Create(avatar.name);
                 var identity = Sps2SetupStorage.Identity(asset);
@@ -369,14 +485,38 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 {
                     var generated = root.sockets.Find(p => p.id == part.id);
                     var oldPart = previous?.parts.Find(p => p.id == part.id);
-                    if (generated == null) { root.sockets.Add(CreatePart(root, part, placements[part.id], settings, warnings)); structureChanged = true; }
+                    if (generated == null)
+                    {
+                        previousPoseNames.TryGetValue(part.id, out var previousPoseName);
+                        var created = CreatePart(root, part, placements[part.id], settings, warnings, previousPoseName);
+                        if (part.IsFingerRing && oldPart != null && JsonUtility.ToJson(oldPart.fingerRing) == JsonUtility.ToJson(part.fingerRing) && previousRingPoses != null && previousRingPoses.TryGetValue(part.id, out var adjustment))
+                        {
+                            created.pose.localPosition = adjustment.position;
+                            created.pose.localRotation = adjustment.rotation;
+                            created.pose.localScale = adjustment.scale;
+                        }
+                        root.sockets.Add(created);
+                        structureChanged = true;
+                    }
                     else
                     {
                         if (generated.anchor == null || generated.pose == null || generated.socket == null)
-                            throw new InvalidOperationException(part.name + ": 生成物が欠けています。再生成してください。");
+                            throw new InvalidOperationException(part.name + L(": 生成物が欠けています。再生成してください。"));
                         if (!SamePart(oldPart, part)) VrcFuryCompatibility.Configure(generated.socket, part, settings, warnings);
                         else if (previous.autoMode != settings.autoMode || previous.legacy != settings.legacy)
-                            VrcFuryCompatibility.ConfigureCommon(generated.socket, settings);
+                            VrcFuryCompatibility.ConfigureCommon(generated.socket, settings, !part.IsFingerRing);
+                        if (part.IsFingerRing)
+                        {
+                            var placement = placements[part.id];
+                            Undo.RecordObject(generated.anchor, UndoName);
+                            Undo.RecordObject(generated.pose, UndoName);
+                            generated.anchor.SetPositionAndRotation(placement.position, placement.rotation);
+                            FingerRingCalibrationUtility.Configure(generated.anchor.gameObject, placement.first, placement.second, part.fingerRing);
+                            // Explicit recapture replaces the calibration frame; ordinary Apply retains manual pose.
+                            if (oldPart == null || oldPart.fingerRing == null || oldPart.fingerRing.thumbOffset != part.fingerRing.thumbOffset ||
+                                oldPart.fingerRing.indexOffset != part.fingerRing.indexOffset || oldPart.fingerRing.thumbRotation != part.fingerRing.thumbRotation || oldPart.fingerRing.indexRotation != part.fingerRing.indexRotation)
+                            { generated.pose.localPosition = Vector3.zero; generated.pose.localRotation = Quaternion.identity; }
+                        }
                         if (part.custom && oldPart != null && oldPart.target != part.target)
                         {
                             var position = generated.pose.position; var rotation = generated.pose.rotation;
@@ -399,7 +539,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                             root.oralBoundaryPath ? (socket.id == "mouth" ? 0 : 2) : -1);
                 root.settings = settings.Copy();
                 if (VrcFuryCapabilities.Current.Legacy && VrcFuryCompatibility.AutoSocketCount(avatar.gameObject) > 16)
-                    throw new InvalidOperationException("既存分を含む Auto Mode 対象が16個を超えます。Auto Mode を外すか対象を減らしてください。");
+                    throw new InvalidOperationException(L("既存分を含む Auto Mode 対象が16個を超えます。Auto Mode を外すか対象を減らしてください。"));
                 Undo.RecordObject(root.gameObject, UndoName); root.gameObject.name = RootName;
                 UpdateAuthoringIdentities(root);
                 CommitMetadata(root, metadataBefore);
@@ -460,13 +600,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             if (!settings.penetration || (mouth == null && anus == null)) return;
             var animator = avatar.GetComponent<Animator>();
             var throat = animator.GetBoneTransform(HumanBodyBones.Neck);
-            if (throat == null) { throat = animator.GetBoneTransform(HumanBodyBones.Head); warnings.Add("貫通: Neck がないため Head を使用しました。喉の通過点を確認してください。"); }
+            if (throat == null) { throat = animator.GetBoneTransform(HumanBodyBones.Head); warnings.Add(L("貫通: Neck がないため Head を使用しました。喉の通過点を確認してください。")); }
             var hips = animator.GetBoneTransform(HumanBodyBones.Hips);
-            if (throat == null || hips == null) { warnings.Add("貫通: 胴体の参照が不足しています。"); return; }
+            if (throat == null || hips == null) { warnings.Add(L("貫通: 胴体の参照が不足しています。")); return; }
             var virtualMouth = mouth == null ? Place(new SocketSettings { id = "mouth" }, avatar, basis, surface) : null;
             var virtualAnus = anus == null ? Place(new SocketSettings { id = "anus" }, avatar, basis, surface) : null;
             if ((mouth == null && virtualMouth == null) || (anus == null && virtualAnus == null))
-            { warnings.Add("貫通: 出口の位置を求められませんでした。"); return; }
+            { warnings.Add(L("貫通: 出口の位置を求められませんでした。")); return; }
             var throatCenter = throat.position;
             float reach = Vector3.Distance(throat.position, hips.position);
             if (surface.Ray(throat.position, avatar.transform.forward, reach, out var front) &&
@@ -544,9 +684,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             {
                 VrcFuryCompatibility.RequireVersion();
                 var root = Find(avatar);
-                if (root == null) throw new InvalidOperationException("先にセットアップを生成してください。");
+                if (root == null) throw new InvalidOperationException(L("先にセットアップを生成してください。"));
                 var selectedPlug = longPlug ? root.longTestPlug : root.testPlug;
-                Undo.IncrementCurrentGroup(); group = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName("SPS2 テストプラグ");
+                Undo.IncrementCurrentGroup(); group = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName(L("SPS2 テストプラグ"));
                 if (root.asset == null || selectedPlug == null)
                 {
                     root.asset = createdAsset ?? Sps2SetupStorage.Create(avatar.name);
@@ -559,14 +699,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (selectedPlug == null)
                 {
                     var material = AssetDatabase.LoadAssetAtPath<Material>(PackagePath + "/Assets/IcePop/IcePop.mat");
-                    if (material == null || material.shader == null) throw new InvalidOperationException("プラグの表示用アセットが見つかりません。");
+                    if (material == null || material.shader == null) throw new InvalidOperationException(L("プラグの表示用アセットが見つかりません。"));
                     var plug = Create(longPlug ? "SPS2 Long Test Plug" : "SPS2 Test Plug", root.transform);
                     GameObject mesh;
                     if (longPlug) mesh = LongTestPlugMesh.Create(plug.transform, root.asset, material);
                     else
                     {
                         var model = AssetDatabase.LoadAssetAtPath<GameObject>(PackagePath + "/Assets/IcePop/IcePop.fbx");
-                        if (model == null) throw new InvalidOperationException("IcePop の表示用アセットが見つかりません。");
+                        if (model == null) throw new InvalidOperationException(L("IcePop の表示用アセットが見つかりません。"));
                         mesh = UnityEngine.Object.Instantiate(model, plug.transform, false);
                         Undo.RegisterCreatedObjectUndo(mesh, UndoName);
                         mesh.transform.localRotation = Quaternion.Euler(90, 0, 0);
@@ -582,7 +722,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 {
                     var ice = AssetDatabase.LoadAssetAtPath<Material>(PackagePath + "/Assets/IcePop/IcePop.mat");
                     var stick = AssetDatabase.LoadAssetAtPath<Material>(PackagePath + "/Assets/IcePop/IcePopStick.mat");
-                    if (ice == null || stick == null) throw new InvalidOperationException("IcePop の表示用マテリアルが見つかりません。");
+                    if (ice == null || stick == null) throw new InvalidOperationException(L("IcePop の表示用マテリアルが見つかりません。"));
                     selectedPlug.transform.localScale = Vector3.one * .7f;
                     foreach (var renderer in selectedPlug.GetComponentsInChildren<Renderer>(true))
                     {
@@ -595,7 +735,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (longPlug)
                 {
                     var mouth = root.sockets.Find(s => s.id == "mouth")?.pose;
-                    if (mouth == null) throw new InvalidOperationException("貫通テストには口のソケットを生成してください。");
+                    if (mouth == null) throw new InvalidOperationException(L("貫通テストには口のソケットを生成してください。"));
                     float length = LongTestPlugMesh.Length * Mathf.Abs(selectedPlug.transform.lossyScale.z);
                     selectedPlug.transform.SetPositionAndRotation(mouth.position + mouth.forward * (length + .08f), Quaternion.LookRotation(-mouth.forward, mouth.up));
                 }

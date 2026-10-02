@@ -1,3 +1,4 @@
+using static LumaKroma.Sps2SetupAssistant.Editor.Localization.Sps2Localization;
 using System.Collections.Generic;
 using LumaKroma.Sps2SetupAssistant.Editor.Model;
 using UnityEngine;
@@ -36,20 +37,20 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Planning
 
             if (descriptor == null)
             {
-                error = "Select a VRCAvatarDescriptor.";
+                error = L("VRCAvatarDescriptor を選択してください。");
                 return false;
             }
 
             var animator = descriptor.GetComponent<Animator>();
             if (animator == null)
             {
-                error = "The selected descriptor does not have an Animator on the same GameObject.";
+                error = L("選択した Descriptor と同じ GameObject に Animator がありません。");
                 return false;
             }
 
             if (animator.avatar == null || !animator.isHuman)
             {
-                error = "The selected descriptor must use a valid Humanoid Avatar.";
+                error = L("有効な Humanoid Avatar を使用する Descriptor を選択してください。");
                 return false;
             }
 

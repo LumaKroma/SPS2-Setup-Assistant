@@ -1,4 +1,5 @@
 using System;
+using LumaKroma.Sps2SetupAssistant.Editor.Localization;
 using UnityEngine;
 using VRC.SDK3.Avatars.Components;
 
@@ -10,20 +11,28 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
 
         public static SetupSettings CreateDefault()
         {
-            var setup = new SetupSettings();
+            var setup = new SetupSettings { displayNamesVersion = 1, menuLanguage = Sps2Localization.DefaultLanguage };
             Add(setup, "mouth", "口", 0); Add(setup, "earLeft", "左耳", 0); Add(setup, "earRight", "右耳", 0);
             Add(setup, "nippleLeft", "左乳首", 1); Add(setup, "nippleRight", "右乳首", 1); Add(setup, "chest", "胸", 1);
             Add(setup, "handLeft", "左手", 2); Add(setup, "handRight", "右手", 2); Add(setup, "hands", "両手", 2);
             Add(setup, "vagina", "膣", 3); Add(setup, "anus", "肛門", 3); Add(setup, "thighs", "ふとももの間", 3);
             Add(setup, "footLeft", "左足", 4); Add(setup, "footRight", "右足", 4); Add(setup, "feet", "両足", 4);
+            EnsureFingerRings(setup);
             ApplyPreset(setup, 1);
             return setup;
         }
 
         public static void UpgradeDisplayNames(SetupSettings setup)
         {
-            foreach (var part in setup.parts)
-                if (!part.custom && part.id == "chest" && part.name == "胸の間") part.name = "胸";
+            SocketDisplayNames.Upgrade(setup);
+            EnsureFingerRings(setup);
+        }
+
+        public static void EnsureFingerRings(SetupSettings setup)
+        {
+            foreach (var id in new[] { "fingerRingLeft", "fingerRingRight" })
+                if (!setup.parts.Exists(p => p.id == id))
+                    setup.parts.Add(new SocketSettings { id = id, name = id == "fingerRingLeft" ? "左手の指わっか" : "右手の指わっか", category = 2, included = false });
         }
 
         private static void Add(SetupSettings setup, string id, string name, int category)
@@ -39,6 +48,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
             foreach (var part in setup.parts)
             {
                 if (part.custom) continue;
+                if (part.IsFingerRing)
+                {
+                    part.included = preset == 2;
+                    continue;
+                }
                 bool casual = part.id == "mouth" || part.id == "chest" || part.category == 2 || part.id == "vagina" || part.id == "anus";
                 bool fullOnly = part.id == "earLeft" || part.id == "earRight" || part.id == "thighs";
                 part.included = casual || preset == 2 || (preset == 1 && !fullOnly);
