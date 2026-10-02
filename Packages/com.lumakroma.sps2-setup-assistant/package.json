@@ -19,5 +19,8 @@
   "vpmDependencies": {
     "com.vrchat.avatars": ">=3.10.4 <4.0.0",
     "com.vrcfury.vrcfury": ">=1.0.0"
+  },
+  "legacyFolders": {
+    "Assets/LumaKroma/SPS2SetupAssistant": "1824306e4bd4439aaffbd9eab24486e5"
   }
 }

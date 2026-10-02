@@ -1,5 +1,32 @@
 # 1.1.0 local release preparation — 2026-10-02
 
+## Current migration candidate (supersedes artifact identity below)
+
+After the pre-migration preparation at436e83b, the user approved minimal legacy
+migration metadata and disposable validation. The new candidate changes only
+package.json and README.md among shipped files. All product C# and .meta bytes
+remain unchanged. No new Unity/runtime PASS follows from that byte comparison.
+
+New VPM ZIP:116,391 bytes, SHA256
+`00d79b1476580c373a2424a1bbbd9fd1e2364bb390bbc99a7b4833cce2fc63a4`.
+Two independent builds match. Real ZIP/listing builder tests preserve exactly
+one legacy folder path/GUID and40 shared legacy asset GUIDs. No extra deletion
+targets are permitted. Official VPAI DLL/config are unchanged; the customer ZIP
+contains updated migration guidance. Evidence:
+`.codex-staging/sps2-i18n-110/release-110-migration-candidate/migration-candidate-audit.json`.
+
+Native migration, confirmation/Cancel, moved/modified-folder deletion, backup
+restoration and settings/scene reimport tests have NOT RUN. They require the
+reviewed isolated project/import/prompt scope in MIGRATION_NATIVE_SCOPE_20261002.md
+in private evidence. Do not promote this candidate as migration-validated.
+See LEGACY_MIGRATION_110.md for the exact target and data-loss boundary.
+
+The sections below record the completed PRE-MIGRATION candidate and its hashes.
+Their documentation-only and byte-identity statements apply to that historical
+candidate, not the new manifest/README changes.
+
+## Pre-migration candidate evidence
+
 Version 1.1.0 remains unpublished. Product code tested in Unity is
 `b042e1628b219b4414e348015fcae60679956938`; subsequent release preparation changes
 documentation only. The release audit compares every shipped package byte to

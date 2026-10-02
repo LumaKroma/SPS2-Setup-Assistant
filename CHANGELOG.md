@@ -7,7 +7,7 @@
 - Add optional left/right finger loops, separate from palm Sockets, with initial per-avatar estimation and calibrated weighted finger following. Full includes both loops; Casual and Default exclude them. Saved calibration and names survive preset changes. Loops remain excluded from Auto; its existing policy and 16-Socket limit are unchanged. Scaled rigs remain unsupported and invalid calibration fails closed.
 - Repair Socket OFF and Legacy/Stealth restoration for the observed native integration, preserving native/foreign curves and Write Defaults settings.
 - Reject regeneration before changing data when a Depth Action references a generated object or renderer that regeneration would destroy. References outside that hierarchy and retained test Plugs remain supported. Ordinary Apply that removes a referenced part is a separate, unverified boundary.
-- New distribution uses the VPM installer unitypackage and VCC/ALCOM. No new Assets-edition package or automatic legacy-folder deletion is included.
+- New distribution uses the VPM installer unitypackage and VCC/ALCOM. No new Assets-edition package is distributed. Exact legacyFolders metadata supports removal of the old Assets product folder during migration; back up the project and inspect user modifications before accepting.
 - Unity authoring regression: 46/46 EditMode tests plus actual Apply/rejection/save-reload checks passed on b042e16. Prior runtime double-check on unchanged runtime code passed 56 Socket-toggle and 238 Legacy/Stealth steps. The user separately reported VRChat testing; exact final-package delivery and native-language review remain open. See `Docs/RELEASE_110_VALIDATION.md`.
 
 ## 1.0.2 — 2026-09-22

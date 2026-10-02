@@ -592,3 +592,15 @@ No user Gesture, Animator controller, Avatar asset or mesh is modified. CPU
 mesh projection used during validation is diagnostic evidence only and is not
 included in the runtime estimator or package dependency contract. Other-avatar,
 visible fit and VRC PC validation remain open.
+
+
+## Legacy Assets migration metadata (unpublished 1.1.0)
+
+The package declares exactly Assets/LumaKroma/SPS2SetupAssistant with root GUID
+1824306e4bd4439aaffbd9eab24486e5 in legacyFolders. This standard VPM/VPAI
+mechanism removes the folder and its meta during installation; user additions
+inside that folder are not exempt. Assets/SPS2Settings and unrelated folders
+are not deletion targets. Preserve all shared script/asset GUIDs, retain normal
+installer confirmation, and instruct users to back up and inspect before install.
+No automatic backup, rollback or unconditional duplicate cleanup is guaranteed.
+See repository Docs/LEGACY_MIGRATION_110.md for exact scope and native test gates.

@@ -54,6 +54,11 @@ Assert-Condition ($manifest.license -eq 'MIT') 'Package license must be MIT.'
 Assert-Condition ($manifest.vpmDependencies.'com.vrchat.avatars' -eq '>=3.10.4 <4.0.0') 'Unexpected VRChat SDK range.'
 Assert-Condition ($manifest.vpmDependencies.'com.vrcfury.vrcfury' -eq '>=1.0.0') 'VRCFury installation must not force an exact version.'
 Assert-Condition (-not ($manifest.vpmDependencies.PSObject.Properties.Name -contains 'nadena.dev.modular-avatar')) 'Modular Avatar must remain an optional dependency.'
+Assert-Condition ($manifest.PSObject.Properties.Name -contains 'legacyFolders') 'Legacy Assets migration metadata is missing.'
+$legacyFolders = @($manifest.legacyFolders.PSObject.Properties)
+Assert-Condition ($legacyFolders.Count -eq 1) 'Migration must target exactly one legacy product folder.'
+Assert-Condition ($legacyFolders[0].Name -ceq 'Assets/LumaKroma/SPS2SetupAssistant' -and $legacyFolders[0].Value -ceq '1824306e4bd4439aaffbd9eab24486e5') 'Legacy migration path/GUID drift.'
+Assert-Condition (-not ($manifest.PSObject.Properties.Name -contains 'legacyFiles') -and -not ($manifest.PSObject.Properties.Name -contains 'legacyPackages')) 'Additional migration deletion targets are not authorized.'
 
 Assert-Condition (Test-Path -LiteralPath (Join-Path $packageRoot 'Runtime/SetupSettings.cs')) 'Persistent authoring metadata is missing.'
 $authoringFiles = @(Get-ChildItem -LiteralPath (Join-Path $packageRoot 'Runtime') -Recurse -File -Filter '*.cs')

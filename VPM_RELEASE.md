@@ -22,11 +22,17 @@ fresh installation of unpublished 1.1.0. Actual VPAI/VCC/ALCOM delivery remains 
 separate check after explicitly approved publication. No upload, push, merge or
 listing change is authorized by this preparation.
 
-The manifest deliberately has no legacyFolders/legacyFiles. VPAI supports those
-VPM fields, but path-first removal can delete user additions. Migration deletion
-is not implemented or approved here. Back up the entire project and inspect
-Assets/LumaKroma/SPS2SetupAssistant before any separately performed migration;
-preserve user changes and Assets/SPS2Settings. Do not install both editions.
+The manifest now declares exactly Assets/LumaKroma/SPS2SetupAssistant and its
+observed root GUID in legacyFolders. No legacyFiles/legacyPackages are declared.
+This uses standard VPAI/VCC/ALCOM migration. Keep VPAI's normal confirmation and
+never enable NO_PROMPT. Path-first recursive removal includes user additions;
+require an external whole-project backup and old-folder inspection in guidance.
+Settings at Assets/SPS2Settings remain outside the deletion target. Already-
+installed early exit does not guarantee later duplicate cleanup. See
+Docs/LEGACY_MIGRATION_110.md for the approved boundary and required disposable
+native cases. Artifact tests alone do not pass those cases. Earlier artifacts
+without migration metadata are superseded only after the new candidate passes
+its own review; never overwrite historical published releases.
 
 See Docs/RELEASE_110_VALIDATION.md for exact validation and remaining limits.
 The following 1.0.x sections are historical procedures, not current 1.1.0
