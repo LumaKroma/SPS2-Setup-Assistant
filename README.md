@@ -1,3 +1,7 @@
+> Issue186 development adds equal, optional VRCFury and SPS for NDMF selection
+> for new generation. See package README / OUTPUT_CONTRACT for pinned versions
+> and remaining Unity/VRC/license gates. No new release is produced.
+
 # SPS2 Setup Assistant
 
 VRChatアバターへのSPS2セットアップを補助するUnity Editorツール
@@ -62,9 +66,10 @@ scaleを変更した後は設定を反映、または再生成してください
 
 - Unity 2022.3
 - VRChat Avatars SDK
-- VRCFury
+- VRCFury または SPS for NDMF（選択した系列を別途導入）
 - lilToon（テストプラグの表示用）
-- Modular Avatar（任意・追従方式の追加）
+- Modular Avatar（Furyでは任意、SPS for NDMFでは1.18.1以上・2未満が必要）
+- NDMF（SPS for NDMFでは1.11以上・2未満が必要）
 
 ## ライセンス
 

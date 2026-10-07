@@ -110,6 +110,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 if (menuLanguage != settings.menuLanguage) Change(() => settings.menuLanguage = menuLanguage);
                 var next = (VRCAvatarDescriptor)EditorGUILayout.ObjectField(L("アバター"), descriptor, typeof(VRCAvatarDescriptor), true);
                 if (next != descriptor) Change(() => BindAvatar(next));
+                using (new EditorGUI.DisabledScope(FullSetupGenerator.HasGeneratedRoot(descriptor)))
+                {
+                    var family = (SpsFamily)EditorGUILayout.Popup(L("SPS系列"), (int)settings.family, new[] { "VRCFury", "SPS for NDMF" });
+                    if (family != settings.family) Change(() => { settings.family = family; VrcFuryCapabilities.Refresh(); });
+                }
                 scroll = EditorGUILayout.BeginScrollView(scroll);
                 DrawCompatibility();
                 DrawPresets();
@@ -153,23 +158,24 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         private void DrawOptions()
         {
             GUILayout.Space(12);
-            CompatibleToggle(L("貫通"), settings.penetration, v => settings.penetration = v, VrcFuryCapabilities.Current.Path,
+            CompatibleToggle(L("貫通"), settings.penetration, v => settings.penetration = v, VrcFuryCapabilities.For(settings.family).Path,
                 L("口-肛門の間にプラグが通る経路を生成します。非常に長いプラグの場合、体を貫通します。\n「首付近で太さを0にする」をオンにすると、口の入口では太さを保ち、首付近から体内の太さを0にします。出口の外では元の太さに戻します。"));
             if (settings.penetration)
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     GUILayout.Space(18);
-                    CompatibleToggle(L("首付近で太さを0にする"), !settings.showInternalThickness, v => settings.showInternalThickness = !v, VrcFuryCapabilities.Current.Collapse);
+                    CompatibleToggle(L("首付近で太さを0にする"), !settings.showInternalThickness, v => settings.showInternalThickness = !v, VrcFuryCapabilities.For(settings.family).Collapse);
                 }
             }
-            CompatibleToggle(L("Auto Mode"), settings.autoMode, v => settings.autoMode = v, VrcFuryCapabilities.Current.AutoMode,
+            CompatibleToggle(L("Auto Mode"), settings.autoMode, v => settings.autoMode = v, VrcFuryCapabilities.For(settings.family).AutoMode,
                 L("プラグに最も近い対象ソケットを自動で有効にするメニューを追加します。"));
-            CompatibleToggle(L("後方互換性"), settings.legacy, v => settings.legacy = v, VrcFuryCapabilities.Current.Legacy,
+            CompatibleToggle(L("後方互換性"), settings.legacy, v => settings.legacy = v, VrcFuryCapabilities.For(settings.family).Legacy,
                 L("SPS1・DPS・TPSのプラグにも対応させ、互換機能の切り替えメニューを追加します。\nSPS2同士だけで使う場合はオフにできます。"));
-            CompatibleToggle(L("Local Only"), settings.localOnly, v => settings.localOnly = v, VrcFuryCapabilities.Current.LocalOnly);
+            CompatibleToggle(L("Local Only"), settings.localOnly, v => settings.localOnly = v, VrcFuryCapabilities.For(settings.family).LocalOnly);
             GUILayout.Space(8);
-            Toggle(L("Modular Avatarで追従"), settings.modularAvatar, v => settings.modularAvatar = v);
+            using (new EditorGUI.DisabledScope(settings.family == SpsFamily.SpsForNdmf))
+                Toggle(L("Modular Avatarで追従"), settings.family == SpsFamily.SpsForNdmf || settings.modularAvatar, v => settings.modularAvatar = v);
             GUILayout.Space(12);
         }
 
@@ -184,7 +190,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             }
             else if (EditorApplication.isPlayingOrWillChangePlaymode)
                 EditorGUILayout.HelpBox(L("再生を停止すると生成・再生成できます。"), MessageType.Info);
-            using (new EditorGUI.DisabledScope(descriptor == null || EditorApplication.isPlayingOrWillChangePlaymode || !VrcFuryCapabilities.Current.CanGenerate))
+            using (new EditorGUI.DisabledScope(descriptor == null || EditorApplication.isPlayingOrWillChangePlaymode || !VrcFuryCapabilities.For(settings.family).CanGenerate))
             {
                 if (!generated)
                 {
@@ -194,12 +200,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 {
                     if (GUILayout.Button(L("プレハブを再生成"), GUILayout.Height(30))) Apply(true);
                     if (GUILayout.Button(L("置き換えずに変更を反映"), GUILayout.Height(30))) Apply(false);
-                    using (new EditorGUI.DisabledScope(!VrcFuryCapabilities.Current.TestPlug))
+                    using (new EditorGUI.DisabledScope(!VrcFuryCapabilities.For(settings.family).TestPlug))
                     if (GUILayout.Button(L("貫通テストプラグ出現"), GUILayout.Height(30)))
                     {
                         bool ok = FullSetupGenerator.ShowLongTestPlug(descriptor, out var error); SetMessage(error, ok);
                     }
-                    using (new EditorGUI.DisabledScope(!VrcFuryCapabilities.Current.TestPlug))
+                    using (new EditorGUI.DisabledScope(!VrcFuryCapabilities.For(settings.family).TestPlug))
                     if (GUILayout.Button(L("テストプラグ出現"), GUILayout.Height(30)))
                     {
                         bool ok = FullSetupGenerator.ShowTestPlug(descriptor, out var error); SetMessage(error, ok);
@@ -220,10 +226,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     if (included != part.included) Change(() => part.included = included);
                     if (part.included)
                     {
-                        using (new EditorGUI.DisabledScope(!VrcFuryCapabilities.Current.Depth))
+                        using (new EditorGUI.DisabledScope(!VrcFuryCapabilities.For(settings.family).Depth))
                         {
-                        bool depth = EditorGUILayout.ToggleLeft(L("深度アクション"), part.depth && VrcFuryCapabilities.Current.Depth, GUILayout.Width(EditorStyles.toggle.CalcSize(new GUIContent(L("深度アクション"))).x + 4));
-                        if (VrcFuryCapabilities.Current.Depth && depth != part.depth) Change(() => { part.depth = depth; if (depth && part.actions.Count == 0) part.actions.Add(new DepthActionSettings()); });
+                        bool depth = EditorGUILayout.ToggleLeft(L("深度アクション"), part.depth && VrcFuryCapabilities.For(settings.family).Depth, GUILayout.Width(EditorStyles.toggle.CalcSize(new GUIContent(L("深度アクション"))).x + 4));
+                        if (VrcFuryCapabilities.For(settings.family).Depth && depth != part.depth) Change(() => { part.depth = depth; if (depth && part.actions.Count == 0) part.actions.Add(new DepthActionSettings()); });
                         }
                     }
                     if (part.included)
@@ -247,7 +253,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     var customName = EditorGUILayout.TextField(new GUIContent(L("メニュー表示名"), L("空欄で標準名を使用します。個別名は言語変更後も保持されます。")), part.menuNameOverride ?? "");
                     if (customName != (part.menuNameOverride ?? "")) Change(() => part.menuNameOverride = customName);
                 }
-                if (!part.included || !part.depth || !VrcFuryCapabilities.Current.Depth) return;
+                if (!part.included || !part.depth || !VrcFuryCapabilities.For(settings.family).Depth) return;
                 using (new EditorGUI.DisabledScope(!part.included))
                 {
                     DrawRange(part);
@@ -333,13 +339,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         private void SetMessage(string text, bool success) { message = text; messageType = success ? MessageType.Warning : MessageType.Error; Repaint(); }
         private void DrawCompatibility()
         {
-            var caps = VrcFuryCapabilities.Current;
+            var caps = VrcFuryCapabilities.For(settings.family);
             var notes = caps.Notices();
             if (notes.Count == 0) return;
-            EditorGUILayout.HelpBox("VRCFury " + caps.Version + "\n" + string.Join("\n", notes) + "\n" + VrcFuryCapabilities.UpdateGuide, MessageType.Warning);
+            EditorGUILayout.HelpBox(SpsBackend.Name(settings.family) + " " + caps.Version + "\n" + string.Join("\n", notes) + "\n" + SpsBackend.Guide(settings.family), MessageType.Warning);
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button(L("VRCFury 導入・更新の案内"))) Application.OpenURL(VrcFuryCapabilities.GuideUrl);
+                if (GUILayout.Button(L("選択した系列の導入案内"))) Application.OpenURL(SpsBackend.GuideUrl(settings.family));
                 if (GUILayout.Button(L("互換性を再確認"))) { VrcFuryCapabilities.Refresh(); Repaint(); }
             }
         }
@@ -347,7 +353,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         private void CompatibleToggle(string label, bool value, Action<bool> set, bool available, string tooltip = null)
         {
             using (new EditorGUI.DisabledScope(!available))
-                Toggle(label, value && available, v => { if (available) set(v); }, available ? tooltip : L("この版では利用できません。") + VrcFuryCapabilities.UpdateGuide);
+                Toggle(label, value && available, v => { if (available) set(v); }, available ? tooltip : L("この版では利用できません。") + SpsBackend.Guide(settings.family));
         }
 
         private void Toggle(string label, bool value, Action<bool> set, string tooltip = null)

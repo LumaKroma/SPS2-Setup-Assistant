@@ -41,7 +41,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 Sps2SetupContext root;
                 if (before) { Pending.Remove(avatar.GetInstanceID()); root = Sps2SetupStorage.Find(avatar.GetComponent<VRCAvatarDescriptor>(), true); }
                 else { Pending.TryGetValue(avatar.GetInstanceID(), out root); Pending.Remove(avatar.GetInstanceID()); }
-                if (root == null) return true;
+                if (root == null || root.settings.family != SpsFamily.VrcFury) return true;
+                using var backend = SpsBackend.Use(root.settings.family);
                 VrcFuryCompatibility.RequireVersion();
                 if (root.schema != 1 || string.IsNullOrEmpty(root.identity))
                     throw new InvalidOperationException(L("SPS2 の所有ルートが不正です。"));
@@ -49,18 +50,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 if (before)
                 {
                     Pending.Add(avatar.GetInstanceID(), root);
-                    VrcFuryCompatibility.ValidateBuildTokens(avatar, root);
-                    root.settings = VrcFuryCapabilities.Current.Effective(root.settings);
-                    if (VrcFuryCapabilities.Current.Legacy && VrcFuryCompatibility.AutoSocketCount(avatar) > 16) throw new InvalidOperationException(L("Auto Mode の対象が16個を超えています。"));
-                    var seenSockets = new HashSet<Component>();
-                    foreach (var socket in root.sockets)
-                    {
-                        // NDMF/MA may already have moved anchors beneath their target bones.
-                        if (socket.socket == null || !socket.socket.transform.IsChildOf(avatar.transform) || !seenSockets.Add(socket.socket))
-                            throw new InvalidOperationException(L("SPS2 Socket の所有参照が不正です。"));
-                        socket.buildToken = "__SPS2_" + root.identity + "_" + socket.id;
-                        VrcFuryCompatibility.SetBuildToken(socket.socket, socket.buildToken);
-                    }
+                    PrepareOwned(avatar, root);
                 }
                 else
                 {
@@ -69,6 +59,32 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 return true;
             }
             catch (Exception e) { Pending.Remove(avatar.GetInstanceID()); Debug.LogError(L("SPS2 ビルドを中止しました: ") + e.Message, avatar); return false; }
+        }
+
+        internal static Sps2SetupContext CaptureNdmf(GameObject avatar)
+        {
+            var root = Sps2SetupStorage.Find(avatar.GetComponent<VRCAvatarDescriptor>(), true);
+            if (root == null || root.settings.family != SpsFamily.SpsForNdmf) return null;
+            using var backend = SpsBackend.Use(root.settings.family);
+            VrcFuryCompatibility.RequireVersion();
+            if (root.schema != 1 || string.IsNullOrEmpty(root.identity)) throw new InvalidOperationException(L("SPS2 の所有ルートが不正です。"));
+            PrepareOwned(avatar, root);
+            return root;
+        }
+        private static void PrepareOwned(GameObject avatar, Sps2SetupContext root)
+        {
+            VrcFuryCompatibility.ValidateBuildTokens(avatar, root);
+            root.settings = VrcFuryCapabilities.Current.Effective(root.settings);
+            if (VrcFuryCapabilities.Current.Legacy && VrcFuryCompatibility.AutoSocketCount(avatar) > 16) throw new InvalidOperationException(L("Auto Mode の対象が16個を超えています。"));
+            var seenSockets = new HashSet<Component>();
+            foreach (var socket in root.sockets)
+            {
+                // NDMF/MA may already have moved anchors beneath their target bones.
+                if (socket.socket == null || !socket.socket.transform.IsChildOf(avatar.transform) || !seenSockets.Add(socket.socket))
+                    throw new InvalidOperationException(L("SPS2 Socket の所有参照が不正です。"));
+                socket.buildToken = "__SPS2_" + root.identity + "_" + socket.id;
+                VrcFuryCompatibility.SetBuildToken(socket.socket, socket.buildToken);
+            }
         }
 
         private sealed class MenuEntry
@@ -114,10 +130,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         private static VRCExpressionsMenu.Control Submenu(string name, VRCExpressionsMenu menu) => new VRCExpressionsMenu.Control
         { name = name, type = VRCExpressionsMenu.Control.ControlType.SubMenu, subMenu = menu };
 
-        private static void Complete(VRCAvatarDescriptor avatar, Sps2SetupContext root)
+        internal static void Complete(VRCAvatarDescriptor avatar, Sps2SetupContext root)
         {
             if (avatar == null || avatar.expressionsMenu == null || avatar.expressionParameters == null)
-                throw new InvalidOperationException(L("VRCFury のビルド結果がありません。"));
+                throw new InvalidOperationException(L("SPSのビルド結果がありません。"));
             var layers = avatar.baseAnimationLayers;
             int fxIndex = Array.FindIndex(layers, l => l.type == VRCAvatarDescriptor.AnimLayerType.FX);
             if (fxIndex < 0 || !(layers[fxIndex].animatorController is AnimatorController original)) throw new InvalidOperationException(L("FX Controller の形式が一致しません。"));

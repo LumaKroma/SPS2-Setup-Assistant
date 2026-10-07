@@ -7,6 +7,9 @@ namespace LumaKroma.Sps2SetupAssistant
     // Persisted values: never reorder. Missing language in older settings means Japanese.
     public enum DisplayLanguage { Japanese = 0, English = 1, Korean = 2, ChineseSimplified = 3, ChineseTraditional = 4 }
 
+    // Persisted identity: missing in old settings means original VRCFury. Never reorder.
+    public enum SpsFamily { VrcFury = 0, SpsForNdmf = 1 }
+
     [Serializable]
     public sealed class GeneratedSocket
     {
@@ -21,6 +24,7 @@ namespace LumaKroma.Sps2SetupAssistant
     [Serializable]
     public sealed class SetupSettings
     {
+        public SpsFamily family;
         public DisplayLanguage menuLanguage;
         public int displayNamesVersion;
         public List<SocketSettings> parts = new List<SocketSettings>();
@@ -34,7 +38,7 @@ namespace LumaKroma.Sps2SetupAssistant
 
         public SetupSettings Copy()
         {
-            var copy = new SetupSettings { menuLanguage = menuLanguage, displayNamesVersion = displayNamesVersion,
+            var copy = new SetupSettings { family = family, menuLanguage = menuLanguage, displayNamesVersion = displayNamesVersion,
                 penetration = penetration, showInternalThickness = showInternalThickness, autoMode = autoMode,
                 legacy = legacy, localOnly = localOnly, modularAvatar = modularAvatar };
             foreach (var part in parts) copy.parts.Add(part.Copy());

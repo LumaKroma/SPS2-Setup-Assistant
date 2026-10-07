@@ -16,14 +16,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
     public static class VrcFuryCompatibility
     {
         public const string SupportedVersion = "1.1403.0";
-        internal const string SocketType = "VF.Component.VRCFuryHapticSocket";
-        internal const string PlugType = "VF.Component.VRCFuryHapticPlug";
+        internal static string SocketType => SpsBackend.SocketType(SpsBackend.ActiveFamily);
+        internal static string PlugType => SpsBackend.PlugType(SpsBackend.ActiveFamily);
 
         public static void RequireVersion()
         {
             var capabilities = VrcFuryCapabilities.Current;
             if (!capabilities.CanGenerate)
-                throw new InvalidOperationException(capabilities.BlockReason + "\n" + VrcFuryCapabilities.UpdateGuide);
+                throw new InvalidOperationException(capabilities.BlockReason + "\n" + SpsBackend.Guide(SpsBackend.ActiveFamily));
         }
 
         internal static SerializedProperty Require(SerializedObject data, string path, SerializedPropertyType type)

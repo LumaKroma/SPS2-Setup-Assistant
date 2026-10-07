@@ -35,7 +35,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
 
         public static Socket CreateSocket(GameObject obj)
         {
-            var api = Create("CreateSocket", obj);
+            var api = SpsBackend.ActiveFamily == SpsFamily.SpsForNdmf ? null : Create("CreateSocket", obj);
             var native = VrcFuryCompatibility.FindSocket(obj);
             if (native == null)
             {
@@ -74,18 +74,24 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 VrcFuryCompatibility.Require(data, "useRadiusOffset", SerializedPropertyType.Boolean).boolValue = true;
                 data.ApplyModifiedPropertiesWithoutUndo();
             }
-            public Actions AddDepthActions(Vector2 range, float smoothing, bool self) => new Actions(Call(api,
-                "AddDepthActions", new[] { typeof(Vector2), typeof(float), typeof(bool) }, range, smoothing, self));
+            public Actions AddDepthActions(Vector2 range, float smoothing, bool self) =>
+                SpsBackend.FamilyOf(native) == SpsFamily.SpsForNdmf
+                    ? new Actions(NdmfDepthActions.Create(native, range, smoothing, self))
+                    : new Actions(Call(api, "AddDepthActions", new[] { typeof(Vector2), typeof(float), typeof(bool) }, range, smoothing, self));
         }
 
         public sealed class Actions
         {
             private readonly object api;
+            private readonly NdmfDepthActions native;
             internal Actions(object api) { this.api = api; }
-            public void AddBlendshape(string shape, float weight, Renderer renderer) =>
-                Call(api, "AddBlendshape", new[] { typeof(string), typeof(float), typeof(Renderer) }, shape, weight, renderer);
-            public void AddAnimationClip(AnimationClip clip) => Call(api, "AddAnimationClip", new[] { typeof(AnimationClip) }, clip);
-            public void AddTurnOn(GameObject obj) => Call(api, "AddTurnOn", new[] { typeof(GameObject) }, obj);
+            internal Actions(NdmfDepthActions native) { this.native = native; }
+            public void AddBlendshape(string shape, float weight, Renderer renderer)
+            { if (native != null) native.AddBlendshape(shape, weight, renderer); else Call(api, "AddBlendshape", new[] { typeof(string), typeof(float), typeof(Renderer) }, shape, weight, renderer); }
+            public void AddAnimationClip(AnimationClip clip)
+            { if (native != null) native.AddAnimationClip(clip); else Call(api, "AddAnimationClip", new[] { typeof(AnimationClip) }, clip); }
+            public void AddTurnOn(GameObject obj)
+            { if (native != null) native.AddTurnOn(obj); else Call(api, "AddTurnOn", new[] { typeof(GameObject) }, obj); }
         }
 
         public static void Attach(GameObject anchor, HumanBodyBones bone)

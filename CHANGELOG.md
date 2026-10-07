@@ -1,3 +1,12 @@
+## Unreleased - Issue186
+
+- Add explicit optional VRCFury / SPS for NDMF family selection for new setups,
+  preserving old Fury settings and rejecting existing-family conversion.
+- Guard package identity, shipped NDMF schema and managed DepthActions; separate
+  NDMF processing from Fury SDK callbacks. Remove mandatory VRCFury VPM dependency.
+- Unity/native build, save/reload/Undo, appearance, VRC and license confirmation
+  remain open. Package version remains 1.1.1; no release was produced.
+
 # Changelog
 
 ## 1.1.1 - Unreleased

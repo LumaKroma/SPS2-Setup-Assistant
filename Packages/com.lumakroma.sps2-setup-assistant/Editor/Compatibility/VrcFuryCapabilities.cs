@@ -13,9 +13,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         private VrcFuryCapabilities() { }
         public static string UpdateGuide => L("VCC の Manage Project で VRCFury を最新の安定版に更新してください。未導入の場合は VRCFury の公式導入案内をご確認ください。");
         public const string GuideUrl = "https://vrcfury.com/download/";
-        private static VrcFuryCapabilities current;
-        public static VrcFuryCapabilities Current => current ?? (current = Inspect());
-        public static void Refresh() { current = null; }
+        private static readonly Dictionary<SpsFamily, VrcFuryCapabilities> Cache = new Dictionary<SpsFamily, VrcFuryCapabilities>();
+        public SpsFamily Family { get; private set; }
+        public static VrcFuryCapabilities Current => For(SpsBackend.ActiveFamily);
+        public static VrcFuryCapabilities For(SpsFamily family)
+        {
+            SpsBackend.ValidateFamily(family);
+            if (!Cache.TryGetValue(family, out var result))
+            { using (SpsBackend.Use(family)) result = Inspect(); Cache.Add(family, result); }
+            return result;
+        }
+        public static void Refresh() { Cache.Clear(); }
         public string Version { get; private set; }
         public string BlockReason { get; private set; }
         public bool HasSps { get; private set; }
@@ -37,8 +45,34 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         private static bool Has(SerializedObject data, string path, SerializedPropertyType type) =>
             data?.FindProperty(path)?.propertyType == type;
 
-        private static VrcFuryCapabilities Inspect() => Inspect(
-            VrcFuryApi.FindType(VrcFuryCompatibility.SocketType), VrcFuryApi.FindType(VrcFuryCompatibility.PlugType));
+        private static VrcFuryCapabilities Inspect()
+        {
+            var family = SpsBackend.ActiveFamily;
+            var socket = VrcFuryApi.FindType(SpsBackend.SocketType(family));
+            var plug = VrcFuryApi.FindType(SpsBackend.PlugType(family));
+            var result = Inspect(socket, plug, family == SpsFamily.VrcFury);
+            result.Family = family;
+            if (!SpsBackend.PackageMatches(socket, family, out var version) ||
+                !SpsBackend.PackageMatches(plug, family, out _))
+                result.BlockReason = string.Format(L("{0}本体のpackage IDを確認できません。Stubのみでは生成できません。"), SpsBackend.Name(family));
+            else if (family == SpsFamily.VrcFury && !SpsBackend.PackageMatches(
+                VrcFuryApi.FindType("VF.Builder.VRCFuryBuilder"), family, out _))
+                result.BlockReason = string.Format(L("{0}のビルド機能が見つかりません。"), SpsBackend.Name(family));
+            else if (family == SpsFamily.SpsForNdmf)
+            {
+                if (version != SpsBackend.NdmfVersion)
+                    result.BlockReason = string.Format(L("SPS for NDMFの対応版は{0}です。異なる版では生成を中止します。"), SpsBackend.NdmfVersion);
+                else if (!SpsBackend.HasNdmfBuildIntegration)
+                    result.BlockReason = L("SPS for NDMF、Modular Avatar、NDMFを導入してください。対応版と導入方法は案内で確認できます。");
+                else if (result.CanGenerate)
+                {
+                    result.Depth = NdmfDepthActions.Probe(socket);
+                    if (!result.Depth || !result.Sps2 || !result.LocalTangents || !result.Collapse || !result.Legacy || !result.TestPlug)
+                        result.BlockReason = L("SPS for NDMFの設定schemaを確認できません。生成を中止します。");
+                }
+            }
+            return result;
+        }
 
         // Also accepts independently supplied component schemas for contract tests. No test override of Current.
         internal static VrcFuryCapabilities Inspect(Type socketType, Type plugType, bool publicApi = true)
@@ -124,16 +158,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             Missing(AutoMode, L("Auto Mode")); Missing(Legacy, L("後方互換性の切り替え"));
             Missing(LocalOnly, L("Local Only")); Missing(Depth, L("深度アクションの自動設定")); Missing(TestPlug, L("テストプラグ"));
             if (!RadiusOffset) notes.Add(L("Radius Offset 非対応のため、標準のソケット配置を使用します。"));
-            if (!PublicAttachment) notes.Add(L("追従の公開 API がないため Unity の Parent Constraint を使用します。"));
+            if (!PublicAttachment && Family != SpsFamily.SpsForNdmf) notes.Add(L("追従の公開 API がないため Unity の Parent Constraint を使用します。"));
             return notes;
         }
 
         public SetupSettings Effective(SetupSettings requested, List<string> warnings = null)
         {
-            if (!CanGenerate) throw new InvalidOperationException(BlockReason + "\n" + UpdateGuide);
+            if (!CanGenerate) throw new InvalidOperationException(BlockReason + "\n" + SpsBackend.Guide(Family));
             var result = requested.Copy();
             result.penetration &= Path;
             if (!Collapse) result.showInternalThickness = true;
+            if (Family == SpsFamily.SpsForNdmf) result.modularAvatar = true;
             result.autoMode &= AutoMode; result.legacy &= Legacy; result.localOnly &= LocalOnly;
             if (!Depth) foreach (var part in result.parts) part.depth = false;
             if (warnings != null) warnings.AddRange(Notices());

@@ -36,6 +36,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
         {
             return Adapters.TryGetValue(backend, out var adapter)
                 ? adapter.DisplayName
+                : backend == AttachmentBackend.SpsNdmfWithModularAvatar ? "SPS for NDMF + Modular Avatar"
                 : backend == AttachmentBackend.VrcFuryWithModularAvatar
                     ? "VRCFury + Modular Avatar"
                     : backend.ToString();

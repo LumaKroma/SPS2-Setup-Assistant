@@ -16,8 +16,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.Tests
                 Is.True);
         }
 
-        [Test]
-        public void TryApply_ModularAvatarCreatesConfiguredPublicBoneProxy()
+        [TestCase(AttachmentBackend.VrcFuryWithModularAvatar)]
+        [TestCase(AttachmentBackend.SpsNdmfWithModularAvatar)]
+        public void TryApply_ModularAvatarCreatesConfiguredPublicBoneProxy(AttachmentBackend backend)
         {
             var anchor = new GameObject("Anchor");
             try
@@ -27,7 +28,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar.Tests
                 Undo.SetCurrentGroupName("Add Modular Avatar Attachment");
 
                 Assert.That(AttachmentBackendRegistry.TryApply(
-                    AttachmentBackend.VrcFuryWithModularAvatar,
+                    backend,
                     anchor,
                     HumanBodyBones.Head,
                     out var error), Is.True, error);

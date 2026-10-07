@@ -1,3 +1,44 @@
+# Issue186 optional SPS families - development, unvalidated in Unity
+
+One Assistant offers explicit VRCFury or SPS for NDMF selection for new setups.
+Both are optional external installations; the Assistant package requires neither
+as a mandatory VPM dependency. Generation checks the selected package ID, native
+capabilities and build integration. A VF-compatible Stub or Migrator alone is not
+original VRCFury. A selection does not install/remove dependencies or convert avatars.
+
+Old settings omit `family` and therefore retain original VRCFury (enum value 0),
+including the existing optional MA attachment setting. New NDMF settings persist
+value 1 across copying, settings asset JSON, Apply and regeneration. Existing setup
+family changes, unknown enum values and mismatched native Socket types fail before
+mutation, including regeneration. The UI locks the family of an existing generated
+setup. Recovery can discover either native family without assuming a current selection.
+
+The SPSNDMF adapter targets shipped `net.nrzk.spsndmf` 1.1430.0 only (source
+`a8a688274e24ac68eadf1848d97ab1d757c35b67`). Its optional integration requires
+MA >=1.18.1 <2 and NDMF >=1.11 <2; MA attachment is mandatory for this family.
+The shipped package omits PublicApi. Capability/schema checks guard native
+SpsNdmf components and DepthAction managed references, explicit object modes,
+renderer-only BlendShape actions, GuidAnimationClip reference/ID and initialized
+upgrade versions. Dependency source/shaders are neither patched nor bundled.
+Unsupported versions/schema block generation rather than certifying them.
+
+Original Fury keeps the SDK -10001/-9999 build callbacks. NDMF captures setup
+identity/tokens in Transforming before net.nrzk.spsndmf consumes native components,
+and finalizes tool-owned menu/default/saved values in Optimizing, after SPS output,
+MA merging and the SPS external-animation rewrite, before Avatar Optimizer. Pending
+state belongs to the NDMF BuildContext; native component rediscovery is not used
+after consumption. Existing owned BlendTree baseline corrections are reused unchanged;
+no new Contact/Animator lifecycle or timing is introduced. This source ordering is
+not yet a native build guarantee. Unknown menu/controller correspondence stops build.
+
+Manual pose, references/regeneration guards, Undo, test Plugs, finger-ring calibration,
+native modes, stable IDs/defaults and five-language UI/menu names remain contractual
+invariants. Native serialization/reload/Undo, Fury and Fury-free NDMF build comparison,
+final Animator/menu/parameter behavior, original-avatar appearance and VRC PC checks
+remain required exact-source gates. License Commercial clause and author/user
+confirmation remain pre-publication questions; implementation approval is not legal
+clearance. No release/publication is authorized by this development change.
+
 # 1.1.0 localization and menu names — 2026-09-30 (unreleased)
 
 ## Regeneration protects saved Depth Action references

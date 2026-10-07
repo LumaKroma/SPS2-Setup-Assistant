@@ -1,3 +1,19 @@
+## Development: select SPS family (Issue186)
+
+For a new setup, choose **VRCFury** or **SPS for NDMF**. Install the chosen family
+separately before generation: [VRCFury](https://vrcfury.com/download/) or
+[SPS for NDMF](https://spsndmf.nrzk.net/spsndmf/overview/).
+VRCFury may use its existing optional Modular Avatar attachment. The new SPS for NDMF
+adapter targets 1.1430.0 with Modular Avatar 1.18.1+ (<2) and NDMF 1.11+ (<2),
+without original VRCFury or migration Stub. Both choices are offered equally.
+The Assistant no longer installs VRCFury as a required dependency.
+
+Selection applies only to new generation. Existing setups keep their saved family;
+Apply/regeneration do not migrate existing Fury output. Old settings still use Fury.
+This is unreleased development source: exact-source Unity build/Undo/save/reload
+and VRC checks are pending. The dependency's license conditions require separate
+confirmation before publication; no legal clearance is claimed here.
+
 # SPS2 Setup Assistant
 
 VRChatアバターへのSPS2セットアップを補助するUnity Editorツール
@@ -51,9 +67,10 @@ scaleを変更した後は設定を反映、または再生成してください
 
 - Unity 2022.3
 - VRChat Avatars SDK
-- VRCFury
+- VRCFury または SPS for NDMF（選択した系列を別途導入）
 - lilToon（テストプラグの表示用）
-- Modular Avatar（任意・追従方式の追加）
+- Modular Avatar（Furyでは任意、SPS for NDMFでは1.18.1以上・2未満が必要）
+- NDMF（SPS for NDMFでは1.11以上・2未満が必要）
 
 ## ライセンス
 

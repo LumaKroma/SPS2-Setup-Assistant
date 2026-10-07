@@ -152,7 +152,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         internal static Sps2SetupContext Find(VRCAvatarDescriptor avatar, bool build = false)
         {
             if (avatar == null) return null;
-            var owned = VrcFuryCompatibility.AllSockets(avatar.gameObject)
+            var owned = SpsBackend.AllSockets(avatar.gameObject)
                 .Select(s => new { socket = s, token = VrcFuryCompatibility.ReadIdentity(s) })
                 .Where(s => TryToken(s.token, out _, out _)).ToArray();
             if (owned.Length == 0)
@@ -181,6 +181,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     pathStops=build ? Array.Empty<Transform>() : record.stops.Select(p => Resolve(transform, p)).ToArray() });
             }
             if (owned.Length != result.sockets.Count(s => s.socket != null)) throw new InvalidOperationException(L("設定アセットに記録されていない SPS2 Socket があります。"));
+            SpsBackend.ValidateExisting(result, result.settings.family);
             FullSetupCatalog.UpgradeDisplayNames(result.settings);
             return result;
         }

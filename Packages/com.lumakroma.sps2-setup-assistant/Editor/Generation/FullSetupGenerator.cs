@@ -320,7 +320,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 Constrain(anchor, placement.first, placement.second);
             else
             {
-                var backend = setup.modularAvatar ? AttachmentBackend.VrcFuryWithModularAvatar : AttachmentBackend.VrcFury;
+                var backend = setup.family == SpsFamily.SpsForNdmf ? AttachmentBackend.SpsNdmfWithModularAvatar
+                    : setup.modularAvatar ? AttachmentBackend.VrcFuryWithModularAvatar : AttachmentBackend.VrcFury;
                 if (!AttachmentBackendRegistry.TryApply(backend, anchor, placement.bone, out var error))
                     throw new InvalidOperationException(error);
             }
@@ -358,10 +359,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             Sps2SetupAsset createdAsset = null;
             try
             {
+                using var backend = SpsBackend.Use(settings.family);
                 VrcFuryCompatibility.RequireVersion();
                 if (avatar == null || EditorUtility.IsPersistent(avatar)) throw new InvalidOperationException(L("Scene または Prefab Mode のアバターを選択してください。"));
                 if (!HumanoidSnapshot.TryCapture(avatar, out var snapshot, out var error)) throw new InvalidOperationException(error);
                 var old = Find(avatar);
+                SpsBackend.ValidateExisting(old, settings.family);
                 if (regenerate) ValidateRegenerationReferences(old, settings);
                 if (old != null && !regenerate) ValidateOwnership(old, false);
                 // A singular avatar root cannot safely place any generated child.
@@ -682,8 +685,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             Sps2SetupAsset createdAsset = null;
             try
             {
-                VrcFuryCompatibility.RequireVersion();
                 var root = Find(avatar);
+                using var backend = SpsBackend.Use(root?.settings.family ?? SpsFamily.VrcFury);
+                VrcFuryCompatibility.RequireVersion();
                 if (root == null) throw new InvalidOperationException(L("先にセットアップを生成してください。"));
                 var selectedPlug = longPlug ? root.longTestPlug : root.testPlug;
                 Undo.IncrementCurrentGroup(); group = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName(L("SPS2 テストプラグ"));
