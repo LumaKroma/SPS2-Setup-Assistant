@@ -1,3 +1,76 @@
+# Issue186 offline implementation - 2026-10-07
+
+Source commit: `c1c093f0d603fd1227a671fc1bd11094ede820af`; baseline official 1.1.1
+`7a08706298b91b678a8324b4e60186792cebf539`. Management/runbook baseline
+`769228e60a4957f526bb77cd0f54eeb062613879`. Branch
+`issue/186-sps2-ndmf-option`, writer `issue186-sps2-ndmf-option`.
+This record is appended after the tested source; it does not change compiled code.
+
+- Independent read-only checkpoint reviewer task
+  `01a115ba-5e93-7355-af39-766d454770b1` confirmed real ZIP/manifest/fixture
+  hashes and pinned source/schema; no P1/P2 implementation-start blocker.
+  Reviewed checkpoint SHA256 `065df378642e25a786a27b4031025e261cb1a1d5a23bf54f32fe43065b0237d6`;
+  approved-review checkpoint SHA256 `b86354ba376142b1d1aa5c6023b91ca774c15ffa773629eeb089c8d45f38a96b`.
+- Required-Discovery live preflight passed `rawReady=true`,
+  `implementationReady=true` with owner-matched In Progress / None. Management
+  checkout remains clean and separate from authored Assistant source. Existing
+  invalid-lock-record warning was retained without any Editor/lock operation.
+- Real SPSNDMF 1.1430.0 ZIP SHA256
+  `760b76a0d2bb1ea174a7526a46dd818ff56a837119637f4fa8bd8d1c01d79b85`;
+  manifest `5b30a932fc003ebc482932418d14ad0bdde94133b943c1d2b50dfb9afee9b7f7`.
+  Sanitized shipped observation SHA256
+  `bb285b89e9d25e72aa10376909ad2f800b22c1a6d82c422ec84ab2f0d0615ce3`.
+- Existing package validator and git whitespace checks PASS. Localization: 217
+  entries with four translations each; required literals/placeholders present.
+- Offline Roslyn compile: Authoring, core Editor, optional MA, optional NDMF,
+  core Editor tests and optional MA tests all PASS. Real Unity 2022.3.22f1/SDK
+  3.10.4 reference DLLs; fixture manifests identify MA 1.18.1/NDMF 1.14.3.
+  Fury and SPSNDMF DLLs were excluded from compiler references. This checks
+  type/API compatibility without launching Unity or installing dependencies.
+  Existing CS0414 unused `menuDisplayExpanded` warning remains. Initial temporary
+  compiler harness reference omissions (mscorlib shim, Unity test-runner DLLs)
+  were repaired within scratch; no product fix, stub or dependency patch was used.
+- 11/11 direct offline managed checks PASS: exact package identity rejects Stub,
+  Migrator, other/missing family; nested exception scope restores selected family;
+  old Fury/MA defaults and new family/part copy remain independent. These execute
+  candidate managed methods only; no native Unity serializer/action/build invoked.
+- Existing owned Animator/BlendTree correction tail is identical to baseline
+  (normalized source SHA256 `fb695b9f2948c49784b1095a1401f1991b639979a2d3dc8b2ec47df3d1512cd3`).
+  Package meta GUID uniqueness: 68/68; existing metas preserved.
+- Private evidence retained at `C:/Users/konoh/AppData/Local/Temp/lg186-intake`:
+  checkpoint/observation, preflight-reviewed.json, compiler response files/logs,
+  reference hashes, source hashes, offline-policy.log and boundary-checks.log.
+  Source inventory SHA256 `15f387280ebaddd8ed0cee76d5455d318eb5a19dd159b53d3c562d0521fb2da4`;
+  reference inventory SHA256 `43be6774c3986ba5d86ad43ad114221db2885100abb92648e973b4538b547c44`.
+  No licensed source, shader or dependency artifact is committed/bundled.
+
+## Required native handoff (not run)
+
+Use the parent-coordinated official entry only. No Unity launch, Play, SDK build,
+package install/export or shared runtime/registry/profile change occurred here.
+Small NDMF configuration: exact Assistant source above, SDK 3.10.4, shipped
+net.nrzk.spsndmf 1.1430.0, MA 1.18.1 and NDMF 1.14.3; original Fury/Stub/Migrator
+absent. Existing lilToon/display-asset prerequisites are needed for test Plugs.
+Compare an independent Fury fixture using its pinned installed package and same
+Assistant source; do not convert an old Fury setup or use one mixed fixture as
+proof of the Fury-free path. No original/private avatar source changes required.
+
+Native gates: actual optional asmdef compilation; new generation/Apply/regeneration;
+old settings/Fury preservation and mismatched-family rejection before mutation;
+DepthAction BlendShape renderer/weight, saved Clip GUID/localID, explicit Object
+ON/OFF and managed-reference version roundtrip through save/reload and Undo/Redo;
+manual poses, guided paths, modes, test Plugs and finger-ring preservation; actual
+NDMF processing order and final FX/menu/default/saved parameter comparison after
+MA and SPS external-animation rewrite. Added Editor tests are compiled, NOT run.
+Native API execution, full Fury regression, original-avatar appearance, UI layout/
+native-language review, fresh VCC install and VRC PC remain UNVERIFIED.
+
+No runtime/lifecycle PASS or license/legal clearance is claimed. Commercial clause
+and author/user confirmation remain pre-publication questions. No version bump,
+push, PR publication, merge, release, upload or canonical cleanup is authorized.
+Stage remains Validation / Waiting Unity until the authorized native entry exists;
+later exact-source VRC PC gates must remain open independently.
+
 # 1.1.1 yellow-warning revision (2026-10-02, unpublished)
 
 The user requested yellow-only scale guidance after the strict-scale candidate
