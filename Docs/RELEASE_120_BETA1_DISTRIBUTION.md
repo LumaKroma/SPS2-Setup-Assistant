@@ -49,9 +49,7 @@ migration removal boundary. Normal prompts are preserved; no NO_PROMPT mode.
 Two fresh builds match for each unitypackage and customer ZIP. Archive audit
 compares every non-config member with official template and verifies exact config,
 opposite-family absence, no Stub/Migrator, and exact four-file customer ZIP payload.
-Validate-Package and git diff --check pass. Browser visual QA is pending because
-the available browser runtime failed initialization; static markup/link and actual
-inline JavaScript family-switch checks are recorded separately.
+Validate-Package and git diff --check pass. Browser visual QA passed using existing Edge headless with a separate temporary profile: desktop Fury/NDMF, 390px mobile, family switching, no horizontal overflow and no page errors. Static markup/link and inline JavaScript checks also pass.
 No Unity launch/import/operation was performed. Native fresh VPAI import/confirmation/
 dependency resolution remains unverified and cannot fully succeed until beta is
 published in the listing. Any native gate must use a separately authorized disposable
@@ -87,3 +85,5 @@ donations or commercial-use guidance with SPSNDMF remain distinct conditions to
 assess under its modified/derivative-VRCFury restrictions. No legal clearance or
 external author permission is invented. Official source and complete local license
 evidence are identified in RELEASE_120_BETA1_PUBLICATION_REVIEW.md.
+
+Publication authorized by the user on 2026-10-11. Final canonical VPM ZIP SHA256: 3d1e489bbda3c31beb7845630c62cb2b64cbf0d230df1d881ac564b523602591. Git-normalized checkout changes from the previous artifact were confirmed to be CRLF/LF only. Runtime gates remain pending until the authorized postpublication installation tests.

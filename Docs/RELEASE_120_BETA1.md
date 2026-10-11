@@ -42,7 +42,7 @@ Source commit: insert the reviewed final commit before publishing.
   policy tests and 4px HelpBox spacing. These remain uncommitted, alongside beta
   metadata/docs. The live user's project does not receive the beta metadata.
 - Local ZIP candidate: com.lumakroma.sps2-setup-assistant-1.2.0-beta.1.zip,
-  89 entries, SHA256 a127fbb949f2d25a4bb59c675ee2307dabefcef48e01d4c49f9c9591fe2316ee.
+  89 entries, SHA256 3d1e489bbda3c31beb7845630c62cb2b64cbf0d230df1d881ac564b523602591.
   Two fresh builds matched; build script checked every included source byte.
 - User PASS was reported after latest UI/spacing, lilToon 2.3.4 and Gesture Manager
   3.9.9 installation in Unity 2022.3.22f1 / SDK 3.10.4 / SPSNDMF 1.1430.0 / MA 1.18.1 /

@@ -12,7 +12,7 @@ The user's open Unity Editor and manual project were not operated in this phase.
   `b6ff22b6c73a4d78fde272ef12439c16135ba9f7` plus uncommitted candidate changes.
   The final reviewed commit SHA does not exist yet and must be recorded before release.
 - Final local asset: `.artifacts/issue186-family-final-vpm-a/com.lumakroma.sps2-setup-assistant-1.2.0-beta.1.zip`.
-  89 entries; SHA256 `a127fbb949f2d25a4bb59c675ee2307dabefcef48e01d4c49f9c9591fe2316ee`.
+  89 entries; SHA256 `3d1e489bbda3c31beb7845630c62cb2b64cbf0d230df1d881ac564b523602591`.
   Independent `issue186-family-final-vpm-b` build has the same hash. Each build
   checks included bytes against source. Validate-Package and git diff --check pass.
 - Release attachments: this ZIP and the generated sibling `package.json` only.
