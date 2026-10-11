@@ -480,7 +480,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             var parameters = fx.parameters; var animatorMatches = parameters.Where(p => p.name == name).ToArray();
             if (string.IsNullOrEmpty(name) || matches.Length != 1 || matches[0].valueType != VRCExpressionParameters.ValueType.Bool || animatorMatches.Length != 1 ||
                 (animatorMatches[0].type != AnimatorControllerParameterType.Float && animatorMatches[0].type != AnimatorControllerParameterType.Bool))
-                throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。"));
+                throw new InvalidOperationException(L("SPS パラメーターの対応が不明です。") + " " + name + " / expression " + string.Join(",", matches.Select(p => p.valueType.ToString())) + " / FX " + string.Join(",", animatorMatches.Select(p => p.type.ToString())));
             matches[0].saved = saved; matches[0].defaultValue = initial;
             animatorMatches[0].defaultFloat = initial; animatorMatches[0].defaultBool = initial > .5f; fx.parameters = parameters;
         }

@@ -1,0 +1,7 @@
+{
+  "vpmRepositories": ["https://lumakroma.github.io/SPS2-Setup-Assistant/index.json", "https://spsndmf.vpm.nrzk.net/index.json", "https://vpm.nadena.dev/vpm.json", "https://lilxyzw.github.io/vpm-repos/vpm.json"],
+  "vpmDependencies": {"com.lumakroma.sps2-setup-assistant": "1.2.0-beta.2", "net.nrzk.spsndmf": "1.1430.0", "nadena.dev.modular-avatar": ">=1.18.1 <2.0.0", "nadena.dev.ndmf": ">=1.11.0 <2.0.0", "jp.lilxyzw.liltoon": ">=1.0.0"},
+  "includePrerelease": true,
+  "silentIfInstalled": false,
+  "minimumUnity": "2022.3"
+}

@@ -83,7 +83,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
         }
         [TestCase(SpsFamily.VrcFury, SpsFamily.SpsForNdmf)]
         [TestCase(SpsFamily.SpsForNdmf, SpsFamily.VrcFury)]
-        public void ExistingSetupCannotBeConvertedEvenDuringRegeneration(SpsFamily existing, SpsFamily requested)
+        public void ExistingFamilyGuardRemainsStrictOutsideDedicatedMigration(SpsFamily existing, SpsFamily requested)
         {
             var settings = new SetupSettings { family = existing };
             var root = new Sps2SetupContext { settings = settings };

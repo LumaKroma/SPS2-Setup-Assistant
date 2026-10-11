@@ -13,7 +13,7 @@ using VRC.SDK3.Avatars.Components;
 
 namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
 {
-    public static class FullSetupGenerator
+    public static partial class FullSetupGenerator
     {
         private static string UndoName => L("SPS2 セットアップ");
         private const string PathName = "Guided Paths";
@@ -364,6 +364,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (avatar == null || EditorUtility.IsPersistent(avatar)) throw new InvalidOperationException(L("Scene または Prefab Mode のアバターを選択してください。"));
                 if (!HumanoidSnapshot.TryCapture(avatar, out var snapshot, out var error)) throw new InvalidOperationException(error);
                 var old = Find(avatar);
+                if (old != null && old.settings.family != settings.family)
+                    return MigrateFamily(avatar, old, settings, out root, out message);
                 SpsBackend.ValidateExisting(old, settings.family);
                 if (regenerate) ValidateRegenerationReferences(old, settings);
                 if (old != null && !regenerate) ValidateOwnership(old, false);
