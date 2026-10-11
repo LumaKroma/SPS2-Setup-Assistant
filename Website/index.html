@@ -2,32 +2,54 @@
 <html lang="ja">
 <head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <title>SPS2 Setup Assistant — 導入</title>
-<style>body{font-family:system-ui,sans-serif;max-width:760px;margin:48px auto;padding:0 24px;line-height:1.8;color:#222;background:#faf9ff}a{color:#5144b8}.button{display:inline-block;box-sizing:border-box;max-width:100%;margin:6px 0;padding:10px 18px;background:#5144b8;color:white;border-radius:6px;text-decoration:none;overflow-wrap:anywhere}fieldset,section{border:1px solid #d7d2e8;border-radius:10px;padding:18px 22px;margin:22px 0;background:white}legend{font-weight:bold}.choices{display:flex;flex-wrap:wrap;gap:12px 24px}label{cursor:pointer}input{accent-color:#5144b8}p{margin:8px 0 0}code{overflow-wrap:anywhere;font-size:.9em}.repository+.repository{margin-top:22px}[hidden]{display:none}:focus-visible{outline:3px solid #c35f00;outline-offset:3px}@media(max-width:480px){body{margin:24px auto;padding:0 16px}fieldset,section{padding:16px}}</style>
+<style>body{font-family:system-ui,sans-serif;max-width:760px;margin:48px auto;padding:0 24px;line-height:1.8;color:#00FFFF;background:#000000}a{color:#00FFFF}.button{display:inline-block;box-sizing:border-box;max-width:100%;margin:6px 0;padding:10px 18px;background:#FFFFFF;color:#FF00FF;font-weight:700;border:1px solid #FF00FF;border-radius:6px;text-decoration:none;overflow-wrap:anywhere}.button:hover{box-shadow:0 0 0 1px #FF00FF;text-decoration:underline;text-underline-offset:4px}.button:active{box-shadow:inset 0 0 0 1px #FF00FF}fieldset,section{border:1px solid #FF00FF;border-radius:10px;padding:18px 22px;margin:22px 0;background:#000000}legend{font-weight:bold}.choices{display:flex;flex-wrap:wrap;gap:12px 24px}label{display:inline-flex;align-items:center;gap:8px;box-sizing:border-box;padding:8px 12px;border:1px solid #FF00FF;border-radius:6px;background:#FFFFFF;color:#FF00FF;font-weight:700;cursor:pointer}label:hover{box-shadow:0 0 0 1px #FF00FF}label:focus-within{outline:3px solid #FF00FF;outline-offset:3px}input{margin:0;accent-color:#FF00FF}p{margin:8px 0 0}h2{margin:0 0 12px;font-size:1.4em}h3{margin:0 0 8px;font-size:1.1em}hr{border:0;border-top:1px solid #FF00FF;margin:32px 0}.downloads{display:flex;flex-direction:column;align-items:flex-start;gap:8px}.manual-heading{margin-top:28px}code{overflow-wrap:anywhere;font-size:.9em}#fury,#ndmf{margin-top:22px}.repository+.repository{margin-top:22px}.docs a{text-underline-offset:3px}[hidden]{display:none}:focus-visible{outline:3px solid #FF00FF;outline-offset:3px}@media(max-width:480px){body{margin:24px auto;padding:0 16px}fieldset,section{padding:16px}}</style>
 </head><body>
 <h1>SPS2 Setup Assistant</h1>
+
+<section id="installer" aria-labelledby="installer-heading">
+<h2 id="installer-heading">VCC／ALCOMで導入</h2>
+<h3>unitypackageで一括導入</h3>
+<p>VCC または ALCOM で用意した Unity アバタープロジェクトに導入できます。使う基盤ツールに合った Installer ZIP を選んでください。</p>
+<div class="downloads">
+<a class="button" href="https://github.com/LumaKroma/SPS2-Setup-Assistant/releases/download/1.2.0-beta.1/SPS2-Setup-Assistant-1.2.0-beta.1-Fury-Installer.zip">VRCFury用 Installer ZIP をダウンロード</a>
+<a class="button" href="https://github.com/LumaKroma/SPS2-Setup-Assistant/releases/download/1.2.0-beta.1/SPS2-Setup-Assistant-1.2.0-beta.1-NDMF-Installer.zip">Modular Avatar／NDMF用 Installer ZIP をダウンロード</a>
+</div>
+<p>ZIP を展開し、中の unitypackage を対象プロジェクトの Unity にインポートしてください。Unity 内の Installer 確認画面で、SPS2 Setup Assistant 1.2.0-beta.1 と lilToon・選んだ基盤の依存パッケージを一括導入します。</p>
+<p>依存パッケージのプレリリース版が選ばれる場合があります。確認画面でバージョンを確認してください。</p>
+</section>
+<hr>
+<h2 id="manual-heading">手動で追加</h2>
+<p>個別にリポジトリを登録する場合は、以下のボタンを使ってください。</p>
 <section id="assistant" aria-label="SPS2 Setup Assistant">
 <a class="button" href="vcc://vpm/addRepo?url=https%3A%2F%2Flumakroma.github.io%2FSPS2-Setup-Assistant%2Findex.json">SPS2 Setup Assistant リポジトリを登録</a>
 <p><code>https://lumakroma.github.io/SPS2-Setup-Assistant/index.json</code></p>
+<p class="docs"><a href="https://github.com/LumaKroma/SPS2-Setup-Assistant#readme">SPS2 Setup Assistant ドキュメント</a></p>
 </section>
+<h2 class="manual-heading">依存関係</h2>
 <section id="liltoon" aria-label="lilToon">
 <a class="button" href="vcc://vpm/addRepo?url=https%3A%2F%2Flilxyzw.github.io%2Fvpm-repos%2Fvpm.json">lilToon リポジトリを登録</a>
 <p><code>https://lilxyzw.github.io/vpm-repos/vpm.json</code></p>
+<p class="docs"><a href="https://lilxyzw.github.io/lilToon/ja_JP/first.html">lilToon 公式ドキュメント</a></p>
 </section>
-<fieldset><legend>SPS系列を選択</legend><div class="choices"><label><input type="radio" name="family" value="fury" checked> VRCFury</label><label><input type="radio" name="family" value="ndmf"> SPS for NDMF</label></div></fieldset>
-<section id="fury" aria-label="VRCFury">
+<fieldset id="mechanism"><legend>基盤ツールを選択</legend><div class="choices"><label><input type="radio" name="family" value="fury" checked> VRCFury</label><label><input type="radio" name="family" value="ndmf"> Modular Avatar／NDMF</label></div>
+<div id="fury" aria-label="VRCFury">
 <a class="button" href="vcc://vpm/addRepo?url=https%3A%2F%2Fvcc.vrcfury.com%2F">VRCFury リポジトリを登録</a>
 <p><code>https://vcc.vrcfury.com/</code></p>
-</section>
-<section id="ndmf" aria-label="SPS for NDMF" hidden>
-<div class="repository">
+<p class="docs"><a href="https://vrcfury.com/">VRCFury 公式ドキュメント</a></p>
+</div>
+<div id="ndmf" aria-label="SPS for NDMF" hidden>
+<div class="repository" id="spsndmf">
 <a class="button" href="vcc://vpm/addRepo?url=https%3A%2F%2Fspsndmf.vpm.nrzk.net%2Findex.json">SPS for NDMF リポジトリを登録</a>
 <p><code>https://spsndmf.vpm.nrzk.net/index.json</code></p>
+<p class="docs"><a href="https://spsndmf.nrzk.net/guides/about/">SPS for NDMF 公式ドキュメント</a></p>
 </div>
-<div class="repository">
+<div class="repository" id="ma-ndmf">
 <a class="button" href="vcc://vpm/addRepo?url=https%3A%2F%2Fvpm.nadena.dev%2Fvpm.json">Modular Avatar / NDMF リポジトリを登録</a>
 <p><code>https://vpm.nadena.dev/vpm.json</code></p>
+<p class="docs"><a href="https://modular-avatar.nadena.dev/ja/docs/intro">Modular Avatar 公式ドキュメント</a><br><a href="https://ndmf.nadena.dev/">NDMF 公式ドキュメント</a></p>
 </div>
-</section>
+</div>
+</fieldset>
 <noscript><style>#ndmf[hidden]{display:block}</style></noscript>
 <script>document.querySelectorAll('input[name="family"]').forEach(input=>input.addEventListener('change',()=>{document.getElementById('fury').hidden=input.value!=='fury';document.getElementById('ndmf').hidden=input.value!=='ndmf';}));</script>
 </body></html>
