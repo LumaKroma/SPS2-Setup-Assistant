@@ -1,3 +1,43 @@
+## 1.2.0-beta.1 候補：SPS 系列の選択
+
+この版は beta 更新の準備中です。安定版は 1.1.1 を維持します。
+公開後は VCC / ALCOM でプレリリースを表示し、この版を明示的に選んでください。
+
+新規セットアップで **VRCFury** または **SPS for NDMF** を選べます。
+利用できる系列が一つだけなら、その系列を既定選択します。利用できない項目は
+無効表示になり、理由を案内します。両方利用できる場合はどちらも選択できます。
+系列欄と案内欄の間には余白があります。
+
+選んだ系列は生成前に別途導入してください：
+[VRCFury](https://vrcfury.com/download/) / [SPS for NDMF](https://spsndmf.nrzk.net/spsndmf/overview/)。
+Fury 本体は本ツールの必須 VPM 依存から外れます。Fury の既存連携と任意の
+Modular Avatar 対応は保持します。NDMF 系列の対応版は SPS for NDMF 1.1430.0、
+Modular Avatar 1.18.1 以上・2 未満、NDMF 1.11 以上・2 未満です。
+NDMF のみの環境に Fury 本体や移行 Stub を追加する必要はありません。
+
+系列選択は新規生成に限ります。保存済み・生成済み設定は既存系列を保持し、
+適用や再生成で系列を移行しません。系列項目を持たない従来の設定は Fury として扱います。
+
+2026-10-11 に最新 UI・余白修正を含む NDMF 候補の手動検証 PASS がユーザーから
+報告されました。試験項目や VRC 実機の範囲は未指定です。以前の SDK / Controller
+検証は UI 修正前の候補に対する証拠であり、最終配布 ZIP の導入・VRC 動作保証ではありません。
+依存パッケージのライセンス条件は本ツールの MIT ライセンスとは別です。
+依存は同梱しません。SPS for NDMF の商用アバター制作・販売・寄付付きサービス等での
+利用や案内には、改変版への依存・利用案内に関する条件の確認が必要です。
+
+本 ZIP のコード・文書・IcePop 表示アセットは MIT です。同梱の `LICENSE.md` と
+`Assets/IcePop/LICENSE.txt` を保持してください。外部依存のライセンスは次のとおりです。
+
+| 外部パッケージ | 条件・導入元 |
+| --- | --- |
+| SPS for NDMF | [公式導入案内](https://spsndmf.nrzk.net/guides/install/)から別途導入。[ライセンス](https://github.com/niriziki/VRCFury/blob/ndmf/LICENSE.md)は Personal / Commercial / VRCA-VRCW の条件を区別します。商用（寄付を含む）の改変版・派生版への依存や利用案内には制限があり、本連携の商用許諾は未確認です。 |
+| VRCFury | [公式配布](https://vrcfury.com/download/)から導入し、導入版のライセンス条件を確認してください。SPS for NDMF の許諾と同一視しないでください。 |
+| NDMF | MIT。配布物の `COPYING.md` に著作権・許諾表示があります。 |
+| Modular Avatar | 基本コードは MIT。Editor 画像・ロゴは別条件です。導入版の `COPYING.md` とロゴ利用方針を確認してください。本 ZIP にその画像・ロゴは含めません。 |
+| lilToon | MIT。導入版の `LICENSE` と `Third Party Notices.md` を確認してください。本 ZIP はシェーダーを含めません。 |
+| Gesture Manager | MIT。任意の確認ツールで、本 ZIP に含めません。 |
+| VRChat SDK | [SDK License](https://hello.vrchat.com/legal/sdk)が適用されます。VPM が公式 SDK を別途取得し、本 ZIP は SDK を含めません。 |
+
 # SPS2 Setup Assistant
 
 VRChatアバターへのSPS2セットアップを補助するUnity Editorツール
@@ -15,6 +55,17 @@ VRChatアバターへのSPS2セットアップを補助するUnity Editorツー�
 手動で追加する場合のリポジトリURL：`https://lumakroma.github.io/SPS2-Setup-Assistant/index.json`
 
 ## 使い方
+
+## 1.1.1：指わっかのscale対応
+
+指わっかは、アバターroot・祖先・指関節の正の一様scaleに対応します。
+非一様・負のscaleでも黄色の注意を表示して生成を続行します。この場合、指わっかの位置・向き・サイズは保証されません。生成後に確認し、手動で調整してください。
+保存済み校正があれば再利用し、初回は現在の指関節を基準に仮配置します。
+0scaleなどで安全に計算できない指わっかだけを省略し、他の生成可能な部位は続行します。保存済み校正は保持します。
+生成可能な部位が残らない場合や、アバターroot自体が退化して安全に配置できない場合は、黄色の注意を表示し、既存の設定・生成物を変更しません。
+scaleを変更した後は設定を反映、または再生成してください。実行中のscaleアニメーションへの自動追従は対象外です。
+従来のscale=1設定と、保存した校正・手動調整を引き継ぎます。安定版1.1.1に含まれています。
+
 
 一番シンプルな方法は、上部メニュー欄から `Tools > LumaKroma > SPS2 Setup Assistant` を開いて対象アバターを指定 → `プレハブを生成`。
 
@@ -40,12 +91,23 @@ VRChatアバターへのSPS2セットアップを補助するUnity Editorツー�
 
 - Unity 2022.3
 - VRChat Avatars SDK
-- VRCFury
+- VRCFury または SPS for NDMF（選択した系列を別途導入）
 - lilToon（テストプラグの表示用）
-- Modular Avatar（任意・追従方式の追加）
+- Modular Avatar（Furyでは任意、SPS for NDMFでは1.18.1以上・2未満が必要）
+- NDMF（SPS for NDMFでは1.11以上・2未満が必要）
 
 ## ライセンス
 
 コード・ドキュメントおよび同梱のIcePopアセットはMITライセンスです。
 
 本ツールは非公式の補助ツールです。
+
+## 従来のAssets版からの移行
+
+1.1.0ではVPMの旧版移行機能を使い、導入時に旧 `Assets/LumaKroma/SPS2SetupAssistant` フォルダーを削除対象にします。移動済みの旧フォルダーもGUIDで検出される場合があります。設定保存先 `Assets/SPS2Settings` は削除対象に含めません。
+
+**移行前にUnityを終了し、プロジェクト全体をプロジェクト外へバックアップしてください。** 旧フォルダー内へ追加したファイルや編集した内容も削除対象です。必要な内容を確認・退避してから進めてください。この機能による自動バックアップや、ごみ箱からの復旧は保証されません。
+
+VPMインストーラーでは、表示される削除対象を確認してからInstallを選んでください。対象が想定と異なる場合や内容を確認できない場合はCancelしてください。VCC/ALCOM経由でも同じ旧版削除情報が使われるため、先にバックアップと内容確認が必要です。
+
+導入後はコンパイルと保存済み設定・シーン・プレハブの参照を確認してください。問題があればUnityを終了し、移行前のバックアップから復元してください。VPM版を導入済みの場合、インストーラーが「Nothing TO DO」で終了して旧版が残ることがあります。再インポートで必ず重複を解消できるわけではありません。

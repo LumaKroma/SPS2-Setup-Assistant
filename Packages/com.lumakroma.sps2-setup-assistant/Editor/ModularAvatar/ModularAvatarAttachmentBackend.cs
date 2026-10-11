@@ -11,11 +11,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.ModularAvatar
         static ModularAvatarAttachmentBackend()
         {
             AttachmentBackendRegistry.Register(new ModularAvatarAttachmentBackend());
+            AttachmentBackendRegistry.Register(new ModularAvatarAttachmentBackend(AttachmentBackend.SpsNdmfWithModularAvatar));
         }
 
-        public AttachmentBackend Backend => AttachmentBackend.VrcFuryWithModularAvatar;
+        public AttachmentBackend Backend { get; }
+        internal ModularAvatarAttachmentBackend(AttachmentBackend backend = AttachmentBackend.VrcFuryWithModularAvatar) { Backend = backend; }
 
-        public string DisplayName => "VRCFury + Modular Avatar";
+        public string DisplayName => Backend == AttachmentBackend.SpsNdmfWithModularAvatar ? "SPS for NDMF + Modular Avatar" : "VRCFury + Modular Avatar";
 
         public void Apply(GameObject anchor, HumanBodyBones bone)
         {

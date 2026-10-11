@@ -1,3 +1,4 @@
+using static LumaKroma.Sps2SetupAssistant.Editor.Localization.Sps2Localization;
 using System;
 using System.Linq;
 using System.Reflection;
@@ -18,10 +19,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
 
         internal static object Call(object target, string name, Type[] signature, params object[] arguments)
         {
-            if (target == null) throw new InvalidOperationException("VRCFury API の生成結果がありません: " + name + "。" + VrcFuryCapabilities.UpdateGuide);
+            if (target == null) throw new InvalidOperationException(L("VRCFury API の生成結果がありません: ") + name + "。" + VrcFuryCapabilities.UpdateGuide);
             var type = target as Type ?? target.GetType();
             var method = Method(type, name, signature);
-            if (method == null) throw new InvalidOperationException("VRCFury API がありません: " + name + "。VCC で VRCFury を更新してください。");
+            if (method == null) throw new InvalidOperationException(L("VRCFury API がありません: ") + name + L("。VCC で VRCFury を更新してください。"));
             try { return method.Invoke(target is Type ? null : target, arguments); }
             catch (TargetInvocationException e) { throw new InvalidOperationException("VRCFury: " + e.InnerException?.Message, e.InnerException ?? e); }
         }
@@ -34,13 +35,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
 
         public static Socket CreateSocket(GameObject obj)
         {
-            var api = Create("CreateSocket", obj);
+            var api = SpsBackend.ActiveFamily == SpsFamily.SpsForNdmf ? null : Create("CreateSocket", obj);
             var native = VrcFuryCompatibility.FindSocket(obj);
             if (native == null)
             {
                 var type = FindType(VrcFuryCompatibility.SocketType);
                 if (type == null || !typeof(Component).IsAssignableFrom(type))
-                    throw new InvalidOperationException("SPS Socket がありません。VCC で VRCFury を導入・更新してください。");
+                    throw new InvalidOperationException(L("SPS Socket がありません。VCC で VRCFury を導入・更新してください。"));
                 native = obj.AddComponent(type);
             }
             return new Socket(api, native);
@@ -62,7 +63,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 var data = new SerializedObject(native);
                 var mode = VrcFuryCompatibility.Require(data, "addLight", SerializedPropertyType.Enum);
                 int index = Array.IndexOf(mode.enumNames, value);
-                if (index < 0) throw new InvalidOperationException("この版に Socket モードがありません: " + value);
+                if (index < 0) throw new InvalidOperationException(L("この版に Socket モードがありません: ") + value);
                 mode.enumValueIndex = index; data.ApplyModifiedPropertiesWithoutUndo();
             }
             public void UseRadiusOffset()
@@ -73,18 +74,24 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 VrcFuryCompatibility.Require(data, "useRadiusOffset", SerializedPropertyType.Boolean).boolValue = true;
                 data.ApplyModifiedPropertiesWithoutUndo();
             }
-            public Actions AddDepthActions(Vector2 range, float smoothing, bool self) => new Actions(Call(api,
-                "AddDepthActions", new[] { typeof(Vector2), typeof(float), typeof(bool) }, range, smoothing, self));
+            public Actions AddDepthActions(Vector2 range, float smoothing, bool self) =>
+                SpsBackend.FamilyOf(native) == SpsFamily.SpsForNdmf
+                    ? new Actions(NdmfDepthActions.Create(native, range, smoothing, self))
+                    : new Actions(Call(api, "AddDepthActions", new[] { typeof(Vector2), typeof(float), typeof(bool) }, range, smoothing, self));
         }
 
         public sealed class Actions
         {
             private readonly object api;
+            private readonly NdmfDepthActions native;
             internal Actions(object api) { this.api = api; }
-            public void AddBlendshape(string shape, float weight, Renderer renderer) =>
-                Call(api, "AddBlendshape", new[] { typeof(string), typeof(float), typeof(Renderer) }, shape, weight, renderer);
-            public void AddAnimationClip(AnimationClip clip) => Call(api, "AddAnimationClip", new[] { typeof(AnimationClip) }, clip);
-            public void AddTurnOn(GameObject obj) => Call(api, "AddTurnOn", new[] { typeof(GameObject) }, obj);
+            internal Actions(NdmfDepthActions native) { this.native = native; }
+            public void AddBlendshape(string shape, float weight, Renderer renderer)
+            { if (native != null) native.AddBlendshape(shape, weight, renderer); else Call(api, "AddBlendshape", new[] { typeof(string), typeof(float), typeof(Renderer) }, shape, weight, renderer); }
+            public void AddAnimationClip(AnimationClip clip)
+            { if (native != null) native.AddAnimationClip(clip); else Call(api, "AddAnimationClip", new[] { typeof(AnimationClip) }, clip); }
+            public void AddTurnOn(GameObject obj)
+            { if (native != null) native.AddTurnOn(obj); else Call(api, "AddTurnOn", new[] { typeof(GameObject) }, obj); }
         }
 
         public static void Attach(GameObject anchor, HumanBodyBones bone)
@@ -99,7 +106,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             }
             var animator = anchor.GetComponentInParent<Animator>();
             var target = animator != null && animator.isHuman ? animator.GetBoneTransform(bone) : null;
-            if (target == null) throw new InvalidOperationException("追従先の Humanoid ボーンがありません。");
+            if (target == null) throw new InvalidOperationException(L("追従先の Humanoid ボーンがありません。"));
             var constraint = Undo.AddComponent<ParentConstraint>(anchor);
             constraint.AddSource(new ConstraintSource { sourceTransform = target, weight = 1 });
             constraint.SetTranslationOffset(0, target.InverseTransformPoint(anchor.transform.position));

@@ -4,5 +4,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
     {
         VrcFury = 0,
         VrcFuryWithModularAvatar = 1,
+        SpsNdmfWithModularAvatar = 2,
     }
 }

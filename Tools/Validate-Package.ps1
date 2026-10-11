@@ -48,12 +48,18 @@ foreach ($relativePath in $requiredFiles) {
 
 $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
 Assert-Condition ($manifest.name -eq 'com.lumakroma.sps2-setup-assistant') 'Unexpected package ID.'
-Assert-Condition ($manifest.version -eq '1.0.2') 'Unexpected release version.'
+Assert-Condition ($manifest.version -eq '1.2.0-beta.1') 'Unexpected release version.'
 Assert-Condition ($manifest.unity -eq '2022.3') 'Unexpected Unity version.'
 Assert-Condition ($manifest.license -eq 'MIT') 'Package license must be MIT.'
 Assert-Condition ($manifest.vpmDependencies.'com.vrchat.avatars' -eq '>=3.10.4 <4.0.0') 'Unexpected VRChat SDK range.'
-Assert-Condition ($manifest.vpmDependencies.'com.vrcfury.vrcfury' -eq '>=1.0.0') 'VRCFury installation must not force an exact version.'
+Assert-Condition (-not ($manifest.vpmDependencies.PSObject.Properties.Name -contains 'com.vrcfury.vrcfury')) 'VRCFury must remain an optional backend.'
+Assert-Condition (-not ($manifest.vpmDependencies.PSObject.Properties.Name -contains 'net.nrzk.spsndmf')) 'SPS for NDMF must remain an optional backend.'
 Assert-Condition (-not ($manifest.vpmDependencies.PSObject.Properties.Name -contains 'nadena.dev.modular-avatar')) 'Modular Avatar must remain an optional dependency.'
+Assert-Condition ($manifest.PSObject.Properties.Name -contains 'legacyFolders') 'Legacy Assets migration metadata is missing.'
+$legacyFolders = @($manifest.legacyFolders.PSObject.Properties)
+Assert-Condition ($legacyFolders.Count -eq 1) 'Migration must target exactly one legacy product folder.'
+Assert-Condition ($legacyFolders[0].Name -ceq 'Assets/LumaKroma/SPS2SetupAssistant' -and $legacyFolders[0].Value -ceq '1824306e4bd4439aaffbd9eab24486e5') 'Legacy migration path/GUID drift.'
+Assert-Condition (-not ($manifest.PSObject.Properties.Name -contains 'legacyFiles') -and -not ($manifest.PSObject.Properties.Name -contains 'legacyPackages')) 'Additional migration deletion targets are not authorized.'
 
 Assert-Condition (Test-Path -LiteralPath (Join-Path $packageRoot 'Runtime/SetupSettings.cs')) 'Persistent authoring metadata is missing.'
 $authoringFiles = @(Get-ChildItem -LiteralPath (Join-Path $packageRoot 'Runtime') -Recurse -File -Filter '*.cs')
@@ -79,7 +85,7 @@ $maTestsAssemblyPath = Join-Path $packageRoot 'Tests\Editor\ModularAvatar\LumaKr
 $coreAssembly = Get-Content -Raw -LiteralPath $coreAssemblyPath | ConvertFrom-Json
 $maAssembly = Get-Content -Raw -LiteralPath $maAssemblyPath | ConvertFrom-Json
 $maTestsAssembly = Get-Content -Raw -LiteralPath $maTestsAssemblyPath | ConvertFrom-Json
-$coreSourceFiles = @($sourceFiles | Where-Object { $_.FullName -notlike '*\Editor\ModularAvatar\*' })
+$coreSourceFiles = @($sourceFiles | Where-Object { $_.FullName -notlike '*\Editor\ModularAvatar\*' -and $_.FullName -notlike '*\Compatibility\Ndmf\*' })
 $coreSource = ($coreSourceFiles | ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName }) -join "`n"
 $maSourceFiles = @($sourceFiles | Where-Object { $_.FullName -like '*\Editor\ModularAvatar\*' })
 $maSource = ($maSourceFiles | ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName }) -join "`n"
@@ -114,6 +120,7 @@ foreach ($pattern in $forbiddenPatterns) {
 }
 
 Assert-Condition ($compatibility.Contains('CreateSocket') -and $compatibility.Contains('com.vrcfury.api.FuryComponents')) 'Public Socket API late binding is missing.'
+Assert-Condition ($compatibility.Contains('net.nrzk.spsndmf') -and $compatibility.Contains('PackageMatches') -and $compatibility.Contains('CaptureNdmf')) 'Dual-family package and build boundaries are missing.'
 Assert-Condition ($compatibility.Contains('CreateArmatureLink') -and -not $compatibility.Contains('BindingFlags.NonPublic')) 'Public-only attachment API binding is missing.'
 Assert-Condition ($source.Contains('ModularAvatarBoneProxy')) 'Public Modular Avatar Bone Proxy integration is missing.'
 Assert-Condition (($source.Contains('AttachmentBackendRegistry.TryApply') -and $source.Contains('Adapters.TryGetValue(backend, out var adapter)'))) 'Backend availability guard is missing.'
@@ -137,4 +144,5 @@ if ($LASTEXITCODE -ne 0) {
     throw 'git diff --cached --check failed.'
 }
 
+& (Join-Path $PSScriptRoot 'Test-Localization.ps1')
 Write-Output "PASS development metadata, optional MA, data-only authoring, isolated capability adapter, 15-part catalog, display asset provenance, Undo and diff whitespace"
