@@ -1,6 +1,7 @@
-> Issue186 development adds equal, optional VRCFury and SPS for NDMF selection
-> for new generation. See package README / OUTPUT_CONTRACT for pinned versions
-> and remaining Unity/VRC/license gates. No new release is produced.
+> 1.2.0-beta.1 更新候補を準備しています。安定版は 1.1.1 を維持します。
+> 新規生成で VRCFury / SPS for NDMF を選択でき、利用可能な系列を既定選択します。
+> 対応依存・既存系列の維持・検証範囲は package README を参照してください。
+> タグ、Release、VPM listing はまだ更新していません。
 
 # SPS2 Setup Assistant
 
@@ -20,7 +21,7 @@ VRChatアバターへのSPS2セットアップを補助するUnity Editorツー�
 
 ## 使い方
 
-## 1.1.1候補：指わっかのscale対応
+## 1.1.1：指わっかのscale対応
 
 指わっかは、アバターroot・祖先・指関節の正の一様scaleに対応します。
 非一様・負のscaleでも黄色の注意を表示して生成を続行します。この場合、指わっかの位置・向き・サイズは保証されません。生成後に確認し、手動で調整してください。
@@ -28,10 +29,10 @@ VRChatアバターへのSPS2セットアップを補助するUnity Editorツー�
 0scaleなどで安全に計算できない指わっかだけを省略し、他の生成可能な部位は続行します。保存済み校正は保持します。
 生成可能な部位が残らない場合や、アバターroot自体が退化して安全に配置できない場合は、黄色の注意を表示し、既存の設定・生成物を変更しません。
 scaleを変更した後は設定を反映、または再生成してください。実行中のscaleアニメーションへの自動追従は対象外です。
-従来のscale=1設定と、保存した校正・手動調整を引き継ぎます。この候補は未公開です。
+従来のscale=1設定と、保存した校正・手動調整を引き継ぎます。安定版1.1.1に含まれています。
 
 
-### v1.1.0 開発中：言語とメニュー表示名
+### v1.1.0以降：言語とメニュー表示名
 
 「画面の言語」と、アバターに保存する「メニューの言語」を別々に選択できます。
 日本語・英語・韓国語・中国語（簡体字／繁体字）に対応します。

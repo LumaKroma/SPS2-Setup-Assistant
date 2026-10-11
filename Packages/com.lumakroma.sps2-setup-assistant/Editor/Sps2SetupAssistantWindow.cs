@@ -53,7 +53,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         private void OnEnable()
         {
-            if (settings == null || settings.parts.Count == 0) settings = FullSetupCatalog.CreateDefault();
+            if (settings == null || settings.parts.Count == 0) settings = SettingsForAvatar(null);
             FullSetupCatalog.UpgradeDisplayNames(settings);
             Undo.undoRedoPerformed += Repaint;
             EditorApplication.hierarchyChanged += RecoverAvatar;
@@ -90,7 +90,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         public void BindAvatar(VRCAvatarDescriptor next)
         {
             descriptor = next; avatarId = null; nameEditors.Clear();
-            try { settings = FullSetupGenerator.Find(next)?.settings.Copy() ?? FullSetupCatalog.CreateDefault(); message = null; }
+            try { settings = SettingsForAvatar(FullSetupGenerator.Find(next)); message = null; }
             catch (Exception e) { settings = FullSetupCatalog.CreateDefault(); SetMessage(e.Message, false); }
             FullSetupCatalog.UpgradeDisplayNames(settings);
             FullSetupCatalog.DetectMouth(settings, next); RememberAvatar();
@@ -110,11 +110,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 if (menuLanguage != settings.menuLanguage) Change(() => settings.menuLanguage = menuLanguage);
                 var next = (VRCAvatarDescriptor)EditorGUILayout.ObjectField(L("アバター"), descriptor, typeof(VRCAvatarDescriptor), true);
                 if (next != descriptor) Change(() => BindAvatar(next));
-                using (new EditorGUI.DisabledScope(FullSetupGenerator.HasGeneratedRoot(descriptor)))
-                {
-                    var family = (SpsFamily)EditorGUILayout.Popup(L("SPS系列"), (int)settings.family, new[] { "VRCFury", "SPS for NDMF" });
-                    if (family != settings.family) Change(() => { settings.family = family; VrcFuryCapabilities.Refresh(); });
-                }
+                DrawFamilySelection();
                 scroll = EditorGUILayout.BeginScrollView(scroll);
                 DrawCompatibility();
                 DrawPresets();
@@ -124,6 +120,56 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 DrawGenerationControls();
                 GUILayout.Space(8);
             }
+        }
+        private static SetupSettings SettingsForAvatar(Sps2SetupContext existing)
+        {
+            if (existing != null) return existing.settings.Copy();
+            return CreateSettingsForAvatar(null, VrcFuryCapabilities.For(SpsFamily.VrcFury).CanGenerate,
+                VrcFuryCapabilities.For(SpsFamily.SpsForNdmf).CanGenerate);
+        }
+        internal static SetupSettings CreateSettingsForAvatar(Sps2SetupContext existing, bool furyAvailable, bool ndmfAvailable)
+        {
+            if (existing != null) return existing.settings.Copy();
+            var draft = FullSetupCatalog.CreateDefault();
+            if (!furyAvailable && ndmfAvailable) draft.family = SpsFamily.SpsForNdmf;
+            return draft;
+        }
+        private void DrawFamilySelection()
+        {
+            var fury = VrcFuryCapabilities.For(SpsFamily.VrcFury);
+            var ndmf = VrcFuryCapabilities.For(SpsFamily.SpsForNdmf);
+            bool existing = FullSetupGenerator.HasGeneratedRoot(descriptor);
+            var selected = settings.family == SpsFamily.SpsForNdmf ? ndmf : fury;
+            var rect = EditorGUILayout.GetControlRect();
+            rect = EditorGUI.PrefixLabel(rect, new GUIContent(L("SPS系列")));
+            using (new EditorGUI.DisabledScope(existing || (!fury.CanGenerate && !ndmf.CanGenerate)))
+            {
+                var label = SpsBackend.Name(settings.family) + (selected.CanGenerate ? "" : " (" + L("利用不可") + ")");
+                if (EditorGUI.DropdownButton(rect, new GUIContent(label), FocusType.Keyboard))
+                {
+                    var menu = new GenericMenu();
+                    AddFamilyChoice(menu, SpsFamily.VrcFury, fury);
+                    AddFamilyChoice(menu, SpsFamily.SpsForNdmf, ndmf);
+                    menu.DropDown(rect);
+                }
+            }
+            var unavailable = new[] { fury, ndmf }.Where(c => !c.CanGenerate)
+                .Select(c => SpsBackend.Name(c.Family) + ": " + c.BlockReason).ToArray();
+            if (unavailable.Length != 0)
+            {
+                GUILayout.Space(4);
+                EditorGUILayout.HelpBox(string.Join("\n", unavailable), MessageType.Info);
+            }
+        }
+        private void AddFamilyChoice(GenericMenu menu, SpsFamily family, VrcFuryCapabilities caps)
+        {
+            var label = SpsBackend.Name(family) + (caps.CanGenerate ? "" : " (" + L("利用不可") + ")");
+            var content = new GUIContent(label, caps.BlockReason);
+            if (!caps.CanGenerate) menu.AddDisabledItem(content, settings.family == family);
+            else menu.AddItem(content, settings.family == family, () => {
+                if (FullSetupGenerator.HasGeneratedRoot(descriptor) || !VrcFuryCapabilities.For(family).CanGenerate) return;
+                if (family != settings.family) Change(() => { settings.family = family; VrcFuryCapabilities.Refresh(); });
+            });
         }
         private void DrawPresets()
         {

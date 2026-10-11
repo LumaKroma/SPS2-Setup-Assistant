@@ -38,6 +38,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Localization
         {
             { "SPSのビルド結果がありません。", new[] { "SPS build output is missing.", "SPS 빌드 결과가 없습니다.", "缺少SPS构建结果。", "缺少SPS建置結果。" } },
             { "SPS系列", new[] { "SPS family", "SPS 계열", "SPS系列", "SPS系列" } },
+            { "利用不可", new[] { "Unavailable", "사용 불가", "不可用", "無法使用" } },
             { "選択した系列の導入案内", new[] { "Installation guide for selected family", "선택한 계열의 설치 안내", "所选系列安装指南", "所選系列安裝指南" } },
             { "SPS for NDMF、Modular Avatar、NDMFを導入してください。対応版と導入方法は案内で確認できます。", new[] { "Install SPS for NDMF, Modular Avatar and NDMF. See the guide for supported versions and installation.", "SPS for NDMF, Modular Avatar 및 NDMF를 설치하세요. 지원 버전과 설치 방법은 안내를 확인하세요.", "请安装SPS for NDMF、Modular Avatar和NDMF。支持版本和安装方法请参阅指南。", "請安裝SPS for NDMF、Modular Avatar和NDMF。支援版本及安裝方法請參閱指南。" } },
             { "SPS系列の設定が不明です。生成を中止します。", new[] { "Unknown SPS family setting. Generation stopped.", "알 수 없는 SPS 계열 설정입니다. 생성을 중지합니다.", "SPS系列设置未知。已停止生成。", "SPS系列設定未知。已停止生成。" } },

@@ -9,6 +9,34 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
 {
     public sealed class SpsBackendTests
     {
+        [TestCase(true, false, SpsFamily.VrcFury)]
+        [TestCase(false, true, SpsFamily.SpsForNdmf)]
+        [TestCase(true, true, SpsFamily.VrcFury)]
+        [TestCase(false, false, SpsFamily.VrcFury)]
+        public void NewDraftDefaultsToTheOnlyUsableBackend(bool furyAvailable, bool ndmfAvailable, SpsFamily expected)
+        {
+            var draft = Sps2SetupAssistantWindow.CreateSettingsForAvatar(null, furyAvailable, ndmfAvailable);
+            Assert.AreEqual(expected, draft.family);
+        }
+        [TestCase(SpsFamily.VrcFury, true, false)]
+        [TestCase(SpsFamily.VrcFury, false, true)]
+        [TestCase(SpsFamily.VrcFury, true, true)]
+        [TestCase(SpsFamily.VrcFury, false, false)]
+        [TestCase(SpsFamily.SpsForNdmf, true, false)]
+        [TestCase(SpsFamily.SpsForNdmf, false, true)]
+        [TestCase(SpsFamily.SpsForNdmf, true, true)]
+        [TestCase(SpsFamily.SpsForNdmf, false, false)]
+        public void SavedFamilyIsPreservedRegardlessOfAvailableBackends(SpsFamily savedFamily, bool furyAvailable, bool ndmfAvailable)
+        {
+            var saved = new SetupSettings { family = savedFamily, localOnly = true, penetration = false };
+            var existing = new Sps2SetupContext { settings = saved };
+            var loaded = Sps2SetupAssistantWindow.CreateSettingsForAvatar(existing, furyAvailable, ndmfAvailable);
+            Assert.AreEqual(savedFamily, loaded.family);
+            Assert.AreEqual(savedFamily, saved.family);
+            Assert.IsTrue(loaded.localOnly);
+            Assert.IsFalse(loaded.penetration);
+            Assert.AreNotSame(saved, loaded);
+        }
         [TestCase("com.vrcfury.vrcfury", SpsFamily.VrcFury, true)]
         [TestCase("net.nrzk.vfstub", SpsFamily.VrcFury, false)]
         [TestCase("net.nrzk.spsndmf-migrator", SpsFamily.VrcFury, false)]

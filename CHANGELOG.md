@@ -1,11 +1,20 @@
-## Unreleased - Issue186
+## 1.2.0-beta.1 - Prepared, unpublished (2026-10-11)
 
 - Add explicit optional VRCFury / SPS for NDMF family selection for new setups,
   preserving old Fury settings and rejecting existing-family conversion.
 - Guard package identity, shipped NDMF schema and managed DepthActions; separate
   NDMF processing from Fury SDK callbacks. Remove mandatory VRCFury VPM dependency.
-- Unity/native build, save/reload/Undo, appearance, VRC and license confirmation
-  remain open. Package version remains 1.1.1; no release was produced.
+- Default new drafts to the only usable installed family. Disable unavailable
+  choices with their capability reason; allow both when both are usable.
+- Keep saved/generated family unchanged, including legacy settings without a
+  family field. Add spacing between the family dropdown and information box.
+- The user reported manual PASS on 2026-10-11 for the latest NDMF/UI candidate;
+  test scope and VRC platform were unspecified. Earlier SDK/Controller evidence
+  predates the UI delta. Native UI compile and 15 focused assertions were checked,
+  with normal/narrow spacing checked after the subsequent layout-only change.
+- Stable 1.1.1 stays unchanged. This prerelease candidate is not published.
+  Exact packaged delivery, broader lifecycle/VRC checks and dependency license
+  confirmation remain separate gates; no VRC runtime certification is claimed.
 
 # Changelog
 

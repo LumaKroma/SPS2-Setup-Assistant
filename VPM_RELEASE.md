@@ -1,5 +1,64 @@
 # VPM release handoff
 
+## 1.2.0-beta.1 preparation (2026-10-11, unpublished)
+
+Current public stable is 1.1.1 (tag commit
+7a08706298b91b678a8324b4e60186792cebf539). The public release/tag/listing inventory
+contains no earlier beta convention. The proposed minor prerelease adds a new
+optional SPS family without promoting or replacing stable 1.1.1.
+
+Candidate source is Issue186 b6ff22b6c73a4d78fde272ef12439c16135ba9f7 plus the
+uncommitted family UI/localization/policy-test and spacing edits, followed by this
+metadata/documentation preparation. Commit and review the exact combined diff
+before any public action. The live user validation project remains untouched by
+this preparation. User manual PASS is scope-unspecified, not VRC certification.
+
+Build the existing common VPM package ZIP and package.json for this beta. Do not
+bundle Fury, SPSNDMF, MA, NDMF, lilToon, Gesture Manager, test avatars or evidence.
+The user's subsequent distribution decision adds two official VPAI installers,
+Fury and NDMF, sharing this exact beta package. See Docs/RELEASE_120_BETA1_DISTRIBUTION.md.
+Their configurations use includePrerelease=true and silentIfInstalled=false.
+The current stable VPAI configuration remains unchanged. No new Assets edition or
+VPM metapackage is introduced.
+
+After publication approval and review of the intended license scope:
+
+1. Review/commit the entire candidate on the Issue branch. Static/package checks
+   and two deterministic ZIP builds precede draft creation. The package README
+   must accurately retain remaining gates. Do not run Unity in the user's Editor.
+2. Recheck tag/release absence, including authenticated drafts. Dispatch the
+   existing release.yml at the reviewed candidate commit/ref, creating tag
+   1.2.0-beta.1 and a draft with prerelease=true. Verify target commit, assets and
+   hashes. Publish with make_latest=false; stable 1.1.1 remains GitHub Latest.
+3. The existing Prepare-VpmListing includes all public non-draft semver releases,
+   including prereleases. Use the existing SPS2 listing at
+   https://lumakroma.github.io/SPS2-Setup-Assistant/index.json, after reviewing
+   the deployment ref. Its prior-version SHA guards must preserve every existing
+   entry. Listing publication can trigger automatically; review that route before
+   publishing. Under the recorded Pages policy, dispatch listing.yml on reviewed
+   main; do not rely on a tag-ref Pages deployment. Live main metadata currently
+   remains older than stable and is not a release-source baseline.
+4. Verify public release prerelease=true, GitHub Latest still 1.1.1, stable entry
+   ZIP hash d31a5d61c52c6fa17e64e39d736d8dc5a1372e86eba17ee0b9cb5e09a735e2af,
+   beta manifest/hash and explicit prerelease visibility in VCC/ALCOM. Fresh
+   package installation is a delivery gate, not proven by local ZIP inspection.
+
+Minimum remaining regression: audit the final ZIP contains the exact UI and
+spacing code and excludes dependencies/tests; check the installed-family matrix,
+saved/missing family compatibility and existing-family guard on the final committed
+source if executable code changes again. Do not repeat SDK/Controller builds for
+metadata/README-only edits. Native final-ZIP NDMF import plus one legacy-Fury
+load/Apply check remains distinct from the user's current manual PASS. Any broader
+Undo/save-reopen/lifecycle/VRC scope requires a separate scheduled validation slot.
+
+SPSNDMF 1.1430.0 declares VRCFury License (Personal / VRCA-VRCW). Its commercial
+terms restrict relying on modified/derivative Fury and directing users to it.
+No license clearance is inferred from omitting dependency binaries or calling the
+release beta. Confirm the intended distribution/use scope and any applicable
+rightsholder permission when making commercial-use claims. No individual author
+permission requirement was identified for noncommercial free API integration
+without dependency redistribution/modification; commercial users are a separate scope.
+
 ## Current 1.1.0 preparation (2026-10-02, unpublished)
 
 The current distribution is the official VPMPackageAutoInstaller (VPAI)

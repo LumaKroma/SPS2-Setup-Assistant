@@ -1,6 +1,6 @@
-Scope: This MIT license covers the original package code and documentation.
-The IcePop display assets in Assets/IcePop are excluded; see
-Documentation~/ASSET_PROVENANCE.md for the approved private inclusion scope.
+Scope: This MIT license covers the original package code, documentation and
+included IcePop display assets. See Assets/IcePop/LICENSE.txt for their notice.
+External dependencies are not included or relicensed by this license.
 
 MIT License
 
