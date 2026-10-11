@@ -158,7 +158,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             if (owned.Length == 0)
             {
                 if (!build && avatar.transform.Find(FullSetupGenerator.RootName) != null)
-                    throw new InvalidOperationException(L("SPS2 という名前の生成物がありますが、所有情報を確認できません。"));
+                    throw new InvalidOperationException(SpsBackend.MissingSourceGuidance);
                 return null;
             }
             var identities = owned.Select(s => { TryToken(s.token, out var id, out _); return id; }).Distinct().ToArray();

@@ -8,10 +8,11 @@ original VRCFury. A selection does not install/remove dependencies or convert av
 
 Old settings omit `family` and therefore retain original VRCFury (enum value 0),
 including the existing optional MA attachment setting. New NDMF settings persist
-value 1 across copying, settings asset JSON, Apply and regeneration. Existing setup
-family changes, unknown enum values and mismatched native Socket types fail before
-mutation, including regeneration. The UI locks the family of an existing generated
-setup. Recovery can discover either native family without assuming a current selection.
+value 1 across copying, settings asset JSON, Apply and regeneration. Unknown enum
+values and mismatched native Socket types fail before mutation. Same-family paths
+retain their original validation. A different selected family now enters a dedicated
+migration path, not ordinary regeneration; see the migration contract below.
+Recovery can discover either native family without assuming a current selection.
 
 The SPSNDMF adapter targets shipped `net.nrzk.spsndmf` 1.1430.0 only (source
 `a8a688274e24ac68eadf1848d97ab1d757c35b67`). Its optional integration requires
@@ -665,3 +666,62 @@ are not deletion targets. Preserve all shared script/asset GUIDs, retain normal
 installer confirmation, and instruct users to back up and inspect before install.
 No automatic backup, rollback or unconditional duplicate cleanup is guaranteed.
 See repository Docs/LEGACY_MIGRATION_110.md for exact scope and native test gates.
+
+## Backend migration candidate (Editor validation; VRC PC pending)
+
+Both original and target dependency stacks must be installed and pass the existing
+capability checks. The UI shows the current backend and selected target. Apply and
+Regenerate both route a family change through the dedicated migration operation.
+Other setting edits must be applied separately; migration cannot remove parts or
+silently discard unsupported target settings. NDMF retains its mandatory MA attachment.
+
+Migration keeps the existing GameObjects, hierarchy paths, local transforms, calibration,
+Guided Path references, user additions and test Plug renderers. Only native Socket,
+ordinary bone attachment and test Plug components proven equivalent to the tool's
+expected state are replaced. Legacy rotation/meter tangents and current local tangents are mapped through the
+actual frame rotation/scale by
+the compatibility adapter; unknown native edits, ambiguous ownership, preexisting
+target components, unrecorded native components anywhere under the generated root,
+and external references to components being replaced stop the
+operation. No cross-family serialized managed-reference data is copied.
+
+Preflight creates disposable tool-owned objects in a separate Undo group, always
+reverted before mutation. Conversion then uses one Undo transaction and a fresh
+settings asset snapshot so existing scene/Prefab snapshots stay unchanged. Failure
+reverts the transaction and removes only the newly created snapshot. Missing source
+scripts/ownership stop with manual remove-and-regenerate or reinstall-and-migrate
+guidance; no automatic prefab deletion or dependency modification is performed.
+
+Native validation in the disposable dual-stack project has exercised both migration
+directions, native Fury/MA attachment replacement, manual transforms/tangents, settings,
+user additions, external Transform references, Undo/Redo, save/reload and failure rollback.
+Unknown native components and external native Component references are rejected.
+A connected avatar Prefab with a newly added scene-owned generated root supports
+migration, same-family update and save/reload without unpacking the avatar or editing
+its source asset. Generated objects that already have corresponding Prefab source objects
+and Prefab editing mode are conservatively rejected to preserve external native fileID
+references. Such a generated Prefab must be explicitly unpacked in a backed-up Scene by
+the user before migration; the tool never unpacks automatically.
+
+Both backends built successfully with a valid uniform-scale fixture after migration;
+output menu/expression/FX parameter correspondence was checked from preserved bundles.
+Nonuniform Socket/ancestor scale is unsupported by both native backends. Migration
+preserves those values rather than silently correcting them; buildability is a separate
+gate. A freshly generated nonuniform NDMF fixture also reproduced the missing FX
+parameter failure, so that failure is not specific to migration.
+
+Loaded components across scenes and ScriptableObject assets under Assets are checked
+for replacement references; arbitrary unloaded serialized assets are not certified.
+Additional native roundtrip validation preserved a rotated custom target, both finger-ring
+calibrations (joint paths, offsets, rotations and 0.63/0.37 constraint weights), manual
+Socket pose edits, both test Plug objects, and their renderer/mesh/material references.
+Save/reload retained the actual constraint sources and settings. The dedicated humanoid
+fixture added synthetic fingers; this does not certify the user's avatar or gesture quality.
+Four focused comparison/recovery tests passed: both Socket schemas exclude Unity owner
+field children while rejecting native edits, Fury attachment comparison normalizes only
+the known expected self-reference and rejects foreign references, and Apply stops on a
+generated root lacking owned native Socket data without changing that root or additions.
+Missing dependency schemas were simulated through the existing capability inspection
+seam; actual package removal/reinstallation was not tested and no dependency was changed.
+Exact-revision VRC PC behavior and actual missing-package recovery remain unverified.
+This candidate is not a released compatibility guarantee.

@@ -136,13 +136,18 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         private void DrawFamilySelection()
         {
+            try
+            {
+                var current = FullSetupGenerator.Find(descriptor);
+                if (current != null) EditorGUILayout.HelpBox(string.Format(L("現在: {0} → 選択先: {1}"), SpsBackend.Name(current.settings.family), SpsBackend.Name(settings.family)), MessageType.Info);
+            }
+            catch (Exception e) { EditorGUILayout.HelpBox(e.Message, MessageType.Warning); }
             var fury = VrcFuryCapabilities.For(SpsFamily.VrcFury);
             var ndmf = VrcFuryCapabilities.For(SpsFamily.SpsForNdmf);
-            bool existing = FullSetupGenerator.HasGeneratedRoot(descriptor);
             var selected = settings.family == SpsFamily.SpsForNdmf ? ndmf : fury;
             var rect = EditorGUILayout.GetControlRect();
             rect = EditorGUI.PrefixLabel(rect, new GUIContent(L("SPS系列")));
-            using (new EditorGUI.DisabledScope(existing || (!fury.CanGenerate && !ndmf.CanGenerate)))
+            using (new EditorGUI.DisabledScope((!fury.CanGenerate && !ndmf.CanGenerate)))
             {
                 var label = SpsBackend.Name(settings.family) + (selected.CanGenerate ? "" : " (" + L("利用不可") + ")");
                 if (EditorGUI.DropdownButton(rect, new GUIContent(label), FocusType.Keyboard))
@@ -167,7 +172,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             var content = new GUIContent(label, caps.BlockReason);
             if (!caps.CanGenerate) menu.AddDisabledItem(content, settings.family == family);
             else menu.AddItem(content, settings.family == family, () => {
-                if (FullSetupGenerator.HasGeneratedRoot(descriptor) || !VrcFuryCapabilities.For(family).CanGenerate) return;
+                if (!VrcFuryCapabilities.For(family).CanGenerate) return;
                 if (family != settings.family) Change(() => { settings.family = family; VrcFuryCapabilities.Refresh(); });
             });
         }
@@ -371,9 +376,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         private void Apply(bool regenerate)
         {
+            bool migrating = false;
+            try { var current = FullSetupGenerator.Find(descriptor); migrating = current != null && current.settings.family != settings.family; }
+            catch { /* The generator returns the source-recovery warning without mutation. */ }
             bool ok = FullSetupGenerator.Apply(descriptor, settings, regenerate, out var root, out var result);
             if (ok)
                 Change(() => {
+                    if (migrating && root != null) settings = root.settings.Copy();
                     foreach (var part in settings.parts.Where(p => p.IsFingerRing && (p.fingerRing == null || !p.fingerRing.calibrated)))
                     {
                         var saved = root?.settings.parts.Find(p => p.id == part.id)?.fingerRing;

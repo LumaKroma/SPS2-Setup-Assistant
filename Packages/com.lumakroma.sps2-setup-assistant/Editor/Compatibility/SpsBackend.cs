@@ -60,6 +60,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             if (existing != null && existing.sockets.Any(s => s.socket != null && FamilyOf(s.socket) != requested))
                 throw new InvalidOperationException(L("設定とSocketのSPS系列が一致しません。変更を中止します。"));
         }
+        internal static string MissingSourceGuidance => L("元の基盤または所有情報を確認できません。既存生成プレハブを手動で削除して新規生成するか、元の依存を再導入して移行してください。自動変更は行いません。");
         internal static bool HasNdmfBuildIntegration => VrcFuryApi.FindType(
             "LumaKroma.Sps2SetupAssistant.Editor.Compatibility.Ndmf.Sps2NdmfPlugin") != null;
     }

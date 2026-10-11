@@ -36,6 +36,19 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Localization
         }
         private static readonly Dictionary<string, string[]> Translations = new Dictionary<string, string[]>
         {
+
+            { "Prefab接続中またはPrefab編集モードでは基盤を切り替えません。Scene上の接続されていない生成物を使用してください。", new[] { "Backend switching is blocked in connected Prefab instances and Prefab Mode. Use an unconnected generated setup in a scene.", "연결된 프리팹 인스턴스 또는 프리팹 모드에서는 기반 도구를 변경하지 않습니다. 씬에서 연결되지 않은 생성물을 사용하세요.", "不会在已连接的预制体实例或预制体编辑模式下切换基盘。请使用场景中未连接的生成物。", "不會在已連接的預製件實例或預製件編輯模式下切換基盤。請使用場景中未連接的生成物。" } },
+
+            { "元の基盤または所有情報を確認できません。既存生成プレハブを手動で削除して新規生成するか、元の依存を再導入して移行してください。自動変更は行いません。", new[] { "The original backend or ownership cannot be verified. Manually remove the generated prefab and create a new setup, or reinstall the original dependency and migrate. Nothing is changed automatically.", "기존 기반 도구 또는 소유 정보를 확인할 수 없습니다. 생성 프리팹을 수동으로 삭제하고 새로 생성하거나, 기존 의존 패키지를 다시 설치한 후 이전하세요. 자동 변경은 하지 않습니다.", "无法确认原基盘或所属信息。请手动删除已生成的预制体并重新生成，或重新安装原依赖后迁移。不会自动更改。", "無法確認原基盤或所屬資訊。請手動刪除已生成的預製件並重新生成，或重新安裝原相依套件後遷移。不會自動變更。" } },
+            { "基盤切り替えと他の設定変更は別々に反映してください。", new[] { "Apply backend switching separately from other setting changes.", "기반 도구 변경과 다른 설정 변경은 따로 적용하세요.", "请分别应用基盘切换和其他设置更改。", "請分別套用基盤切換及其他設定變更。" } },
+            { "手動変更または未対応の基盤固有設定があります。既存の生成物は変更しません。", new[] { "There are manual changes or unsupported backend-specific settings. Existing output is unchanged.", "수동 변경 또는 지원하지 않는 기반별 설정이 있습니다. 기존 생성물은 변경하지 않습니다.", "存在手动修改或不支持的基盘专用设置。不会更改已有生成物。", "存在手動修改或不支援的基盤專用設定。不會變更現有生成物。" } },
+            { "移行先では現在の設定を維持できません。既存の生成物は変更しません。", new[] { "The target backend cannot retain these settings. Existing output is unchanged.", "대상 기반 도구에서 현재 설정을 유지할 수 없습니다. 기존 생성물은 변경하지 않습니다.", "目标基盘无法保留当前设置。不会更改已有生成物。", "目標基盤無法保留目前設定。不會變更現有生成物。" } },
+            { "コンポーネントまたは経路の所有を確定できません。既存の生成物は変更しません。", new[] { "Component or path ownership is ambiguous. Existing output is unchanged.", "컴포넌트 또는 경로의 소유를 확인할 수 없습니다. 기존 생성물은 변경하지 않습니다.", "无法确认组件或路径的归属。不会更改已有生成物。", "無法確認元件或路徑的歸屬。不會變更現有生成物。" } },
+            { "置換対象への外部参照があるため、基盤切り替えを中止します。", new[] { "Backend switching stopped because a component to replace has external references.", "교체 대상에 외부 참조가 있어 기반 도구 변경을 중단합니다.", "替换对象存在外部引用，已停止基盘切换。", "替換對象存在外部參照，已停止基盤切換。" } },
+            { "移行に必要な追従先が見つかりません。", new[] { "A required attachment target is missing.", "이전에 필요한 추적 대상이 없습니다.", "找不到迁移所需的跟随目标。", "找不到遷移所需的跟隨目標。" } },
+            { "移行中に既存の階層が変更されました。変更を復元します。", new[] { "The existing hierarchy changed during migration. Reverting changes.", "이전 중 기존 계층이 변경되었습니다. 변경을 복원합니다.", "迁移期间已有层级发生变化。正在恢复更改。", "遷移期間現有階層發生變化。正在還原變更。" } },
+            { "基盤を切り替えました。保存後、ビルドと動作を確認してください。", new[] { "Backend switched. Save and verify the build and behavior.", "기반 도구를 변경했습니다. 저장 후 빌드와 동작을 확인하세요.", "基盘已切换。保存后请确认构建和运行情况。", "基盤已切換。儲存後請確認建置和執行情況。" } },
+            { "現在: {0} → 選択先: {1}", new[] { "Current: {0} → Selected: {1}", "현재: {0} → 선택: {1}", "当前：{0} → 选择：{1}", "目前：{0} → 選擇：{1}" } },
             { "SPSのビルド結果がありません。", new[] { "SPS build output is missing.", "SPS 빌드 결과가 없습니다.", "缺少SPS构建结果。", "缺少SPS建置結果。" } },
             { "SPS系列", new[] { "SPS family", "SPS 계열", "SPS系列", "SPS系列" } },
             { "利用不可", new[] { "Unavailable", "사용 불가", "不可用", "無法使用" } },
