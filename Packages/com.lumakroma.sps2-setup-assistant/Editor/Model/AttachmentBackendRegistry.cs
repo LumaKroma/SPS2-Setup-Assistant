@@ -1,3 +1,4 @@
+using static LumaKroma.Sps2SetupAssistant.Editor.Localization.Sps2Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -58,7 +59,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
         {
             if (!Adapters.TryGetValue(backend, out var adapter))
             {
-                error = $"The {GetDisplayName(backend)} attachment backend is unavailable.";
+                error = string.Format(L("追従方式 {0} は利用できません。"), GetDisplayName(backend));
                 return false;
             }
 
@@ -70,7 +71,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
             }
             catch (Exception exception)
             {
-                error = $"The {adapter.DisplayName} attachment backend failed: {exception.Message}";
+                error = string.Format(L("追従方式 {0} が失敗しました: {1}"), adapter.DisplayName, exception.Message);
                 return false;
             }
         }
