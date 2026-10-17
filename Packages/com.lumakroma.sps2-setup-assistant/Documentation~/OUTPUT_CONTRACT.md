@@ -516,7 +516,12 @@ IndexIntermediate joint paths, weights and manually adjusted poses. UI removal
 does not delete or silently replace this data. Ordinary Apply and regeneration
 reuse a valid saved calibration; disabling keeps settings while removing output.
 No gesture clip is edited. Automatic estimation failure leaves output unchanged
-and shows localized guidance to check Humanoid finger mapping or disable the loop.
+and shows a localized reason distinguishing missing Humanoid bones, invalid bone
+references, reference-pose setup failure and geometry rejection. Geometry messages
+describe the automatically calculated finger pose rather than assuming incorrect
+Humanoid mapping. An excessive estimated tip gap now produces a warning after
+successful calibration. The remaining rejection checks, order and numerical
+limits are unchanged.
 
 A two-source ParentConstraint blends the calibrated frames with thumb weight
 [0,1], initial 0.5. This is not the midpoint between anatomical joints: both
@@ -608,12 +613,21 @@ pose is not guaranteed to match the user's runtime Gesture.
 
 Seven mapped points (Hand; thumb/index proximal, intermediate, distal) form a
 bone contour. Unmapped/distinctness failures, nonfinite values, tiny segments,
-degenerate frames, estimated tip gap >0.2 index length, area <0.08 span²,
+degenerate frames, area <0.08 span²,
 plane deviation >0.2 span, exterior centroid or uncertain palm-relative normal reject estimation.
 Terminal segments extend by0.6 of the preceding distal segment: this is a bounded
 bone approximation, not a finger-surface measurement. The area centroid and
 palm-relative plane normal supply center/+Z. Both joint-relative offsets are
 captured on the posed copy, then values and original paths are carried back.
+
+An estimated tip gap >0.2 index length produces a part-prefixed localized warning
+only after the remaining geometry checks and calibration capture succeed. It
+does not reject an otherwise valid estimate. The warning asks the user to check
+and adjust the provisional position/orientation in their actual finger pose.
+The 0.6 segment extension, 0.2 warning boundary and 1.6 index-length factor are
+unchanged. The gap is closed by a straight contour edge, so a valid area centroid
+does not guarantee an anatomical opening center. Avatar-specific Humanoid ranges
+remain in use; no source Avatar or importer limits are rewritten.
 Thumb weight is preserved, not inferred from a single closed pose.
 
 Existing saved/manual calibration is never automatically replaced. Legacy pending

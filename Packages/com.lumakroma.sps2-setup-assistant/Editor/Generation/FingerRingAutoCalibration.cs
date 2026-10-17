@@ -10,9 +10,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
 {
     public static class FingerRingAutoCalibration
     {
-        private const string Failure = "指わっかを自動配置できませんでした。手指のHumanoid設定を確認するか、この指わっかをオフにしてください。";
-
-        public static FingerRingCalibration Estimate(VRCAvatarDescriptor avatar, SocketSettings part)
+        public static FingerRingCalibration Estimate(VRCAvatarDescriptor avatar, SocketSettings part, ICollection<string> warnings = null)
         {
             FingerRingCalibrationUtility.Bones(avatar, part, out var thumb, out var index);
             // Validate original frames before cloning: cloning must not hide parent shear.
@@ -22,7 +20,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             var bones = RequiredBones(left).Select(animator.GetBoneTransform).ToArray();
             if (bones.Any(b => b == null || !b.IsChildOf(avatar.transform)) || bones.Distinct().Count() != bones.Length ||
                 bones.Any(b => avatar.transform.Find(AnimationUtility.CalculateTransformPath(b, avatar.transform)) != b))
-                throw new InvalidOperationException(L(Failure));
+            {
+                if (bones.Any(b => b == null))
+                    throw new InvalidOperationException(L("指わっかを自動配置できませんでした。必要な手指のHumanoidボーンを取得できません。"));
+                throw new InvalidOperationException(L("指わっかを自動配置できませんでした。手指のボーン参照がアバター内の一意なボーンを指していません。"));
+            }
             return WithSkeletonCopy(avatar.transform, (root, map) => {
                 using (var handler = new HumanPoseHandler(animator.avatar, root))
                 {
@@ -32,7 +34,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     handler.SetHumanPose(ref pose);
                 }
                 var points = bones.Select(b => map[b].position).ToArray();
-                EstimateGeometry(points, left, out var center, out var rotation);
+                bool gapExceeded = EstimateGeometry(points, left, out var center, out var rotation);
                 // The index base changes less between reference and gesture poses than
                 // its intermediate joint. Keep the chosen frame in the existing path field.
                 var trackingIndex = bones[4];
@@ -40,6 +42,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 // Never return references to the disposable hierarchy.
                 value.thumbPath = AnimationUtility.CalculateTransformPath(thumb, avatar.transform);
                 value.indexPath = AnimationUtility.CalculateTransformPath(trackingIndex, avatar.transform);
+                if (gapExceeded) warnings?.Add(part.name + ": " + L("自動計算した指ポーズでは、推定した指先の間隔が目安を超えています。指わっかは仮配置しました。実際に使う指のポーズで位置と向きを確認し、必要に応じて調整してください。"));
                 return value;
             });
         }
@@ -62,11 +65,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 { "Index 2 Stretched", -1f }, { "Index 3 Stretched", -1f }
             };
             if (pose.muscles == null || pose.muscles.Length != HumanTrait.MuscleCount)
-                throw new InvalidOperationException(L(Failure));
+                throw new InvalidOperationException(L("指わっかを自動配置できませんでした。自動計算用の指ポーズを設定できません。"));
             foreach (var entry in values)
             {
                 int i = Array.IndexOf(HumanTrait.MuscleName, side + entry.Key);
-                if (i < 0) throw new InvalidOperationException(L(Failure));
+                if (i < 0) throw new InvalidOperationException(L("指わっかを自動配置できませんでした。自動計算用の指ポーズを設定できません。"));
                 pose.muscles[i] = entry.Value;
             }
         }
@@ -100,41 +103,41 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
 
         // Points: Hand, Thumb proximal/intermediate/distal, Index proximal/intermediate/distal.
         // Bone contour is a bounded approximation of the opening, not a mesh measurement.
-        internal static void EstimateGeometry(Vector3[] p, bool left, out Vector3 center, out Quaternion rotation)
+        internal static bool EstimateGeometry(Vector3[] p, bool left, out Vector3 center, out Quaternion rotation)
         {
             center = default; rotation = Quaternion.identity;
-            void Reject() => throw new InvalidOperationException(L(Failure));
-            if (p == null || p.Length != 7 || p.Any(v => !Finite(v))) Reject();
+            void Reject(string reason) => throw new InvalidOperationException(L(reason));
+            if (p == null || p.Length != 7 || p.Any(v => !Finite(v))) Reject("指わっかを自動配置できませんでした。自動計算した指ポーズで、7点の有限なボーン位置を取得できません。");
             float thumbLast = Vector3.Distance(p[2], p[3]), indexLast = Vector3.Distance(p[5], p[6]);
             float length = Vector3.Distance(p[4], p[5]) + indexLast * 1.6f;
-            if (thumbLast < .00001f || indexLast < .00001f || length < .0001f || Vector3.Distance(p[1], p[2]) < .00001f || Vector3.Distance(p[4], p[5]) < .00001f) Reject();
+            if (thumbLast < .00001f || indexLast < .00001f || length < .0001f || Vector3.Distance(p[1], p[2]) < .00001f || Vector3.Distance(p[4], p[5]) < .00001f) Reject("指わっかを自動配置できませんでした。自動計算した指ポーズで、指の骨区間が短すぎます。");
             // Distal Humanoid bones mark a joint rather than the fingertip. No mesh/tip mapping is assumed.
             var thumbTip = p[3] + (p[3] - p[2]) * .6f;
             var indexTip = p[6] + (p[6] - p[5]) * .6f;
-            if (Vector3.Distance(thumbTip, indexTip) > length * .2f) Reject();
+            bool gapExceeded = Vector3.Distance(thumbTip, indexTip) > length * .2f;
             // ThumbProximal belongs to the palm/web, not the opening boundary.
             var contour = new[] { p[4], p[5], p[6], indexTip, thumbTip, p[3], p[2] };
             var origin = contour[0]; var areaVector = Vector3.zero;
             for (int i = 1; i < contour.Length - 1; i++) areaVector += Vector3.Cross(contour[i] - origin, contour[i + 1] - origin);
             float span = contour.Max(v => Vector3.Distance(v, origin));
-            if (!Finite(areaVector) || span < .0001f || areaVector.magnitude < span * span * .08f) Reject();
+            if (!Finite(areaVector) || span < .0001f || areaVector.magnitude < span * span * .08f) Reject("指わっかを自動配置できませんでした。自動計算した指ポーズで、輪の面積が不足しているか、輪郭が退化しています。");
             var planeOrigin = contour.Aggregate(Vector3.zero, (sum, v) => sum + v) / contour.Length;
             var normal = FitPlane(contour, planeOrigin, areaVector.normalized, span);
             var palmNormal = Vector3.Cross(p[4] - p[0], p[1] - p[0]) * (left ? 1 : -1);
-            if (palmNormal.magnitude < span * span * .01f || Mathf.Abs(Vector3.Dot(normal, palmNormal.normalized)) < .25f) Reject();
+            if (palmNormal.magnitude < span * span * .01f || Mathf.Abs(Vector3.Dot(normal, palmNormal.normalized)) < .25f) Reject("指わっかを自動配置できませんでした。自動計算した指ポーズで、輪の法線と手のひらの向きを対応付けられません。");
             if (Vector3.Dot(normal, palmNormal) < 0) normal = -normal;
-            if (contour.Any(v => Mathf.Abs(Vector3.Dot(v - planeOrigin, normal)) > span * .2f)) Reject();
+            if (contour.Any(v => Mathf.Abs(Vector3.Dot(v - planeOrigin, normal)) > span * .2f)) Reject("指わっかを自動配置できませんでした。自動計算した指ポーズで、輪郭の平面からのずれが大きすぎます。");
             float twiceArea = 0; var weighted = Vector3.zero;
             for (int i = 1; i < contour.Length - 1; i++)
             {
                 float a = Vector3.Dot(Vector3.Cross(contour[i] - origin, contour[i + 1] - origin), normal);
                 twiceArea += a; weighted += (origin + contour[i] + contour[i + 1]) / 3 * a;
             }
-            if (Mathf.Abs(twiceArea) < span * span * .08f) Reject();
+            if (Mathf.Abs(twiceArea) < span * span * .08f) Reject("指わっかを自動配置できませんでした。自動計算した指ポーズで、輪の面積が不足しているか、輪郭が退化しています。");
             center = weighted / twiceArea;
             center -= normal * Vector3.Dot(center - planeOrigin, normal);
             var up = Vector3.ProjectOnPlane(p[4] - center, normal);
-            if (!Finite(center) || up.sqrMagnitude < span * span * .001f) Reject();
+            if (!Finite(center) || up.sqrMagnitude < span * span * .001f) Reject("指わっかを自動配置できませんでした。自動計算した指ポーズで、輪の中心または向きを安定して求められません。");
             var xAxis = Vector3.Cross(up.normalized, normal);
             bool inside = false;
             for (int i = 0, j = contour.Length - 1; i < contour.Length; j = i++)
@@ -144,8 +147,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 float ax = Vector3.Dot(a, xAxis), bx = Vector3.Dot(b, xAxis);
                 if ((ay > 0) != (by > 0) && ax + (bx - ax) * -ay / (by - ay) > 0) inside = !inside;
             }
-            if (!inside) Reject();
+            if (!inside) Reject("指わっかを自動配置できませんでした。自動計算した指ポーズで、推定した中心が輪郭の内側にありません。");
             rotation = Quaternion.LookRotation(normal, up.normalized);
+            return gapExceeded;
         }
 
         // Small symmetric covariance eigensolve: use the least-variance axis,
@@ -181,7 +185,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             }
             var order = Enumerable.Range(0, 3).OrderBy(i => covariance[i, i]).ToArray();
             if (covariance[order[1], order[1]] < .001 || covariance[order[0], order[0]] > covariance[order[1], order[1]] * .5)
-                throw new InvalidOperationException(L(Failure));
+                throw new InvalidOperationException(L("指わっかを自動配置できませんでした。自動計算した指ポーズで、輪の平面を安定して推定できません。"));
             var normal = new Vector3((float)axes[0, order[0]], (float)axes[1, order[0]], (float)axes[2, order[0]]).normalized;
             return Vector3.Dot(normal, hint) < 0 ? -normal : normal;
         }

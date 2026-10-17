@@ -1,6 +1,7 @@
 using System;
 using System.Linq;
 using LumaKroma.Sps2SetupAssistant.Editor.Generation;
+using LumaKroma.Sps2SetupAssistant.Editor.Localization;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -45,16 +46,81 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             Assert.That(Quaternion.Angle(rotation, turn * facing), Is.LessThan(.05f));
         }
 
-        [TestCase("open")] [TestCase("collinear")] [TestCase("nan")] [TestCase("nonplanar")] [TestCase("missing")]
-        public void UnsafeGeometryDoesNotReturnCalibration(string kind)
+        [TestCase("collinear", "指わっかを自動配置できませんでした。自動計算した指ポーズで、輪の面積が不足しているか、輪郭が退化しています。")]
+        [TestCase("nan", "指わっかを自動配置できませんでした。自動計算した指ポーズで、7点の有限なボーン位置を取得できません。")]
+        [TestCase("nonplanar", "指わっかを自動配置できませんでした。自動計算した指ポーズで、輪の法線と手のひらの向きを対応付けられません。")]
+        [TestCase("missing", "指わっかを自動配置できませんでした。自動計算した指ポーズで、7点の有限なボーン位置を取得できません。")]
+        public void UnsafeGeometryDoesNotReturnCalibration(string kind, string reason)
         {
             var p = Closed();
-            if (kind == "open") { p[5].x += .2f; p[6].x += .2f; }
             if (kind == "collinear") for (int i = 0; i < p.Length; i++) p[i] = Vector3.up * i * .01f;
             if (kind == "nan") p[2].x = float.NaN;
             if (kind == "nonplanar") p[2].z = .1f;
             if (kind == "missing") p = p.Take(6).ToArray();
-            Assert.Throws<InvalidOperationException>(() => FingerRingAutoCalibration.EstimateGeometry(p, true, out _, out _));
+            // A large gap must not bypass any of the later geometry checks.
+            var error = Assert.Throws<InvalidOperationException>(() => FingerRingAutoCalibration.EstimateGeometry(p, true, out _, out _));
+            Assert.That(error.Message, Is.EqualTo(Sps2Localization.L(reason)));
+        }
+
+        [TestCase(.199f, false)] [TestCase(.2f, false)] [TestCase(.201f, true)]
+        public void TipGapBoundaryWarnsWithoutRejectingValidContour(float ratio, bool expectedWarning)
+        {
+            // Two vertical terminal segments make the gap independent of segment
+            // length. The opening is a rectangle with a known interior centroid.
+            float length = .02f + .02f * 1.6f;
+            float gap = length * ratio;
+            var p = new[] {
+                new Vector3(0, -.02f, 0), new Vector3(-.02f, 0, 0),
+                new Vector3(-gap, .02f, 0), new Vector3(-gap, .04f, 0),
+                Vector3.zero, new Vector3(0, .02f, 0), new Vector3(0, .04f, 0)
+            };
+            foreach (bool left in new[] { true, false })
+            {
+                var points = p.Select(v => new Vector3(left ? v.x : -v.x, v.y, v.z)).ToArray();
+                bool warning = FingerRingAutoCalibration.EstimateGeometry(points, left, out var center, out var rotation);
+                Assert.That(warning, Is.EqualTo(expectedWarning));
+                Assert.That(center.x, Is.InRange(-gap, gap));
+                Assert.That(center.y, Is.InRange(.02f, .052f));
+                Assert.That(float.IsNaN(center.sqrMagnitude) || float.IsInfinity(center.sqrMagnitude), Is.False);
+                Assert.That(Mathf.Abs(rotation.x * rotation.x + rotation.y * rotation.y + rotation.z * rotation.z + rotation.w * rotation.w - 1), Is.LessThan(.00001f));
+                Assert.That(Vector3.Dot(rotation * Vector3.forward, Vector3.forward), Is.GreaterThan(.999f));
+            }
+        }
+
+        [Test]
+        public void WidePlanarContourWarnsAndStillReturnsFiniteInteriorCenter()
+        {
+            // This particular open fixture passes every later check. Other open
+            // contours still fail whenever their plane/area/normal is unusable.
+            var p = Closed(); p[5].x += .2f; p[6].x += .2f;
+            Assert.That(FingerRingAutoCalibration.EstimateGeometry(p, true, out var center, out var rotation), Is.True);
+            Assert.That(center.x, Is.InRange(-.02f, .22f));
+            Assert.That(center.y, Is.InRange(0f, .052f));
+            Assert.That(float.IsNaN(center.sqrMagnitude) || float.IsInfinity(center.sqrMagnitude), Is.False);
+            Assert.That(Vector3.Dot(rotation * Vector3.forward, Vector3.forward), Is.GreaterThan(.999f));
+        }
+
+        [Test]
+        public void FailedEstimateDoesNotAppendPlacementWarning()
+        {
+            var go = new GameObject("Invalid avatar");
+            var warnings = new System.Collections.Generic.List<string> { "Existing warning" };
+            try
+            {
+                var avatar = go.AddComponent<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>();
+                var part = Model.FullSetupCatalog.CreateDefault().parts.Find(p => p.id == "fingerRingLeft");
+                Assert.Throws<InvalidOperationException>(() => FingerRingAutoCalibration.Estimate(avatar, part, warnings));
+                Assert.That(warnings, Is.EqualTo(new[] { "Existing warning" }));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(go); }
+        }
+
+        [TestCase(true)] [TestCase(false)]
+        public void InvalidReferencePoseReportsPoseFailure(bool nullMuscles)
+        {
+            var pose = new HumanPose { muscles = nullMuscles ? null : new float[HumanTrait.MuscleCount - 1] };
+            var error = Assert.Throws<InvalidOperationException>(() => FingerRingAutoCalibration.ApplyReferencePose(ref pose, true));
+            Assert.That(error.Message, Is.EqualTo(Sps2Localization.L("指わっかを自動配置できませんでした。自動計算用の指ポーズを設定できません。")));
         }
 
         [Test]

@@ -35,6 +35,61 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             if (language != DisplayLanguage.Japanese) Assert.That(Sps2Localization.L(message, language), Is.Not.EqualTo(message));
         }
 
+        [TestCase(DisplayLanguage.Japanese, "自動計算した指ポーズ")]
+        [TestCase(DisplayLanguage.English, "automatically calculated finger pose")]
+        [TestCase(DisplayLanguage.Korean, "자동 계산된 손가락 포즈")]
+        [TestCase(DisplayLanguage.ChineseSimplified, "自动计算的手指姿势")]
+        [TestCase(DisplayLanguage.ChineseTraditional, "自動計算的手指姿勢")]
+        public void FingerRingFailureReasonsAreDistinctAndTranslatedWithoutJapaneseFallback(DisplayLanguage language, string poseContext)
+        {
+            var reasons = new[] {
+                "指わっかを自動配置できませんでした。必要な手指のHumanoidボーンを取得できません。",
+                "指わっかを自動配置できませんでした。手指のボーン参照がアバター内の一意なボーンを指していません。",
+                "指わっかを自動配置できませんでした。自動計算用の指ポーズを設定できません。",
+                "指わっかを自動配置できませんでした。自動計算した指ポーズで、7点の有限なボーン位置を取得できません。",
+                "指わっかを自動配置できませんでした。自動計算した指ポーズで、指の骨区間が短すぎます。",
+                "指わっかを自動配置できませんでした。自動計算した指ポーズで、輪の面積が不足しているか、輪郭が退化しています。",
+                "指わっかを自動配置できませんでした。自動計算した指ポーズで、輪の平面を安定して推定できません。",
+                "指わっかを自動配置できませんでした。自動計算した指ポーズで、輪の法線と手のひらの向きを対応付けられません。",
+                "指わっかを自動配置できませんでした。自動計算した指ポーズで、輪郭の平面からのずれが大きすぎます。",
+                "指わっかを自動配置できませんでした。自動計算した指ポーズで、輪の中心または向きを安定して求められません。",
+                "指わっかを自動配置できませんでした。自動計算した指ポーズで、推定した中心が輪郭の内側にありません。"
+            };
+            var translated = reasons.Select(reason => Sps2Localization.L(reason, language)).ToArray();
+            Assert.That(translated.Distinct().Count(), Is.EqualTo(reasons.Length));
+            for (int i = 0; i < reasons.Length; i++)
+            {
+                Assert.That(translated[i], Is.Not.Null.And.Not.Empty);
+                if (language != DisplayLanguage.Japanese)
+                {
+                    Assert.That(translated[i], Is.Not.EqualTo(reasons[i]));
+                    Assert.That(translated[i], Does.Not.Match(@"[\p{IsHiragana}\p{IsKatakana}]"));
+                }
+                if (i >= 3)
+                {
+                    Assert.That(translated[i], Does.Contain(poseContext));
+                    Assert.That(translated[i], Does.Not.Contain("Humanoid"));
+                }
+            }
+        }
+
+        [TestCase(DisplayLanguage.Japanese, "仮配置", "調整")]
+        [TestCase(DisplayLanguage.English, "provisionally", "adjust")]
+        [TestCase(DisplayLanguage.Korean, "임시 배치", "조정")]
+        [TestCase(DisplayLanguage.ChineseSimplified, "临时放置", "调整")]
+        [TestCase(DisplayLanguage.ChineseTraditional, "暫時放置", "調整")]
+        public void FingerRingGapWarningExplainsProvisionalPlacementAndAdjustment(DisplayLanguage language, string placement, string adjustment)
+        {
+            const string message = "自動計算した指ポーズでは、推定した指先の間隔が目安を超えています。指わっかは仮配置しました。実際に使う指のポーズで位置と向きを確認し、必要に応じて調整してください。";
+            string translated = Sps2Localization.L(message, language);
+            Assert.That(translated, Does.Contain(placement).And.Contain(adjustment));
+            if (language != DisplayLanguage.Japanese)
+            {
+                Assert.That(translated, Is.Not.EqualTo(message));
+                Assert.That(translated, Does.Not.Match(@"[\p{IsHiragana}\p{IsKatakana}]"));
+            }
+        }
+
         [Test]
         public void FirstUiPreferenceAndNewSetupUseSystemButSavedChoicesRemain()
         {

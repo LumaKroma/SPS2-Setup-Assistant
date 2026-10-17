@@ -414,7 +414,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                                 if (!pristine) throw new InvalidOperationException(L("未完了の指わっか調整が残っています。設定を保持して処理を中止しました。該当する指わっかをオフにしてください。"));
                                 part.fingerRing = bestEffort
                                     ? FingerRingCalibrationUtility.CaptureProvisional(avatar.transform, thumb, index, part.fingerRing?.thumbWeight ?? .5f)
-                                    : FingerRingAutoCalibration.Estimate(avatar, part);
+                                    : FingerRingAutoCalibration.Estimate(avatar, part, warnings);
                                 if (bestEffort) warnings.Add(part.name + ": " + L("指わっかは現在の指の姿勢を基準に仮配置しました。位置・向き・サイズを手動で調整してください。"));
                             }
                             placement = Place(part, avatar, basis, surface);

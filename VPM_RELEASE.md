@@ -1,5 +1,28 @@
 # VPM release handoff
 
+## 1.2.0-beta.3 preparation (2026-10-17, unpublished)
+
+Prepare one common VPM package and the existing official Fury/NDMF VPAI installers
+from the independent product source. Use new local dev.1 output directories and
+preserve published beta.2/stable artifacts, GUIDs, dependency ranges and legacy
+migration boundaries. The reviewed functional patch is
+6d1922254718e82e569fec62c98b214cddafb420d912da8ef63d6c1d79cb7837 on
+c3d25d24b1bdc3f306df68e74e8d6d49365f6d8e; subsequent changes prepare metadata/docs
+only. Record the resulting local source commit and actual archive hashes in the
+candidate evidence. Do not dispatch release/listing workflows or create a tag.
+
+Track SPS2-NDMF-JSON-REF-20261017 in Docs/KNOWN_ISSUES.md. The full test result
+remains 206 passed / 2 failed, with identical failures reproduced on baseline.
+Before publication, determine actual Object-reference save/reload/update impact
+or document a separately reviewed disposition and explicit scope. Do not change
+the tests to expect null or omit their failures from release validation.
+
+Existing native Play, real-rig reference/open/return and saved calibration evidence
+does not certify VRC PC, authored Gestures, final materials/prefabs or fresh
+installation of the unpublished package. Installing through the generated VPAI
+requires publication in the listing and remains a separate delivery gate.
+Candidate creation/inspection authorizes no publication or promotion.
+
 ## 1.2.0-beta.1 preparation (2026-10-11, unpublished)
 
 Current public stable is 1.1.1 (tag commit

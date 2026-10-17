@@ -8,7 +8,7 @@ if ((Get-FileHash -LiteralPath $creator -Algorithm SHA256).Hash -ne '416709B3A70
 $out=[IO.Path]::GetFullPath((Join-Path $root $OutputDirectory))
 if (-not $out.StartsWith($root+[IO.Path]::DirectorySeparatorChar,[StringComparison]::OrdinalIgnoreCase)) { throw 'Output must be inside checkout' }
 [IO.Directory]::CreateDirectory($out)|Out-Null
-$version='1.2.0-beta.2'
+$version='1.2.0-beta.3'
 $distribution=Join-Path $root "Distribution/$version"
 foreach ($family in @('Fury','NDMF')) {
     $name="SPS2-Setup-Assistant-$version-$family-Installer"

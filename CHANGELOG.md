@@ -1,3 +1,11 @@
+## 1.2.0-beta.3 - Prepared, unpublished (2026-10-17)
+
+- Warn after successful calibration when the estimated fingertip gap exceeds the existing 0.2 guideline; retain strict geometry/frame checks and saved/manual calibration.
+- Report distinct, localized automatic-placement rejection reasons without assuming an incorrect Humanoid mapping.
+- Keep the existing reference muscles, 0.6 tip extension, 1.6 length factor, tracking frames, weights and serialization schema. No temporary Avatar range standardization or distal-local tip trial is included.
+- Native Play cases pass 5/5. Package regression is 206 passed and 2 failed; both NDMF Object-reference roundtrip failures also reproduce on the unchanged baseline. Track them as SPS2-NDMF-JSON-REF-20261017; actual save/update impact is unresolved.
+- Real FBX native-constraint pose and save/reload observations are distinct from SDK avatar builds and VRC client Gesture certification. No publication is authorized by this preparation.
+
 ## 1.2.0-beta.1 - Prepared, unpublished (2026-10-11)
 
 - Add explicit optional VRCFury / SPS for NDMF family selection for new setups,

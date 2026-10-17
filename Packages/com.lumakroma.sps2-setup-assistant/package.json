@@ -1,7 +1,7 @@
 {
   "name": "com.lumakroma.sps2-setup-assistant",
   "displayName": "SPS2 Setup Assistant",
-  "version": "1.2.0-beta.2",
+  "version": "1.2.0-beta.3",
   "description": "SPS2 authoring setup with selectable VRCFury or SPS for NDMF integration for Humanoid VRChat avatars.",
   "unity": "2022.3",
   "author": {

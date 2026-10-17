@@ -1,0 +1,7 @@
+{
+  "vpmRepositories": ["https://lumakroma.github.io/SPS2-Setup-Assistant/index.json", "https://vcc.vrcfury.com/", "https://lilxyzw.github.io/vpm-repos/vpm.json"],
+  "vpmDependencies": {"com.lumakroma.sps2-setup-assistant": "1.2.0-beta.3", "com.vrcfury.vrcfury": ">=1.0.0", "jp.lilxyzw.liltoon": ">=1.0.0"},
+  "includePrerelease": true,
+  "silentIfInstalled": false,
+  "minimumUnity": "2022.3"
+}
