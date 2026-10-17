@@ -1,3 +1,16 @@
+# 1.2.0-beta.3 dev.1 candidate audit — 2026-10-17
+
+Product source is 756ce732fcb256f01e7c0c21b0a13cd62d6d1e4b. Two clean-source
+builds match for the VPM ZIP and both official family installers/customer ZIPs.
+See [the final candidate audit](Docs/RELEASE_120_BETA3_VALIDATION.md) for hashes,
+93-entry/52-GUID checks, source-byte correspondence, retention scope and residue.
+The executable result remains 206 PASS / 2 FAIL, with both failures reproduced
+on baseline; track [SPS2-NDMF-JSON-REF-20261017](Docs/KNOWN_ISSUES.md).
+Fresh final-version installation/update and VRC client gates remain unverified.
+No publication, listing update, upload or Unity startup was performed for packaging.
+
+The following records are historical evidence for their stated revisions.
+
 # VPM preparation evidence — 2026-09-13
 
 Source baseline40642de3108d603d668bf03eb405856321f88668; Issue121. No runtime change.
