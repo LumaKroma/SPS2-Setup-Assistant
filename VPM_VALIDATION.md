@@ -1,3 +1,32 @@
+# 1.2.0-beta.4 dev.1 candidate audit — 2026-10-18
+
+Status: local candidate prepared; public wording awaits user approval. No push,
+tag, Release, VPM/Pages update or Unity startup occurred in this preparation.
+
+- Source: `e1fd1f2e50011a337e85959ed6733450c48e98eb`; functional source
+  `38599b349b7495348c90df99c5e4d41a52c9e905`. All 114 C#/asmdef files match the
+  retained validated code inventory. Author: LumaKroma. This record is added later
+  and does not change archive inputs.
+- Clean detached export checkout; existing package validator/whitespace checks
+  pass. Two builds reproduce all five archives exactly. Common VPM ZIP SHA256:
+  `374ca96c40cce27866a37d5cfc53aea3e5f73ee7fc727ba03c85bd6fcbdb7ec8`.
+- ZIP has 88 source-matching entries. Compared with published beta.3, only the
+  five intentionally removed NDMF plugin/assembly/folder entries disappear;
+  all 49 surviving meta files match. No new payload paths, dependencies, tests,
+  private contracts or avatar evidence. Manifest changes only version;
+  Runtime settings data and the storage serialization section remain unchanged.
+- Official VPAI 1.1.6 creator/template hashes verified against the existing pins.
+  Each installer has the same three assets/GUIDs; only config differs from the
+  official template. Dependency ranges, confirmation behavior and licenses stay
+  unchanged. Customer ZIPs contain exactly installer + README + two licenses.
+- Candidate and full hashes: workspace sibling
+  `deliverables/SPS2-Setup-Assistant-1.2.0-beta.4-dev.1/CANDIDATE.json`.
+  Public-copy proposal/evidence: sibling `sps2-beta4-preparation/`.
+- Existing exact-code Fury/NDMF validation is in package VALIDATION.md. Final
+  beta.4 published installation/update and VRC client checks remain unexecuted.
+  Reuse [the delivery procedure](Docs/RELEASE_120_BETA4_DELIVERY.md), retaining
+  the prior ALCOM Select/Invoke limitation and warm-dependency scope.
+
 # 1.2.0-beta.3 dev.1 candidate audit — 2026-10-17
 
 Product source is 756ce732fcb256f01e7c0c21b0a13cd62d6d1e4b. Two clean-source
