@@ -1,3 +1,17 @@
+# Issue186 Fury Disabled-only restoration — 2026-10-18
+
+Local candidate on `issue/186-ndmf-native-build`, based on `bcf42502bf11cc20acdf367265d3a376f2f687de`. The previous NDMF delegation is retained. Compiled source and asmdef hashes (114 files) match both retained validation packages; only documentation was edited after execution.
+
+- Unity 2022.3.22f1, VRChat SDK 3.10.4, VRCFury 1.1403.0. Dual-backend fixture also contains SPSNDMF 1.1430.0, MA 1.18.1 and NDMF 1.14.3; no dependency versions changed.
+- Explicit Disabled: existing MANUKA/AHGV3 Play probe passes 56 Socket and 238 Legacy/Stealth transitions, including readback and restored output state. Callbacks detached and parameters restored. Menus and expression parameters are identical to the Assistant-absent native Disabled baseline.
+- Public SDK preprocess on isolated avatar clones: Auto→ON, Auto→OFF, ForceOn and ForceOff succeed without Assistant restoration. Auto→ON also succeeds with missing settings GUID and unrecorded part tokens. Unconfigured + one-time Skip succeeds with restoration. WD counts alone are not used to decide the mode.
+- Focused Editor tests: Fury-only 11 passed, 0 failed, 1 skipped (NDMF unavailable); dual-backend 4 passed, 0 failed, 0 skipped. Coverage includes native diagnostic gate, ambiguous ownership, missing authoring data and both native name writers.
+- Existing Fury and NDMF fixtures both complete SDK Build through the public builder API. The NDMF fixture has missing/stale Assistant metadata. No upload. NDMF bundle retained; Fury success JSON retained, but its temporary bundle was absent after the subsequent build.
+- Normal Fury Apply on a copied scene: saved override updates native name; pose and Depth Actions survive save/reopen. Full Apply also renews settings identity as before; the native name writer alone leaves oscId unchanged.
+- Package validator and git whitespace check pass. Original packages/manifests/locks restored after normal Editor exit. Protected original files unchanged: 531 in Fury fixture and 306 in dual-backend fixture. New local validation scenes/assets remain.
+- Evidence: private workspace sibling `fury-disabled-only-validation/RESULT.md`, raw results, source inventory and teardown records. The reused lifecycle probes contain an old hard-coded head field; use the source inventory and this handoff's commit, not that field. `DisabledConsistent.json` actually reports native unresolved WD and is an OFF-dominant Disabled case, not proof of consistent Disabled.
+- Limits: MMD override and consistent Disabled without native W are source-verified, not exercised here. Generated diagnostic schema is observed at Fury 1.1403.0, not a public all-version API. VRC client, remote-player and other-avatar behavior remain unverified. This is focused candidate validation, not a claim that the full test suite passed.
+
 # Issue186 native NDMF build delegation - 2026-10-18
 
 Candidate branch `issue/186-ndmf-native-build` removes Assistant NDMF build passes. Focused existing-suite tests cover NDMF-only missing settings asset bypass in Fury SDK callbacks and native Socket display-name/oscId persistence. Static package and whitespace checks are recorded with the implementation handoff; Unity compile, EditMode execution, native build output, save/reopen and VRC PC gates remain separate exact-head evidence.

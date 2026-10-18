@@ -1,3 +1,39 @@
+# Issue186 Fury native build with Disabled restoration — 2026-10-18 (local candidate)
+
+The Assistant no longer changes native Socket names, menus, ordering, pagination,
+expression defaults or saved flags during build. Both families receive their saved
+localized/overridden Socket names at generation and Apply. Existing generated Fury
+setups need Apply to adopt those names; upgrading alone keeps their native saved
+names. A display-name update preserves poses and Depth Actions. The name writer
+does not change oscId; full Apply keeps its existing settings-snapshot duplication
+and corresponding identity renewal. User source assets are preserved.
+
+Native Fury owns the SPS menu and its Options, Auto Mode, Legacy Compatibility and
+Stealth controls, including visibility, global English labels and persistence.
+The previous SPS2/settings menu layout and separately forced saved/default values
+are removed. Native SpsOptions, when authored, remains authoritative. The Assistant
+Local Only switch is hidden for both families; its legacy stored value is retained
+but no longer hides/shows the native Stealth control. Menu language affects owned
+Socket names only. Existing avatars need rebuilding/reuploading for build changes.
+
+One SDK callback after Fury retains the existing owned Socket/Legacy/Stealth FX
+baseline restoration only when native output reports unresolved WD under effective
+Disabled. The observed Fury 1.1403.0 first unsynced Bool diagnostic `VF W...` means
+`analysis.isBroken && mode == Disabled`. This includes unconfigured + Skip and
+excludes Auto→ON/OFF, ForceOn/ForceOff and native MMD override. Consistent Disabled
+needs no repair. This is an observed generated-output schema, not a public mode API
+or an all-version guarantee. The current prepended diagnostic is used, never a stale
+flag elsewhere in the parameter array. Other builds return before settings-asset
+lookup; missing/stale Assistant authoring data cannot block them.
+
+Only affected FX branches are cloned for the restoration. Native parameter names,
+defaults, saved values, menus, WD settings and other branches are preserved. Existing
+oscId tokens map owned sockets to native toggle parameters independently of display
+names. Ambiguous/unsupported affected output still stops a required restoration.
+NDMF remains fully delegated to SPSNDMF/MA/NDMF, with no Assistant build plugin.
+Exact-candidate validation is recorded separately; VRC client checks remain open.
+This amendment supersedes conflicting historical Fury/NDMF menu/build claims below.
+
 # Issue186 NDMF native build delegation - 2026-10-18 (Unity validation pending)
 
 The NDMF family is authored as native SPSNDMF Sockets with MA attachments. SPSNDMF, MA and NDMF own build output. The Assistant has no NDMF capture/finalize plugin and its common SDK callbacks inspect Fury sockets only. NDMF builds do not load Assistant settings assets or require them to match native Socket ownership.

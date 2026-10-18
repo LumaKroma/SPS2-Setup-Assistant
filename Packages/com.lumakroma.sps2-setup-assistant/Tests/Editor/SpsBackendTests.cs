@@ -7,6 +7,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 using VRC.SDK3.Avatars.Components;
+using VRC.SDK3.Avatars.ScriptableObjects;
 
 namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
 {
@@ -106,8 +107,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
                 var data = new SerializedObject(native);
                 data.FindProperty("oscId").stringValue = "__SPS2_0123456789abcdef0123456789abcdef_mouth";
                 data.ApplyModifiedPropertiesWithoutUndo();
-                Assert.IsTrue(Sps2BuildIntegration.Run(avatar, true));
-                Assert.IsTrue(Sps2BuildIntegration.Run(avatar, false));
+                Assert.IsTrue(Sps2BuildIntegration.Run(avatar));
             }
             finally { UnityEngine.Object.DestroyImmediate(avatar); }
         }
@@ -129,15 +129,64 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             finally { UnityEngine.Object.DestroyImmediate(avatar); }
         }
 
-        [Test]
-        public void NativeNdmfSocketNameTracksSavedDisplayWithoutChangingIdentity()
+        [TestCase("VF WNV", false, false, 0, true)]
+        [TestCase("VF W", false, false, 0, true)]
+        [TestCase("VF NV", false, false, 0, false)]
+        [TestCase("VF 2022.3.22f1", false, false, 0, false)]
+        [TestCase("VF WNV", true, false, 0, false)]
+        [TestCase("VF WNV", false, true, 0, false)]
+        [TestCase("VF WNV", false, false, 1, false)]
+        [TestCase("VF Whatever", false, false, 0, false)]
+        public void RestorationUsesCurrentNativeUnresolvedWdDiagnostic(string name, bool synced, bool saved, float value, bool expected)
         {
-            if (!VrcFuryCapabilities.For(SpsFamily.SpsForNdmf).CanGenerate) Assert.Ignore("Pinned shipped SPSNDMF fixture required.");
+            var asset = ScriptableObject.CreateInstance<VRCExpressionParameters>();
+            try
+            {
+                asset.parameters = new[] {
+                    new VRCExpressionParameters.Parameter { name = name, valueType = VRCExpressionParameters.ValueType.Bool,
+                        networkSynced = synced, saved = saved, defaultValue = value },
+                    new VRCExpressionParameters.Parameter { name = "VF WNV", valueType = VRCExpressionParameters.ValueType.Bool,
+                        networkSynced = false, saved = false }
+                };
+                Assert.AreEqual(expected, Sps2BuildIntegration.NeedsDisabledRestoration(asset));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(asset); }
+        }
+
+        [Test]
+        public void NativeOnlyFuryBuildDoesNotRequireAuthoringAsset()
+        {
+            if (!VrcFuryCapabilities.For(SpsFamily.VrcFury).CanGenerate) Assert.Ignore("Shipped VRCFury fixture required.");
+            var avatar = new GameObject("Fury native-only callback fixture");
+            var parameters = ScriptableObject.CreateInstance<VRCExpressionParameters>();
+            try
+            {
+                var descriptor = avatar.AddComponent<VRCAvatarDescriptor>();
+                var native = avatar.AddComponent(VrcFuryApi.FindType(SpsBackend.SocketType(SpsFamily.VrcFury)));
+                var data = new SerializedObject(native);
+                data.FindProperty("oscId").stringValue = "__SPS2_0123456789abcdef0123456789abcdef_mouth";
+                data.ApplyModifiedPropertiesWithoutUndo();
+                parameters.parameters = new[] { new VRCExpressionParameters.Parameter { name = "VF NV",
+                    valueType = VRCExpressionParameters.ValueType.Bool, networkSynced = false, saved = false } };
+                descriptor.expressionParameters = parameters;
+                // This same missing identity still fails authoring discovery above.
+                Assert.IsTrue(Sps2BuildIntegration.Run(avatar));
+                Assert.AreSame(parameters, descriptor.expressionParameters);
+                Assert.AreEqual("__SPS2_0123456789abcdef0123456789abcdef_mouth", data.FindProperty("oscId").stringValue);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(avatar); UnityEngine.Object.DestroyImmediate(parameters); }
+        }
+
+        [TestCase(SpsFamily.VrcFury)]
+        [TestCase(SpsFamily.SpsForNdmf)]
+        public void NativeSocketNameTracksSavedDisplayWithoutChangingIdentity(SpsFamily family)
+        {
+            if (!VrcFuryCapabilities.For(family).CanGenerate) Assert.Ignore("Pinned shipped backend fixture required.");
             var pose = new GameObject("NDMF name fixture");
             try
             {
                 var part = new SocketSettings { id = "mouth", name = "Internal mouth" };
-                var setup = new SetupSettings { family = SpsFamily.SpsForNdmf, menuLanguage = DisplayLanguage.English };
+                var setup = new SetupSettings { family = family, menuLanguage = DisplayLanguage.English };
                 using (SpsBackend.Use(setup.family))
                 {
                     var native = VrcFuryCompatibility.CreateSocket(pose, part, setup, new System.Collections.Generic.List<string>());

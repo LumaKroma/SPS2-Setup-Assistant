@@ -1,3 +1,14 @@
+# 2026-10-18 scope correction (local candidate)
+
+Native-only comparison isolates the reported MANUKA/AHGV3 failure to effective
+Fix Write Defaults Disabled. Both native Auto→ON and Auto→OFF pass the same
+56 Socket and 238 Legacy/Stealth transitions without the Assistant. The retained
+restoration is now gated by native unresolved-Disabled output after Fury; it does
+not alter Auto/Force builds. See the current OUTPUT_CONTRACT amendment. The old
+saved/default/menu statements below are historical: those values and menus now
+remain native for both backends, including Disabled. VRC client behavior remains
+a separate gate.
+
 # 1.1.0 owned Socket OFF restoration
 
 This amends the native-toggle implementation in Documentation~/OUTPUT_CONTRACT.md.

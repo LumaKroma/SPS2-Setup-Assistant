@@ -183,14 +183,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         }
 
         private static string SocketName(SocketSettings part, SetupSettings setup) =>
-            setup.family == SpsFamily.SpsForNdmf
-                ? SocketDisplayNames.Resolve(part, setup.menuLanguage) : part.name;
+            SocketDisplayNames.Resolve(part, setup.menuLanguage);
 
-        // Native SPSNDMF consumes this saved name directly. A label-only Apply
+        // Both native backends consume this saved name directly. A label-only Apply
         // should not rebuild Depth Actions or disturb an adjusted Socket pose.
         internal static void ConfigureDisplayName(Component component, SocketSettings part, SetupSettings setup)
         {
-            if (setup.family != SpsFamily.SpsForNdmf) return;
             var data = SocketData(component);
             var name = SocketName(part, setup);
             if (data.FindProperty("name").stringValue == name) return;
@@ -295,31 +293,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             property.stringValue = identity;
             data.ApplyModifiedProperties();
             PrefabUtility.RecordPrefabInstancePropertyModifications(socket);
-        }
-
-        internal static void SetBuildToken(Component socket, string token)
-        {
-            var data = SocketData(socket);
-            data.FindProperty("name").stringValue = token;
-            var identity = data.FindProperty("oscId");
-            if (identity != null) identity.stringValue = token;
-            data.ApplyModifiedPropertiesWithoutUndo();
-        }
-
-        internal static void ValidateBuildTokens(GameObject avatar, Sps2SetupContext root)
-        {
-            var tokens = new HashSet<string>(root.sockets.Select(s => "__SPS2_" + root.identity + "_" + s.id));
-            if (tokens.Count != root.sockets.Count) throw new InvalidOperationException(L("SPS2 の部位識別子が重複しています。"));
-            foreach (var socket in AllSockets(avatar))
-            {
-                if (root.sockets.Any(s => s.socket == socket)) continue;
-                var data = SocketData(socket);
-                if (tokens.Contains(data.FindProperty("name").stringValue) || tokens.Contains(data.FindProperty("oscId")?.stringValue))
-                    throw new InvalidOperationException(L("SPS2 のビルド識別子と既存 Socket が衝突しています。"));
-            }
-            foreach (var plug in avatar.GetComponentsInChildren<Component>(true).Where(c => c != null && c.GetType().FullName == PlugType))
-                if (tokens.Contains(new SerializedObject(plug).FindProperty("name")?.stringValue))
-                    throw new InvalidOperationException(L("SPS2 のビルド識別子と Plug 名が衝突しています。"));
         }
 
         internal static int AutoSocketCount(GameObject avatar) => AllSockets(avatar).Count(s =>

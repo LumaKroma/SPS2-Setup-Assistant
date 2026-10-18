@@ -238,49 +238,5 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             }
         }
 
-        [TestCase(DisplayLanguage.English, "Next")]
-        [TestCase(DisplayLanguage.Korean, "다음")]
-        [TestCase(DisplayLanguage.ChineseSimplified, "下一页")]
-        [TestCase(DisplayLanguage.ChineseTraditional, "下一頁")]
-        public void PaginationPreservesControlIdentityOrderAndParameters(DisplayLanguage language, string nextLabel)
-        {
-            var menu = ScriptableObject.CreateInstance<VRCExpressionsMenu>();
-            var controls = Enumerable.Range(0, 18).Select(i => new VRCExpressionsMenu.Control
-            {
-                name = "User " + i, type = VRCExpressionsMenu.Control.ControlType.Toggle,
-                parameter = new VRCExpressionsMenu.Control.Parameter { name = "unchanged/" + i }, value = i
-            }).ToArray();
-            menu.controls = controls.ToList();
-            try
-            {
-                Sps2BuildIntegration.Paginate(menu, language);
-                var page = menu;
-                int index = 0;
-                while (page != null)
-                {
-                    Assert.That(page.controls.Count, Is.LessThanOrEqualTo(8));
-                    VRCExpressionsMenu next = null;
-                    foreach (var control in page.controls)
-                    {
-                        if (control.type == VRCExpressionsMenu.Control.ControlType.SubMenu)
-                        { Assert.That(control.name, Is.EqualTo(nextLabel)); next = control.subMenu; continue; }
-                        Assert.That(control, Is.SameAs(controls[index]));
-                        Assert.That(control.parameter.name, Is.EqualTo("unchanged/" + index));
-                        Assert.That(control.value, Is.EqualTo(index++));
-                    }
-                    page = next;
-                }
-                Assert.That(index, Is.EqualTo(18));
-            }
-            finally
-            {
-                var page = menu;
-                while (page != null)
-                {
-                    var next = page.controls.LastOrDefault()?.subMenu;
-                    UnityEngine.Object.DestroyImmediate(page); page = next;
-                }
-            }
-        }
     }
 }

@@ -151,18 +151,29 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
         }
 
         [Test]
-        public void ReservedBuildNameOnPlugIsRejectedBeforeNativeRenaming()
+        public void AmbiguousNativeToggleMappingIsRejectedBeforeRestoration()
         {
-            if (!VrcFuryCapabilities.Current.TestPlug) Assert.Ignore("Native Plug fixture unavailable.");
             var avatar = new GameObject("Collision fixture");
+            var menu = ScriptableObject.CreateInstance<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu>();
+            var parameters = ScriptableObject.CreateInstance<VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionParameters>();
             try
             {
+                var descriptor = avatar.AddComponent<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>();
+                descriptor.expressionsMenu = menu; descriptor.expressionParameters = parameters;
                 var root = new Sps2SetupContext { identity = "0123456789abcdef0123456789abcdef" };
                 root.sockets.Add(new GeneratedSocket { id = "mouth" });
-                VrcFuryCompatibility.CreateTestPlug(avatar, Array.Empty<Renderer>(), "__SPS2_" + root.identity + "_mouth");
-                Assert.Throws<InvalidOperationException>(() => VrcFuryCompatibility.ValidateBuildTokens(avatar, root));
+                for (int i = 0; i < 2; i++) menu.controls.Add(new VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu.Control {
+                    name = "Native label " + i,
+                    type = VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu.Control.ControlType.Toggle,
+                    parameter = new VRC.SDK3.Avatars.ScriptableObjects.VRCExpressionsMenu.Control.Parameter {
+                        name = "VF79_" + Sps2SetupStorage.Token(root, "mouth") }
+                });
+                Assert.Throws<InvalidOperationException>(() => Sps2BuildIntegration.Complete(descriptor, root));
+                Assert.AreSame(menu, descriptor.expressionsMenu);
+                Assert.AreSame(parameters, descriptor.expressionParameters);
+                Assert.AreEqual("Native label 0", menu.controls[0].name);
             }
-            finally { DisposeUndoFixture(avatar); }
+            finally { DisposeUndoFixture(avatar); UnityEngine.Object.DestroyImmediate(menu); UnityEngine.Object.DestroyImmediate(parameters); }
         }
 
         private static void DisposeUndoFixture(GameObject obj)
