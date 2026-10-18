@@ -510,6 +510,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                         if (!SamePart(oldPart, part)) VrcFuryCompatibility.Configure(generated.socket, part, settings, warnings);
                         else if (previous.autoMode != settings.autoMode || previous.legacy != settings.legacy)
                             VrcFuryCompatibility.ConfigureCommon(generated.socket, settings, !part.IsFingerRing);
+                        VrcFuryCompatibility.ConfigureDisplayName(generated.socket, part, settings);
                         if (part.IsFingerRing)
                         {
                             var placement = placements[part.id];

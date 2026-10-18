@@ -36,6 +36,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Localization
         }
         private static readonly Dictionary<string, string[]> Translations = new Dictionary<string, string[]>
         {
+            { "NDMF は標準のメニュー、ステルス、初期値、保存設定を使用します。メニュー言語はソケット名のみに適用されます。", new[] { "NDMF uses native menus, Stealth, defaults and saved values. Menu language changes Socket names only.", "NDMF는 기본 메뉴, 스텔스, 기본값 및 저장 설정을 사용합니다. 메뉴 언어는 소켓 이름에만 적용됩니다.", "NDMF 使用原生菜单、隐身、默认值和保存设置。菜单语言仅影响插槽名称。", "NDMF 使用原生選單、隱身、預設值和儲存設定。選單語言僅影響插槽名稱。" } },
             { "自動計算した指ポーズでは、推定した指先の間隔が目安を超えています。指わっかは仮配置しました。実際に使う指のポーズで位置と向きを確認し、必要に応じて調整してください。", new[] { "In the automatically calculated finger pose, the estimated fingertip gap exceeds the guideline. The finger loop has been placed provisionally. Check its position and orientation in the finger pose you actually use, and adjust as needed.", "자동 계산된 손가락 포즈에서 추정한 손끝 간격이 기준을 초과합니다. 손가락 고리를 임시 배치했습니다. 실제로 사용할 손가락 포즈에서 위치와 방향을 확인하고 필요에 따라 조정해 주세요.", "在自动计算的手指姿势中，估算的指尖间距超出了参考值。指环已临时放置。请在实际使用的手指姿势下检查位置和朝向，并根据需要调整。", "在自動計算的手指姿勢中，估算的指尖間距超出了參考值。指環已暫時放置。請在實際使用的手指姿勢下檢查位置和朝向，並視需要調整。" } },
 
             { "Prefab接続中またはPrefab編集モードでは基盤を切り替えません。Scene上の接続されていない生成物を使用してください。", new[] { "Backend switching is blocked in connected Prefab instances and Prefab Mode. Use an unconnected generated setup in a scene.", "연결된 프리팹 인스턴스 또는 프리팹 모드에서는 기반 도구를 변경하지 않습니다. 씬에서 연결되지 않은 생성물을 사용하세요.", "不会在已连接的预制体实例或预制体编辑模式下切换基盘。请使用场景中未连接的生成物。", "不會在已連接的預製件實例或預製件編輯模式下切換基盤。請使用場景中未連接的生成物。" } },

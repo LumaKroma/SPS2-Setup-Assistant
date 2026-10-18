@@ -62,7 +62,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             {
                 if (version != SpsBackend.NdmfVersion)
                     result.BlockReason = string.Format(L("SPS for NDMFの対応版は{0}です。異なる版では生成を中止します。"), SpsBackend.NdmfVersion);
-                else if (!SpsBackend.HasNdmfBuildIntegration)
+                else if (!SpsBackend.HasNativeNdmfBuildIntegration)
                     result.BlockReason = L("SPS for NDMF、Modular Avatar、NDMFを導入してください。対応版と導入方法は案内で確認できます。");
                 else if (result.CanGenerate)
                 {

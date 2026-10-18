@@ -61,7 +61,29 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 throw new InvalidOperationException(L("設定とSocketのSPS系列が一致しません。変更を中止します。"));
         }
         internal static string MissingSourceGuidance => L("元の基盤または所有情報を確認できません。既存生成プレハブを手動で削除して新規生成するか、元の依存を再導入して移行してください。自動変更は行いません。");
-        internal static bool HasNdmfBuildIntegration => VrcFuryApi.FindType(
-            "LumaKroma.Sps2SetupAssistant.Editor.Compatibility.Ndmf.Sps2NdmfPlugin") != null;
+        private static bool HasPackageType(string typeName, string packageId)
+        {
+            var type = VrcFuryApi.FindType(typeName);
+            var package = type == null ? null : PackageInfo.FindForAssembly(type.Assembly);
+            return package != null && package.name == packageId;
+        }
+
+        // Unity evaluates the optional package ranges, including prereleases.
+        // Check real native producer types and their package identities without
+        // compiling against either optional assembly.
+        internal static bool HasNativeNdmfBuildIntegration
+        {
+            get
+            {
+#if LUMAKROMA_SPS2_HAS_NATIVE_MA && LUMAKROMA_SPS2_HAS_NATIVE_NDMF
+                return PackageMatches(VrcFuryApi.FindType("SpsNdmf.Plugin.SpsNdmfPlugin"), SpsFamily.SpsForNdmf, out var version) &&
+                    version == NdmfVersion &&
+                    HasPackageType("nadena.dev.modular_avatar.core.ModularAvatarBoneProxy", "nadena.dev.modular-avatar") &&
+                    HasPackageType("nadena.dev.ndmf.PluginBase", "nadena.dev.ndmf");
+#else
+                return false;
+#endif
+            }
+        }
     }
 }

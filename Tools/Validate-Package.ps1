@@ -91,6 +91,11 @@ $maSourceFiles = @($sourceFiles | Where-Object { $_.FullName -like '*\Editor\Mod
 $maSource = ($maSourceFiles | ForEach-Object { Get-Content -Raw -LiteralPath $_.FullName }) -join "`n"
 
 Assert-Condition (-not ($coreAssembly.references -contains 'nadena.dev.modular-avatar.core')) 'The core Editor assembly must not reference Modular Avatar.'
+Assert-Condition (-not ($coreAssembly.references -contains 'nadena.dev.ndmf')) 'The core Editor assembly must not reference NDMF.'
+$nativeMaDefine = @($coreAssembly.versionDefines | Where-Object { $_.name -eq 'nadena.dev.modular-avatar' })
+$nativeNdmfDefine = @($coreAssembly.versionDefines | Where-Object { $_.name -eq 'nadena.dev.ndmf' })
+Assert-Condition ($nativeMaDefine.Count -eq 1 -and $nativeMaDefine[0].expression -eq '[1.18.1,2.0.0)' -and $nativeMaDefine[0].define -eq 'LUMAKROMA_SPS2_HAS_NATIVE_MA') 'Native MA version range is missing.'
+Assert-Condition ($nativeNdmfDefine.Count -eq 1 -and $nativeNdmfDefine[0].expression -eq '[1.11.0,2.0.0)' -and $nativeNdmfDefine[0].define -eq 'LUMAKROMA_SPS2_HAS_NATIVE_NDMF') 'Native NDMF version range is missing.'
 Assert-Condition ($maAssembly.references -contains 'nadena.dev.modular-avatar.core') 'The optional MA assembly must reference the public core assembly.'
 Assert-Condition ($maAssembly.defineConstraints -contains 'LUMAKROMA_SPS2_HAS_MODULAR_AVATAR') 'The optional MA assembly must be conditionally compiled.'
 $maVersionDefine = @($maAssembly.versionDefines | Where-Object { $_.name -eq 'nadena.dev.modular-avatar' })
@@ -99,7 +104,7 @@ Assert-Condition ($maVersionDefine[0].expression -eq '[1.18.1,2.0.0)') 'Unexpect
 Assert-Condition ($maVersionDefine[0].define -eq 'LUMAKROMA_SPS2_HAS_MODULAR_AVATAR') 'Unexpected optional Modular Avatar define.'
 Assert-Condition ($maTestsAssembly.defineConstraints -contains 'LUMAKROMA_SPS2_HAS_MODULAR_AVATAR') 'Optional MA tests must be conditionally compiled.'
 Assert-Condition ($maTestsAssembly.defineConstraints -contains 'UNITY_INCLUDE_TESTS') 'Optional MA tests must remain test-only.'
-Assert-Condition (-not [regex]::IsMatch($coreSource, 'nadena\.dev\.modular_avatar|\bModularAvatarBoneProxy\b')) 'The core Editor source must not compile against Modular Avatar.'
+Assert-Condition (-not [regex]::IsMatch($coreSource, 'using\s+nadena\.dev\.modular_avatar|\b(?:typeof|GetComponent|AddComponent)<ModularAvatarBoneProxy>')) 'The core Editor source must not compile against Modular Avatar.'
 Assert-Condition ([regex]::IsMatch($maSource, '\bModularAvatarBoneProxy\b')) 'The optional public Modular Avatar integration is missing.'
 
 $forbiddenPatterns = @(
@@ -120,7 +125,8 @@ foreach ($pattern in $forbiddenPatterns) {
 }
 
 Assert-Condition ($compatibility.Contains('CreateSocket') -and $compatibility.Contains('com.vrcfury.api.FuryComponents')) 'Public Socket API late binding is missing.'
-Assert-Condition ($compatibility.Contains('net.nrzk.spsndmf') -and $compatibility.Contains('PackageMatches') -and $compatibility.Contains('CaptureNdmf')) 'Dual-family package and build boundaries are missing.'
+Assert-Condition ($compatibility.Contains('net.nrzk.spsndmf') -and $compatibility.Contains('PackageMatches') -and $compatibility.Contains('SpsNdmf.Plugin.SpsNdmfPlugin') -and $compatibility.Contains('HasNativeNdmfBuildIntegration')) 'Dual-family package and native build boundaries are missing.'
+Assert-Condition (-not $compatibility.Contains('CaptureNdmf') -and -not (Test-Path -LiteralPath (Join-Path $packageRoot 'Editor/Compatibility/Ndmf/Sps2NdmfPlugin.cs'))) 'Assistant NDMF build passes must be absent.'
 Assert-Condition ($compatibility.Contains('CreateArmatureLink') -and -not $compatibility.Contains('BindingFlags.NonPublic')) 'Public-only attachment API binding is missing.'
 Assert-Condition ($source.Contains('ModularAvatarBoneProxy')) 'Public Modular Avatar Bone Proxy integration is missing.'
 Assert-Condition (($source.Contains('AttachmentBackendRegistry.TryApply') -and $source.Contains('Adapters.TryGetValue(backend, out var adapter)'))) 'Backend availability guard is missing.'

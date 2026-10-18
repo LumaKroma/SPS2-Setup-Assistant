@@ -111,6 +111,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 var next = (VRCAvatarDescriptor)EditorGUILayout.ObjectField(L("アバター"), descriptor, typeof(VRCAvatarDescriptor), true);
                 if (next != descriptor) Change(() => BindAvatar(next));
                 DrawFamilySelection();
+                if (settings.family == SpsFamily.SpsForNdmf)
+                    EditorGUILayout.HelpBox(L("NDMF は標準のメニュー、ステルス、初期値、保存設定を使用します。メニュー言語はソケット名のみに適用されます。"), MessageType.Info);
                 scroll = EditorGUILayout.BeginScrollView(scroll);
                 DrawCompatibility();
                 DrawPresets();
@@ -223,7 +225,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 L("プラグに最も近い対象ソケットを自動で有効にするメニューを追加します。"));
             CompatibleToggle(L("後方互換性"), settings.legacy, v => settings.legacy = v, VrcFuryCapabilities.For(settings.family).Legacy,
                 L("SPS1・DPS・TPSのプラグにも対応させ、互換機能の切り替えメニューを追加します。\nSPS2同士だけで使う場合はオフにできます。"));
-            CompatibleToggle(L("Local Only"), settings.localOnly, v => settings.localOnly = v, VrcFuryCapabilities.For(settings.family).LocalOnly);
+            if (settings.family == SpsFamily.VrcFury)
+                CompatibleToggle(L("Local Only"), settings.localOnly, v => settings.localOnly = v, VrcFuryCapabilities.For(settings.family).LocalOnly);
             GUILayout.Space(8);
             using (new EditorGUI.DisabledScope(settings.family == SpsFamily.SpsForNdmf))
                 Toggle(L("Modular Avatarで追従"), settings.family == SpsFamily.SpsForNdmf || settings.modularAvatar, v => settings.modularAvatar = v);

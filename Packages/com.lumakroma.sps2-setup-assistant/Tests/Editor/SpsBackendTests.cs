@@ -1,9 +1,12 @@
 using System;
 using LumaKroma.Sps2SetupAssistant.Editor.Compatibility;
 using LumaKroma.Sps2SetupAssistant.Editor.Generation;
+using LumaKroma.Sps2SetupAssistant.Editor.Model;
+using LumaKroma.Sps2SetupAssistant.Editor.Localization;
 using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
+using VRC.SDK3.Avatars.Components;
 
 namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
 {
@@ -89,6 +92,76 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             var root = new Sps2SetupContext { settings = settings };
             Assert.Throws<InvalidOperationException>(() => SpsBackend.ValidateExisting(root, requested));
             Assert.AreEqual(existing, settings.family);
+        }
+
+        [Test]
+        public void FurySdkCallbacksIgnoreNdmfSocketWithMissingSettingsAsset()
+        {
+            if (!VrcFuryCapabilities.For(SpsFamily.SpsForNdmf).CanGenerate) Assert.Ignore("Pinned shipped SPSNDMF fixture required.");
+            var avatar = new GameObject("NDMF callback fixture");
+            try
+            {
+                avatar.AddComponent<VRCAvatarDescriptor>();
+                var native = avatar.AddComponent(VrcFuryApi.FindType(SpsBackend.SocketType(SpsFamily.SpsForNdmf)));
+                var data = new SerializedObject(native);
+                data.FindProperty("oscId").stringValue = "__SPS2_0123456789abcdef0123456789abcdef_mouth";
+                data.ApplyModifiedPropertiesWithoutUndo();
+                Assert.IsTrue(Sps2BuildIntegration.Run(avatar, true));
+                Assert.IsTrue(Sps2BuildIntegration.Run(avatar, false));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(avatar); }
+        }
+
+        [Test]
+        public void FuryBuildLookupStillRejectsMissingSettingsAsset()
+        {
+            if (!VrcFuryCapabilities.For(SpsFamily.VrcFury).CanGenerate) Assert.Ignore("Pinned shipped VRCFury fixture required.");
+            var avatar = new GameObject("Fury callback fixture");
+            try
+            {
+                var descriptor = avatar.AddComponent<VRCAvatarDescriptor>();
+                var native = avatar.AddComponent(VrcFuryApi.FindType(SpsBackend.SocketType(SpsFamily.VrcFury)));
+                var data = new SerializedObject(native);
+                data.FindProperty("oscId").stringValue = "__SPS2_0123456789abcdef0123456789abcdef_mouth";
+                data.ApplyModifiedPropertiesWithoutUndo();
+                Assert.Throws<InvalidOperationException>(() => Sps2SetupStorage.Find(descriptor, true, SpsFamily.VrcFury));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(avatar); }
+        }
+
+        [Test]
+        public void NativeNdmfSocketNameTracksSavedDisplayWithoutChangingIdentity()
+        {
+            if (!VrcFuryCapabilities.For(SpsFamily.SpsForNdmf).CanGenerate) Assert.Ignore("Pinned shipped SPSNDMF fixture required.");
+            var pose = new GameObject("NDMF name fixture");
+            try
+            {
+                var part = new SocketSettings { id = "mouth", name = "Internal mouth" };
+                var setup = new SetupSettings { family = SpsFamily.SpsForNdmf, menuLanguage = DisplayLanguage.English };
+                using (SpsBackend.Use(setup.family))
+                {
+                    var native = VrcFuryCompatibility.CreateSocket(pose, part, setup, new System.Collections.Generic.List<string>());
+                    var token = "__SPS2_0123456789abcdef0123456789abcdef_mouth";
+                    VrcFuryCompatibility.SetAuthoringIdentity(native, token);
+                    var data = new SerializedObject(native);
+                    Assert.AreEqual("Mouth", data.FindProperty("name").stringValue);
+                    part.menuNameOverride = "Saved custom";
+                    VrcFuryCompatibility.ConfigureDisplayName(native, part, setup);
+                    data.Update(); Assert.AreEqual("Saved custom", data.FindProperty("name").stringValue);
+                    part.menuNameOverride = null; setup.menuLanguage = DisplayLanguage.Japanese;
+                    VrcFuryCompatibility.ConfigureDisplayName(native, part, setup);
+                    data.Update();
+                    Assert.AreEqual(SocketDisplayNames.Resolve(part, setup.menuLanguage), data.FindProperty("name").stringValue);
+                    Assert.AreEqual(token, data.FindProperty("oscId").stringValue);
+                }
+            }
+            finally
+            {
+                Undo.FlushUndoRecordObjects();
+                foreach (var component in pose.GetComponents<Component>()) Undo.ClearUndo(component);
+                Undo.ClearUndo(pose);
+                UnityEngine.Object.DestroyImmediate(pose);
+            }
         }
         // Uses actual installed shipped component, not a replacement native stub.
         [TestCase(false)]

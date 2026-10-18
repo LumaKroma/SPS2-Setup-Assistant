@@ -14,6 +14,17 @@
   "precompiledReferences": [],
   "autoReferenced": true,
   "defineConstraints": [],
-  "versionDefines": [],
+  "versionDefines": [
+    {
+      "name": "nadena.dev.modular-avatar",
+      "expression": "[1.18.1,2.0.0)",
+      "define": "LUMAKROMA_SPS2_HAS_NATIVE_MA"
+    },
+    {
+      "name": "nadena.dev.ndmf",
+      "expression": "[1.11.0,2.0.0)",
+      "define": "LUMAKROMA_SPS2_HAS_NATIVE_NDMF"
+    }
+  ],
   "noEngineReferences": false
 }

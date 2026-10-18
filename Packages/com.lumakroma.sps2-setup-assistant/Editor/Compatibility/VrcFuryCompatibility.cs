@@ -63,7 +63,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         {
             RequireVersion();
             var wrapper = UndoComponentRegistration.Invoke(pose, L("SPS2 セットアップ"), () => VrcFuryApi.CreateSocket(pose));
-            wrapper.SetName(part.name);
+            wrapper.SetName(SocketName(part, setup));
             wrapper.SetMode(setup.penetration && (part.id == "mouth" || part.id == "anus") ? "Ring" : "Auto");
             if (part.id == "chest" || part.id == "handLeft" || part.id == "handRight" || part.id == "hands" ||
                 part.id == "footLeft" || part.id == "footRight" || part.id == "feet") wrapper.UseRadiusOffset();
@@ -124,7 +124,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                     source.Update();
                 }
                 Undo.RecordObject(component, L("SPS2 設定反映"));
-                target.FindProperty("name").stringValue = part.name;
+                target.FindProperty("name").stringValue = SocketName(part, setup);
                 SetOptionalBool(target, "enableAuto", setup.autoMode && !part.IsFingerRing);
                 if (VrcFuryCapabilities.Current.Legacy) SetOptionalBool(target, "useLights", setup.legacy);
                 target.FindProperty("addMenuItem").boolValue = true;
@@ -178,6 +178,24 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             Undo.RecordObject(component, L("SPS2 共通設定"));
             SetOptionalBool(data, "enableAuto", setup.autoMode && allowAuto);
             if (VrcFuryCapabilities.Current.Legacy) SetOptionalBool(data, "useLights", setup.legacy);
+            data.ApplyModifiedProperties();
+            PrefabUtility.RecordPrefabInstancePropertyModifications(component);
+        }
+
+        private static string SocketName(SocketSettings part, SetupSettings setup) =>
+            setup.family == SpsFamily.SpsForNdmf
+                ? SocketDisplayNames.Resolve(part, setup.menuLanguage) : part.name;
+
+        // Native SPSNDMF consumes this saved name directly. A label-only Apply
+        // should not rebuild Depth Actions or disturb an adjusted Socket pose.
+        internal static void ConfigureDisplayName(Component component, SocketSettings part, SetupSettings setup)
+        {
+            if (setup.family != SpsFamily.SpsForNdmf) return;
+            var data = SocketData(component);
+            var name = SocketName(part, setup);
+            if (data.FindProperty("name").stringValue == name) return;
+            Undo.RecordObject(component, L("SPS2 設定反映"));
+            data.FindProperty("name").stringValue = name;
             data.ApplyModifiedProperties();
             PrefabUtility.RecordPrefabInstancePropertyModifications(component);
         }

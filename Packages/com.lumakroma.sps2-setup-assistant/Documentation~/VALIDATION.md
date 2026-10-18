@@ -1,3 +1,7 @@
+# Issue186 native NDMF build delegation - 2026-10-18
+
+Candidate branch `issue/186-ndmf-native-build` removes Assistant NDMF build passes. Focused existing-suite tests cover NDMF-only missing settings asset bypass in Fury SDK callbacks and native Socket display-name/oscId persistence. Static package and whitespace checks are recorded with the implementation handoff; Unity compile, EditMode execution, native build output, save/reopen and VRC PC gates remain separate exact-head evidence.
+
 # Issue186 offline implementation - 2026-10-07
 
 Source commit: `c1c093f0d603fd1227a671fc1bd11094ede820af`; baseline official 1.1.1

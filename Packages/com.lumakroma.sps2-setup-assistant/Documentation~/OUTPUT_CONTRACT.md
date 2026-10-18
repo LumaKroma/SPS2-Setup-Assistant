@@ -1,3 +1,11 @@
+# Issue186 NDMF native build delegation - 2026-10-18 (Unity validation pending)
+
+The NDMF family is authored as native SPSNDMF Sockets with MA attachments. SPSNDMF, MA and NDMF own build output. The Assistant has no NDMF capture/finalize plugin and its common SDK callbacks inspect Fury sockets only. NDMF builds do not load Assistant settings assets or require them to match native Socket ownership.
+
+At generation and Apply, native NDMF Socket name receives the saved localized or overridden display name. oscId remains the authoring identity. Name/language-only Apply updates native names without resetting Depth Actions or poses. Existing beta sockets retain their saved names until Apply or regeneration; no automatic build migration occurs.
+
+Native SPSNDMF controls the menu layout, Stealth toggle, defaults, saved parameters and OFF behavior. The Assistant menu language affects native Socket names only, not global controls. NDMF Local Only is not an effective authoring control; its stored value is preserved, but the NDMF UI hides the switch. Fury build postprocessing and authoring behavior remain unchanged. This amendment supersedes NDMF postprocessing and final-menu claims below. Exact-source Unity and VRC checks remain open.
+
 # Issue186 optional SPS families - development, unvalidated in Unity
 
 One Assistant offers explicit VRCFury or SPS for NDMF selection for new setups.

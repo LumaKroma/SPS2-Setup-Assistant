@@ -149,10 +149,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             }
             return settings;
         }
-        internal static Sps2SetupContext Find(VRCAvatarDescriptor avatar, bool build = false)
+        internal static Sps2SetupContext Find(VRCAvatarDescriptor avatar, bool build = false, SpsFamily? buildFamily = null)
         {
             if (avatar == null) return null;
+            // SDK callbacks serve Fury only. An NDMF setup must remain invisible to
+            // them even when its authoring asset is missing or stale.
             var owned = SpsBackend.AllSockets(avatar.gameObject)
+                .Where(s => !build || !buildFamily.HasValue || SpsBackend.FamilyOf(s) == buildFamily.Value)
                 .Select(s => new { socket = s, token = VrcFuryCompatibility.ReadIdentity(s) })
                 .Where(s => TryToken(s.token, out _, out _)).ToArray();
             if (owned.Length == 0)

@@ -39,7 +39,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             {
 
                 Sps2SetupContext root;
-                if (before) { Pending.Remove(avatar.GetInstanceID()); root = Sps2SetupStorage.Find(avatar.GetComponent<VRCAvatarDescriptor>(), true); }
+                if (before) { Pending.Remove(avatar.GetInstanceID()); root = Sps2SetupStorage.Find(avatar.GetComponent<VRCAvatarDescriptor>(), true, SpsFamily.VrcFury); }
                 else { Pending.TryGetValue(avatar.GetInstanceID(), out root); Pending.Remove(avatar.GetInstanceID()); }
                 if (root == null || root.settings.family != SpsFamily.VrcFury) return true;
                 using var backend = SpsBackend.Use(root.settings.family);
@@ -61,16 +61,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             catch (Exception e) { Pending.Remove(avatar.GetInstanceID()); Debug.LogError(L("SPS2 ビルドを中止しました: ") + e.Message, avatar); return false; }
         }
 
-        internal static Sps2SetupContext CaptureNdmf(GameObject avatar)
-        {
-            var root = Sps2SetupStorage.Find(avatar.GetComponent<VRCAvatarDescriptor>(), true);
-            if (root == null || root.settings.family != SpsFamily.SpsForNdmf) return null;
-            using var backend = SpsBackend.Use(root.settings.family);
-            VrcFuryCompatibility.RequireVersion();
-            if (root.schema != 1 || string.IsNullOrEmpty(root.identity)) throw new InvalidOperationException(L("SPS2 の所有ルートが不正です。"));
-            PrepareOwned(avatar, root);
-            return root;
-        }
         private static void PrepareOwned(GameObject avatar, Sps2SetupContext root)
         {
             VrcFuryCompatibility.ValidateBuildTokens(avatar, root);
