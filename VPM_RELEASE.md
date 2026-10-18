@@ -1,5 +1,39 @@
 # VPM release handoff
 
+## 1.2.0-beta.4 preparation (2026-10-18, unpublished)
+
+Prepare the next beta from functional commit
+`38599b349b7495348c90df99c5e4d41a52c9e905`, preserving its native NDMF delegation
+and Disabled-only Fury restoration. User approval of the public copy is pending.
+Do not push, create a tag/draft Release, publish, or update VPM/Pages before that
+approval. Git author and authenticated wrapper must resolve to LumaKroma.
+
+Reuse Build-VpmPackage, Build-FamilyInstallers and Test-FamilyInstallers with the
+official VPAI 1.1.6 creator/template. Create fresh beta.4 dev.1 directories, build
+twice from clean exact source and compare all five archive hashes. Preserve beta.3
+artifacts, dependency ranges, legacy folder GUID and installer licenses. Product
+C#/asmdef source must remain byte-identical to the validated functional commit.
+
+Live inventory at preparation: beta.3 is published; beta.4 tag/release/draft is
+absent; stable GitHub Latest is 1.1.1. Intended public attachments are the common
+VPM ZIP, package.json, Fury Installer ZIP and NDMF Installer ZIP only. Keep
+prerelease=true and make_latest=false. The existing release workflow creates only
+the first two attachments; audit/upload the two prepared installer ZIPs separately.
+
+The public page baseline is main
+`e66759fa7d4aec895dc37814362141d64c4f3104`; preserve its styling and installation
+flow. Never deploy this product branch's older Website. The local page proposal
+changes beta links and one release summary only. After approval, prepare the page
+from live main and use the existing main-ref Pages workflow; tag-ref deployment
+was rejected previously. Publishing triggers listing.yml, so coordinate page and
+listing publication and retain all previous version URLs/hashes.
+
+Post-publication checks reuse the existing beta.3 official VPAI and ALCOM route;
+see `Docs/RELEASE_120_BETA4_DELIVERY.md`. Prior warm-project VPAI passes do not prove
+fresh dependency installation. ALCOM version visibility passed previously, but
+its Select/Invoke update failed before confirmation; do not label that path PASS.
+No Unity startup or new shared validation infrastructure is needed for preparation.
+
 ## 1.2.0-beta.3 preparation (2026-10-17, unpublished)
 
 Prepare one common VPM package and the existing official Fury/NDMF VPAI installers

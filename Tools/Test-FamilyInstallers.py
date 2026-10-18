@@ -6,7 +6,7 @@ parser.add_argument('output', type=pathlib.Path)
 parser.add_argument('template', type=pathlib.Path)
 args = parser.parse_args()
 root = pathlib.Path(__file__).resolve().parent.parent
-distribution = root / 'Distribution/1.2.0-beta.3'
+distribution = root / 'Distribution/1.2.0-beta.4'
 
 def read_package(path):
     with tarfile.open(path, 'r:gz') as archive:
@@ -21,7 +21,7 @@ template, template_paths = read_package(args.template)
 assert len(template_paths) == 3, 'Expected official three-asset template'
 result = []
 for family in ('Fury', 'NDMF'):
-    name = f'SPS2-Setup-Assistant-1.2.0-beta.3-{family}-Installer'
+    name = f'SPS2-Setup-Assistant-1.2.0-beta.4-{family}-Installer'
     package = args.output / f'{name}.unitypackage'
     data, paths = read_package(package)
     assert paths == template_paths, 'Unexpected payload or GUID change'
@@ -37,7 +37,7 @@ for family in ('Fury', 'NDMF'):
     assert config['includePrerelease'] is True and config['silentIfInstalled'] is False
     assert config['minimumUnity'] == '2022.3'
     deps = config['vpmDependencies']
-    assert deps['com.lumakroma.sps2-setup-assistant'] == '1.2.0-beta.3'
+    assert deps['com.lumakroma.sps2-setup-assistant'] == '1.2.0-beta.4'
     assert ('com.vrcfury.vrcfury' in deps) == (family == 'Fury')
     assert ('net.nrzk.spsndmf' in deps) == (family == 'NDMF')
     assert 'net.nrzk.vfstub' not in deps and 'net.nrzk.spsndmf-migrator' not in deps

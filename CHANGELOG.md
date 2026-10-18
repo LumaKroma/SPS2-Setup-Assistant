@@ -1,3 +1,11 @@
+## 1.2.0-beta.4 - Prepared, unpublished (2026-10-18)
+
+- Delegate NDMF builds to the native SPSNDMF/MA/NDMF pipeline.
+- Restrict Fury FX restoration to native unresolved Write Defaults under effective Disabled, including one-time Skip; Auto/Force builds skip Assistant authoring lookup.
+- Use native menus, defaults and saved flags. Save localized/overridden Socket names during generation and Apply; existing Fury setups need Apply to adopt those names.
+- Remove the Assistant Local Only switch in favor of native Stealth. Keep prior settings data and copy-on-write identity behavior.
+- Source behavior: 38599b349b7495348c90df99c5e4d41a52c9e905. Preparation changes metadata and documentation only. VRC client and final published installation remain separate gates.
+
 ## 1.2.0-beta.3 - Prepared, unpublished (2026-10-17)
 
 - Warn after successful calibration when the estimated fingertip gap exceeds the existing 0.2 guideline; retain strict geometry/frame checks and saved/manual calibration.
