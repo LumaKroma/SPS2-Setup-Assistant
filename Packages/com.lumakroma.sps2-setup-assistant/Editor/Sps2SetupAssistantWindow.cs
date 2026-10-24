@@ -1,3 +1,5 @@
+using LumaKroma.Sps2SetupAssistant.Editor.Localization;
+using static LumaKroma.Sps2SetupAssistant.Editor.Localization.Sps2Localization;
 using System;
 using System.Linq;
 using LumaKroma.Sps2SetupAssistant.Editor.Compatibility;
@@ -14,15 +16,31 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         [SerializeField] private VRCAvatarDescriptor descriptor;
         [SerializeField] private SetupSettings settings;
         [SerializeField] private string avatarId;
+        [SerializeField] private bool menuDisplayExpanded;
+        [SerializeField] private System.Collections.Generic.List<string> nameEditors = new System.Collections.Generic.List<string>();
+        internal SetupSettings DraftSettings => settings;
+        internal bool IsNameEditing(SocketSettings part) => nameEditors.Contains(part.id) || !string.IsNullOrWhiteSpace(part.menuNameOverride);
+        internal void SetNameEditing(SocketSettings part, bool enabled)
+        {
+            Change(() => {
+                if (enabled)
+                {
+                    menuDisplayExpanded = true;
+                    if (!nameEditors.Contains(part.id)) nameEditors.Add(part.id);
+                    if (string.IsNullOrWhiteSpace(part.menuNameOverride)) part.menuNameOverride = SocketDisplayNames.Resolve(part, settings.menuLanguage);
+                }
+                else { nameEditors.Remove(part.id); part.menuNameOverride = ""; }
+            });
+        }
         private Vector2 scroll;
         private string message;
         private MessageType messageType;
-        private GUIStyle title;
+        private GUIStyle titleStyle;
         private GUIStyle helpStyle;
         private readonly Vector3[] helpCirclePoints = new Vector3[33];
-        private static readonly string[] PresetLabels = { "カジュアル", "デフォルト", "フル" };
-        private static readonly string[] DepthUnitLabels = { "メートル", "プラグ長", "ローカル" };
-        private static readonly string[] ActionKindLabels = { "BlendShape", "Animation Clip", "オブジェクト ON・OFF" };
+        private static string[] PresetLabels => new[] { L("カジュアル"), L("デフォルト"), L("フル") };
+        private static string[] DepthUnitLabels => new[] { L("メートル"), L("プラグ長"), L("ローカル") };
+        private static string[] ActionKindLabels => new[] { "BlendShape", "Animation Clip", L("オブジェクト ON・OFF") };
         private static readonly string[] ObjectStateLabels = { "ON", "OFF" };
 
         [MenuItem("Tools/LumaKroma/SPS2 Setup Assistant")]
@@ -71,7 +89,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         public void BindAvatar(VRCAvatarDescriptor next)
         {
-            descriptor = next; avatarId = null;
+            descriptor = next; avatarId = null; nameEditors.Clear();
             try { settings = FullSetupGenerator.Find(next)?.settings.Copy() ?? FullSetupCatalog.CreateDefault(); message = null; }
             catch (Exception e) { settings = FullSetupCatalog.CreateDefault(); SetMessage(e.Message, false); }
             FullSetupCatalog.UpgradeDisplayNames(settings);
@@ -79,14 +97,18 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         private void OnGUI()
         {
-            if (title == null) title = new GUIStyle(EditorStyles.boldLabel) { fontSize = 20 };
-            EditorGUIUtility.labelWidth = 100;
+            if (titleStyle == null) titleStyle = new GUIStyle(EditorStyles.boldLabel) { fontSize = 20 };
+            EditorGUIUtility.labelWidth = 155;
             using (new EditorGUILayout.VerticalScope(EditorStyles.inspectorDefaultMargins))
             {
                 GUILayout.Space(12);
-                GUILayout.Label("SPS2 Setup Assistant", title);
+                GUILayout.Label("SPS2 Setup Assistant", titleStyle);
                 GUILayout.Space(10);
-                var next = (VRCAvatarDescriptor)EditorGUILayout.ObjectField("アバター", descriptor, typeof(VRCAvatarDescriptor), true);
+                var uiLanguage = (DisplayLanguage)EditorGUILayout.Popup(L("画面の言語"), (int)UiLanguage, LanguageNames);
+                if (uiLanguage != UiLanguage) { UiLanguage = uiLanguage; VrcFuryCapabilities.Refresh(); message = null; Repaint(); }
+                var menuLanguage = (DisplayLanguage)EditorGUILayout.Popup(L("メニューの言語"), (int)Normalize(settings.menuLanguage), LanguageNames);
+                if (menuLanguage != settings.menuLanguage) Change(() => settings.menuLanguage = menuLanguage);
+                var next = (VRCAvatarDescriptor)EditorGUILayout.ObjectField(L("アバター"), descriptor, typeof(VRCAvatarDescriptor), true);
                 if (next != descriptor) Change(() => BindAvatar(next));
                 scroll = EditorGUILayout.BeginScrollView(scroll);
                 DrawCompatibility();
@@ -101,7 +123,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         private void DrawPresets()
         {
             GUILayout.Space(10);
-            GUILayout.Label("プリセット", EditorStyles.boldLabel);
+            GUILayout.Label(L("プリセット"), EditorStyles.boldLabel);
             using (new EditorGUILayout.HorizontalScope())
             {
                 var labels = PresetLabels;
@@ -118,11 +140,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             for (int category = 0; category < FullSetupCatalog.Categories.Length; category++)
             {
                 GUILayout.Space(12);
-                GUILayout.Label(FullSetupCatalog.Categories[category], EditorStyles.boldLabel);
+                GUILayout.Label(L(FullSetupCatalog.Categories[category]), EditorStyles.boldLabel);
                 foreach (var part in settings.parts.Where(p => p.category == category).ToArray()) DrawPart(part);
-                if (category == 5 && GUILayout.Button("＋ カスタム部位を追加")) Change(() => settings.parts.Add(new SocketSettings
+                if (category == 5 && GUILayout.Button(L("＋ カスタム部位を追加"))) Change(() => settings.parts.Add(new SocketSettings
                 {
-                    id = Guid.NewGuid().ToString("N"), name = "カスタム " + (settings.parts.Count(p => p.custom) + 1),
+                    id = Guid.NewGuid().ToString("N"), name = L("カスタム ") + (settings.parts.Count(p => p.custom) + 1),
                     custom = true, category = 5, included = true
                 }));
             }
@@ -131,23 +153,23 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         private void DrawOptions()
         {
             GUILayout.Space(12);
-            CompatibleToggle("貫通", settings.penetration, v => settings.penetration = v, VrcFuryCapabilities.Current.Path,
-                "口-肛門の間にプラグが通る経路を生成します。非常に長いプラグの場合、体を貫通します。\n「首付近で太さを0にする」をオンにすると、口の入口では太さを保ち、首付近から体内の太さを0にします。出口の外では元の太さに戻します。");
+            CompatibleToggle(L("貫通"), settings.penetration, v => settings.penetration = v, VrcFuryCapabilities.Current.Path,
+                L("口-肛門の間にプラグが通る経路を生成します。非常に長いプラグの場合、体を貫通します。\n「首付近で太さを0にする」をオンにすると、口の入口では太さを保ち、首付近から体内の太さを0にします。出口の外では元の太さに戻します。"));
             if (settings.penetration)
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
                     GUILayout.Space(18);
-                    CompatibleToggle("首付近で太さを0にする", !settings.showInternalThickness, v => settings.showInternalThickness = !v, VrcFuryCapabilities.Current.Collapse);
+                    CompatibleToggle(L("首付近で太さを0にする"), !settings.showInternalThickness, v => settings.showInternalThickness = !v, VrcFuryCapabilities.Current.Collapse);
                 }
             }
-            CompatibleToggle("Auto Mode", settings.autoMode, v => settings.autoMode = v, VrcFuryCapabilities.Current.AutoMode,
-                "プラグに最も近い対象ソケットを自動で有効にするメニューを追加します。");
-            CompatibleToggle("後方互換性", settings.legacy, v => settings.legacy = v, VrcFuryCapabilities.Current.Legacy,
-                "SPS1・DPS・TPSのプラグにも対応させ、互換機能の切り替えメニューを追加します。\nSPS2同士だけで使う場合はオフにできます。");
-            CompatibleToggle("Local Only", settings.localOnly, v => settings.localOnly = v, VrcFuryCapabilities.Current.LocalOnly);
+            CompatibleToggle(L("Auto Mode"), settings.autoMode, v => settings.autoMode = v, VrcFuryCapabilities.Current.AutoMode,
+                L("プラグに最も近い対象ソケットを自動で有効にするメニューを追加します。"));
+            CompatibleToggle(L("後方互換性"), settings.legacy, v => settings.legacy = v, VrcFuryCapabilities.Current.Legacy,
+                L("SPS1・DPS・TPSのプラグにも対応させ、互換機能の切り替えメニューを追加します。\nSPS2同士だけで使う場合はオフにできます。"));
+            CompatibleToggle(L("Local Only"), settings.localOnly, v => settings.localOnly = v, VrcFuryCapabilities.Current.LocalOnly);
             GUILayout.Space(8);
-            Toggle("Modular Avatarで追従", settings.modularAvatar, v => settings.modularAvatar = v);
+            Toggle(L("Modular Avatarで追従"), settings.modularAvatar, v => settings.modularAvatar = v);
             GUILayout.Space(12);
         }
 
@@ -157,28 +179,28 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             bool generated = FullSetupGenerator.HasGeneratedRoot(descriptor);
             if (descriptor == null)
             {
-                EditorGUILayout.HelpBox("対象アバターを選択してください。以前の対象が開かれている場合は再検出できます。", MessageType.Info);
-                if (GUILayout.Button("対象アバターを再検出")) Change(() => { avatarId = null; RecoverAvatar(); });
+                EditorGUILayout.HelpBox(L("対象アバターを選択してください。以前の対象が開かれている場合は再検出できます。"), MessageType.Info);
+                if (GUILayout.Button(L("対象アバターを再検出"))) Change(() => { avatarId = null; RecoverAvatar(); });
             }
             else if (EditorApplication.isPlayingOrWillChangePlaymode)
-                EditorGUILayout.HelpBox("再生を停止すると生成・再生成できます。", MessageType.Info);
+                EditorGUILayout.HelpBox(L("再生を停止すると生成・再生成できます。"), MessageType.Info);
             using (new EditorGUI.DisabledScope(descriptor == null || EditorApplication.isPlayingOrWillChangePlaymode || !VrcFuryCapabilities.Current.CanGenerate))
             {
                 if (!generated)
                 {
-                    if (GUILayout.Button("プレハブを生成", GUILayout.Height(34))) Apply(true);
+                    if (GUILayout.Button(L("プレハブを生成"), GUILayout.Height(34))) Apply(true);
                 }
                 else
                 {
-                    if (GUILayout.Button("プレハブを再生成", GUILayout.Height(30))) Apply(true);
-                    if (GUILayout.Button("置き換えずに変更を反映", GUILayout.Height(30))) Apply(false);
+                    if (GUILayout.Button(L("プレハブを再生成"), GUILayout.Height(30))) Apply(true);
+                    if (GUILayout.Button(L("置き換えずに変更を反映"), GUILayout.Height(30))) Apply(false);
                     using (new EditorGUI.DisabledScope(!VrcFuryCapabilities.Current.TestPlug))
-                    if (GUILayout.Button("貫通テストプラグ出現", GUILayout.Height(30)))
+                    if (GUILayout.Button(L("貫通テストプラグ出現"), GUILayout.Height(30)))
                     {
                         bool ok = FullSetupGenerator.ShowLongTestPlug(descriptor, out var error); SetMessage(error, ok);
                     }
                     using (new EditorGUI.DisabledScope(!VrcFuryCapabilities.Current.TestPlug))
-                    if (GUILayout.Button("テストプラグ出現", GUILayout.Height(30)))
+                    if (GUILayout.Button(L("テストプラグ出現"), GUILayout.Height(30)))
                     {
                         bool ok = FullSetupGenerator.ShowTestPlug(descriptor, out var error); SetMessage(error, ok);
                     }
@@ -192,27 +214,38 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             {
                 using (new EditorGUILayout.HorizontalScope())
                 {
-                    bool included = EditorGUILayout.ToggleLeft(part.custom ? "使用" : part.name, part.included, GUILayout.Width(part.custom ? 48 : 130));
+                    string standard = SocketDisplayNames.Standard(part, UiLanguage);
+                    string currentName = SocketDisplayNames.Resolve(part, settings.menuLanguage);
+                    bool included = EditorGUILayout.ToggleLeft(new GUIContent(currentName, standard + " · " + currentName), part.included, GUILayout.MinWidth(60), GUILayout.ExpandWidth(true));
                     if (included != part.included) Change(() => part.included = included);
-                    if (part.custom)
-                    {
-                        string name = EditorGUILayout.TextField(part.name);
-                        if (name != part.name) Change(() => part.name = name);
-                    }
                     if (part.included)
                     {
                         using (new EditorGUI.DisabledScope(!VrcFuryCapabilities.Current.Depth))
                         {
-                        bool depth = EditorGUILayout.ToggleLeft("深度アクション", part.depth && VrcFuryCapabilities.Current.Depth, GUILayout.MinWidth(114));
+                        bool depth = EditorGUILayout.ToggleLeft(L("深度アクション"), part.depth && VrcFuryCapabilities.Current.Depth, GUILayout.Width(EditorStyles.toggle.CalcSize(new GUIContent(L("深度アクション"))).x + 4));
                         if (VrcFuryCapabilities.Current.Depth && depth != part.depth) Change(() => { part.depth = depth; if (depth && part.actions.Count == 0) part.actions.Add(new DepthActionSettings()); });
                         }
+                    }
+                    if (part.included)
+                    {
+                        bool editing = IsNameEditing(part);
+                        bool nextEditing = EditorGUILayout.ToggleLeft(new GUIContent(L("表示名変更"), L("オフにするとメニュー言語の標準名へ戻ります。")), editing,
+                            GUILayout.Width(EditorStyles.toggle.CalcSize(new GUIContent(L("表示名変更"))).x + 4));
+                        if (nextEditing != editing) SetNameEditing(part, nextEditing);
                     }
                     if (part.custom && GUILayout.Button("−", GUILayout.Width(24))) Change(() => settings.parts.Remove(part));
                 }
                 if (part.custom)
                 {
-                    var target = (Transform)EditorGUILayout.ObjectField("追従先", part.target, typeof(Transform), true);
+                    string name = EditorGUILayout.TextField(L("名前"), part.name);
+                    if (name != part.name) Change(() => part.name = name);
+                    var target = (Transform)EditorGUILayout.ObjectField(L("追従先"), part.target, typeof(Transform), true);
                     if (target != part.target) Change(() => part.target = target);
+                }
+                if (part.included && IsNameEditing(part))
+                {
+                    var customName = EditorGUILayout.TextField(new GUIContent(L("メニュー表示名"), L("空欄で標準名を使用します。個別名は言語変更後も保持されます。")), part.menuNameOverride ?? "");
+                    if (customName != (part.menuNameOverride ?? "")) Change(() => part.menuNameOverride = customName);
                 }
                 if (!part.included || !part.depth || !VrcFuryCapabilities.Current.Depth) return;
                 using (new EditorGUI.DisabledScope(!part.included))
@@ -231,13 +264,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             if (EditorGUI.EndChangeCheck()) Change(() => part.range = new Vector2(FullSetupCatalog.SliderToDistance(min), FullSetupCatalog.SliderToDistance(max)));
             using (new EditorGUILayout.HorizontalScope())
             {
-                EditorGUIUtility.labelWidth = 28;
-                float start = EditorGUILayout.FloatField("近", part.range.x), end = EditorGUILayout.FloatField("遠", part.range.y);
-                int units = EditorGUILayout.Popup((int)part.units, DepthUnitLabels, GUILayout.Width(90));
+                EditorGUIUtility.labelWidth = 50;
+                float start = EditorGUILayout.FloatField(L("近"), part.range.x), end = EditorGUILayout.FloatField(L("遠"), part.range.y);
+                int units = EditorGUILayout.Popup((int)part.units, DepthUnitLabels, GUILayout.MinWidth(100));
                 if (start != part.range.x || end != part.range.y || units != (int)part.units)
                     if (!float.IsNaN(start) && !float.IsInfinity(start) && !float.IsNaN(end) && !float.IsInfinity(end))
                         Change(() => { start = Mathf.Clamp(start, -1, 3); end = Mathf.Clamp(end, -1, 3); part.range = new Vector2(Mathf.Min(start, end), Mathf.Max(start, end)); part.units = (DepthUnits)units; });
-                EditorGUIUtility.labelWidth = 100;
+                EditorGUIUtility.labelWidth = 155;
             }
         }
         private void DrawAction(SocketSettings part, DepthActionSettings action)
@@ -252,19 +285,19 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 }
                 if (action.kind == DepthActionKind.BlendShape)
                 {
-                    var renderer = (SkinnedMeshRenderer)EditorGUILayout.ObjectField("メッシュ", action.renderer, typeof(SkinnedMeshRenderer), true);
+                    var renderer = (SkinnedMeshRenderer)EditorGUILayout.ObjectField(L("メッシュ"), action.renderer, typeof(SkinnedMeshRenderer), true);
                     if (renderer != action.renderer) Change(() => { action.renderer = renderer; action.shape = ""; });
                     var mesh = action.renderer != null ? action.renderer.sharedMesh : null;
-                    var names = new[] { "未設定" }.Concat(mesh == null ? Array.Empty<string>() : Enumerable.Range(0, mesh.blendShapeCount).Select(mesh.GetBlendShapeName)).ToArray();
+                    var names = new[] { L("未設定") }.Concat(mesh == null ? Array.Empty<string>() : Enumerable.Range(0, mesh.blendShapeCount).Select(mesh.GetBlendShapeName)).ToArray();
                     using (new EditorGUILayout.HorizontalScope())
                     {
                         EditorGUIUtility.labelWidth = 62;
                         int index = Math.Max(0, Array.IndexOf(names, action.shape));
-                        int next = EditorGUILayout.Popup("シェイプ", index, names);
-                        EditorGUIUtility.labelWidth = 20;
-                        float weight = EditorGUILayout.FloatField("値", action.weight, GUILayout.Width(78));
+                        int next = EditorGUILayout.Popup(L("シェイプ"), index, names);
+                        EditorGUIUtility.labelWidth = 45;
+                        float weight = EditorGUILayout.FloatField(L("値"), action.weight, GUILayout.Width(110));
                         if (next != index || weight != action.weight) Change(() => { action.shape = next == 0 ? "" : names[next]; action.weight = Mathf.Clamp(weight, 0, 100); });
-                        EditorGUIUtility.labelWidth = 100;
+                        EditorGUIUtility.labelWidth = 155;
                     }
                 }
                 else if (action.kind == DepthActionKind.AnimationClip)
@@ -286,7 +319,16 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         private void Apply(bool regenerate)
         {
-            bool ok = FullSetupGenerator.Apply(descriptor, settings, regenerate, out _, out var result); SetMessage(result, ok);
+            bool ok = FullSetupGenerator.Apply(descriptor, settings, regenerate, out var root, out var result);
+            if (ok)
+                Change(() => {
+                    foreach (var part in settings.parts.Where(p => p.IsFingerRing && (p.fingerRing == null || !p.fingerRing.calibrated)))
+                    {
+                        var saved = root?.settings.parts.Find(p => p.id == part.id)?.fingerRing;
+                        if (saved != null && saved.calibrated) part.fingerRing = saved.Copy();
+                    }
+                });
+            SetMessage(result, ok);
         }
         private void SetMessage(string text, bool success) { message = text; messageType = success ? MessageType.Warning : MessageType.Error; Repaint(); }
         private void DrawCompatibility()
@@ -297,15 +339,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             EditorGUILayout.HelpBox("VRCFury " + caps.Version + "\n" + string.Join("\n", notes) + "\n" + VrcFuryCapabilities.UpdateGuide, MessageType.Warning);
             using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button("VRCFury 導入・更新の案内")) Application.OpenURL(VrcFuryCapabilities.GuideUrl);
-                if (GUILayout.Button("互換性を再確認")) { VrcFuryCapabilities.Refresh(); Repaint(); }
+                if (GUILayout.Button(L("VRCFury 導入・更新の案内"))) Application.OpenURL(VrcFuryCapabilities.GuideUrl);
+                if (GUILayout.Button(L("互換性を再確認"))) { VrcFuryCapabilities.Refresh(); Repaint(); }
             }
         }
 
         private void CompatibleToggle(string label, bool value, Action<bool> set, bool available, string tooltip = null)
         {
             using (new EditorGUI.DisabledScope(!available))
-                Toggle(label, value && available, v => { if (available) set(v); }, available ? tooltip : "この版では利用できません。" + VrcFuryCapabilities.UpdateGuide);
+                Toggle(label, value && available, v => { if (available) set(v); }, available ? tooltip : L("この版では利用できません。") + VrcFuryCapabilities.UpdateGuide);
         }
 
         private void Toggle(string label, bool value, Action<bool> set, string tooltip = null)
@@ -352,6 +394,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             }
             GUI.Label(rect, new GUIContent("?", tooltip), helpStyle);
         }
-        private void Change(Action change) { Undo.RecordObject(this, "SPS2 設定"); change(); EditorUtility.SetDirty(this); Repaint(); }
+        private void Change(Action change) { Undo.RecordObject(this, L("SPS2 設定")); change(); EditorUtility.SetDirty(this); Repaint(); }
     }
 }
