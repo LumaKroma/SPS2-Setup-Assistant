@@ -380,6 +380,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
                         FingerRingCalibrationUtility.Evaluate(thumb, index, saved, out var expected, out var rotation);
                         var rigid = Vector3.Lerp(index.position + index.rotation * saved.indexOffset,
                             thumb.position + thumb.rotation * saved.thumbOffset, saved.thumbWeight);
+                        System.IO.Directory.CreateDirectory("Library/Issue180Validation");
                         System.IO.File.AppendAllText("Library/Issue180Validation/scale-111-warning-native-v1.jsonl",
                             JsonUtility.ToJson(new ScaleOffsetObservation { converted = converted, stage = stage, rootScale = root.lossyScale.x,
                                 thumbScale = thumb.lossyScale.x, indexScale = index.lossyScale.x,

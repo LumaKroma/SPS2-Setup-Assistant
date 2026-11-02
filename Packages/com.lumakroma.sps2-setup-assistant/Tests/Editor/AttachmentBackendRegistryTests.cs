@@ -17,7 +17,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
         [Test]
         public void TryApply_VrcFuryCreatesAnAuthoringComponent()
         {
+            var humanoid = SyntheticHumanoid.Create();
             var anchor = new GameObject("Anchor");
+            anchor.transform.SetParent(humanoid.transform, false);
             try
             {
                 Undo.IncrementCurrentGroup();
@@ -42,7 +44,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             finally
             {
                 Undo.ClearAll();
-                Object.DestroyImmediate(anchor);
+                SyntheticHumanoid.Destroy(humanoid);
             }
         }
 

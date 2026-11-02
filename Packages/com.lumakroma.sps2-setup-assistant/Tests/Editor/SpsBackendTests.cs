@@ -62,7 +62,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
                     VrcFuryCompatibility.SetPathTangents(native, 0, Vector3.right * .02f, Vector3.up * .03f);
                     var copyObject = new GameObject("Restored socket"); copyObject.transform.SetParent(root.transform);
                     var copy = copyObject.AddComponent(native.GetType());
+                    // EditorJsonUtility deliberately omits scene references. JsonUtility is
+                    // the same-session serializer; saved-scene persistence is a separate gate.
+                    Assert.AreEqual(stop.transform, new SerializedObject(native).FindProperty("guidedPathStops.Array.data[0].transform").objectReferenceValue);
                     EditorJsonUtility.FromJsonOverwrite(EditorJsonUtility.ToJson(native), copy);
+                    Assert.IsNull(new SerializedObject(copy).FindProperty("guidedPathStops.Array.data[0].transform").objectReferenceValue);
+                    JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(native), copy);
                     var data = new SerializedObject(copy);
                     Assert.AreEqual("Compatibility socket", data.FindProperty("name").stringValue);
                     var mode = data.FindProperty("addLight");
@@ -302,7 +307,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
                 if (turnOff) mode.enumValueIndex = Array.IndexOf(mode.enumNames, "TurnOff");
                 data.ApplyModifiedPropertiesWithoutUndo();
                 var copy = restored.AddComponent(type);
+                Assert.AreEqual(first, new SerializedObject(source).FindProperty(path + "obj").objectReferenceValue);
                 EditorJsonUtility.FromJsonOverwrite(EditorJsonUtility.ToJson(source), copy);
+                Assert.IsNull(new SerializedObject(copy).FindProperty(path + "obj").objectReferenceValue);
+                JsonUtility.FromJsonOverwrite(JsonUtility.ToJson(source), copy);
                 var after = new SerializedObject(copy);
                 var afterMode = after.FindProperty(path + "mode");
                 Assert.AreEqual(turnOff ? "TurnOff" : "TurnOn", afterMode.enumNames[afterMode.enumValueIndex]);

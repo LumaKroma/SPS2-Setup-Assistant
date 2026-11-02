@@ -67,9 +67,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
         [Test]
         public void MissingNativeOwnershipStopsApplyAndOffersManualRecoveryWithoutChangingRoot()
         {
-            var template = AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Issue186Validation/MigrationAvatarTemplate.prefab");
-            if (template == null) Assert.Ignore("Owned native humanoid fixture required.");
-            var avatarObject = UnityEngine.Object.Instantiate(template);
+            var avatarObject = SyntheticHumanoid.Create();
+            avatarObject.AddComponent<VRCAvatarDescriptor>();
             try
             {
                 var avatar = avatarObject.GetComponent<VRCAvatarDescriptor>();
@@ -87,7 +86,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
                 var capabilities = VrcFuryCapabilities.Inspect(null, null);
                 Assert.IsFalse(capabilities.CanGenerate); Assert.IsNotEmpty(capabilities.BlockReason);
             }
-            finally { UnityEngine.Object.DestroyImmediate(avatarObject); }
+            finally { SyntheticHumanoid.Destroy(avatarObject); }
         }
     }
 }
