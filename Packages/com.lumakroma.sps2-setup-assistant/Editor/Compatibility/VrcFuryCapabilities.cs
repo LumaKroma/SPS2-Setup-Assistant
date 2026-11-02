@@ -60,18 +60,39 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 result.BlockReason = string.Format(L("{0}のビルド機能が見つかりません。"), SpsBackend.Name(family));
             else if (family == SpsFamily.SpsForNdmf)
             {
-                if (version != SpsBackend.NdmfVersion)
-                    result.BlockReason = string.Format(L("SPS for NDMFの対応版は{0}です。異なる版では生成を中止します。"), SpsBackend.NdmfVersion);
+                if (!SpsBackend.IsSupportedNativeVersion(version))
+                    result.BlockReason = L("SPS for NDMF、Modular Avatar、NDMFを導入してください。対応版と導入方法は案内で確認できます。");
                 else if (!SpsBackend.HasNativeNdmfBuildIntegration)
                     result.BlockReason = L("SPS for NDMF、Modular Avatar、NDMFを導入してください。対応版と導入方法は案内で確認できます。");
                 else if (result.CanGenerate)
                 {
                     result.Depth = NdmfDepthActions.Probe(socket);
-                    if (!result.Depth || !result.Sps2 || !result.LocalTangents || !result.Collapse || !result.Legacy || !result.TestPlug)
+                    if (!result.Depth || !result.Sps2 || !result.Tangents || !result.LocalTangents || !result.Collapse || !result.Legacy || !result.TestPlug ||
+                        !result.AutoMode || !result.RadiusOffset || !ProbeNativeSocketSchema(socket))
                         result.BlockReason = L("SPS for NDMFの設定schemaを確認できません。生成を中止します。");
                 }
             }
             return result;
+        }
+
+        private static bool ProbeNativeSocketSchema(Type socketType)
+        {
+            GameObject staging = null;
+            try
+            {
+                staging = new GameObject("SPSNDMF socket schema probe") { hideFlags = HideFlags.HideAndDontSave };
+                var data = new SerializedObject(staging.AddComponent(socketType));
+                if (!Has(data, "oscId", SerializedPropertyType.String)) return false;
+                var mode = data.FindProperty("addLight");
+                if (mode == null || mode.propertyType != SerializedPropertyType.Enum ||
+                    new[] { "None", "Hole", "Ring", "Auto", "RingOneWay" }.Any(name => !mode.enumNames.Contains(name))) return false;
+                var stops = data.FindProperty("guidedPathStops");
+                if (stops == null || !stops.isArray) return false;
+                stops.arraySize = 1;
+                return Has(data, "guidedPathStops.Array.data[0].transform", SerializedPropertyType.ObjectReference);
+            }
+            catch { return false; }
+            finally { if (staging != null) UnityEngine.Object.DestroyImmediate(staging); }
         }
 
         // Also accepts independently supplied component schemas for contract tests. No test override of Current.

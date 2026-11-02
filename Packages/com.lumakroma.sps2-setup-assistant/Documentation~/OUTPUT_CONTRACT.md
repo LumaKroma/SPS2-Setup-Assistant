@@ -1,3 +1,20 @@
+# Issue186 native version admission amendment - 2026-11-02
+
+The native NDMF family admits stable three-part SPSNDMF 1.x versions from
+1.1430.0, subject to package identity, native producer and serialized capability
+checks. An admitted version is not a runtime certification. Missing or changed
+Socket, Plug, Guided Path or Depth schemas block generation. Unknown major,
+older, prerelease and malformed versions remain blocked. Existing MA/NDMF
+dependency ranges and saved-family/migration guards remain in force.
+
+Fury Socket name, mode and radius setters prefer the public API when present,
+retaining the existing pre-API/native fallback. Native NDMF storage is preserved;
+Stub components are not substituted for saved native components. The official
+public API lacks Plug and Guided Path setters, so a complete API-only rewrite
+would lose existing features. Stub alone does not satisfy the Fury backend.
+
+Reference: https://spsndmf.nrzk.net/developers/public-api/
+
 # Issue186 Fury native build with Disabled restoration — 2026-10-18 (local candidate)
 
 The Assistant no longer changes native Socket names, menus, ordering, pagination,

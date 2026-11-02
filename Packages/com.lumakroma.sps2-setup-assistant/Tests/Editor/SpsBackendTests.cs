@@ -13,6 +13,79 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
 {
     public sealed class SpsBackendTests
     {
+        [Test]
+        public void ShippedNativeRegressionFixturesMustBeUsableWithoutExactVersionPin()
+        {
+            var type = VrcFuryApi.FindType(SpsBackend.SocketType(SpsFamily.SpsForNdmf));
+            if (!SpsBackend.PackageMatches(type, SpsFamily.SpsForNdmf, out var version) ||
+                (version != "1.1430.0" && version != "1.1434.0" && version != "1.1436.0"))
+                Assert.Ignore("Requires one of the shipped native regression fixtures.");
+            VrcFuryCapabilities.Refresh();
+            var caps = VrcFuryCapabilities.For(SpsFamily.SpsForNdmf);
+            Assert.IsTrue(caps.CanGenerate, caps.BlockReason);
+            Assert.IsTrue(caps.Depth && caps.LocalTangents && caps.Tangents && caps.Collapse && caps.TestPlug);
+        }
+
+        [TestCase("1.1430.0", true)]
+        [TestCase("1.1434.0", true)]
+        [TestCase("1.1436.0", true)]
+        [TestCase("1.1500.0", true)]
+        [TestCase("1.1429.9", false)]
+        [TestCase("2.0.0", false)]
+        [TestCase("1.1434.0-beta.1", false)]
+        [TestCase("1.1434.0+build", false)]
+        [TestCase("1.1434", false)]
+        [TestCase("1.1434.0.1", false)]
+        [TestCase("", false)]
+        [TestCase(null, false)]
+        public void NativeVersionAdmissionRetainsStableMajorBoundary(string version, bool expected) =>
+            Assert.AreEqual(expected, SpsBackend.IsSupportedNativeVersion(version));
+
+        [TestCase(SpsFamily.VrcFury)]
+        [TestCase(SpsFamily.SpsForNdmf)]
+        public void SocketSettersAndGuidedPathSurviveNativeSerialization(SpsFamily family)
+        {
+            var caps = VrcFuryCapabilities.For(family);
+            if (!caps.CanGenerate) Assert.Ignore("Requires the selected native backend fixture.");
+            var root = new GameObject("Compatibility round trip");
+            try
+            {
+                using (SpsBackend.Use(family))
+                {
+                    var pose = new GameObject("Socket"); pose.transform.SetParent(root.transform);
+                    var stop = new GameObject("Path stop"); stop.transform.SetParent(root.transform);
+                    stop.transform.localPosition = Vector3.forward * .1f;
+                    var wrapper = VrcFuryApi.CreateSocket(pose);
+                    wrapper.SetName("Compatibility socket"); wrapper.SetMode("RingOneWay"); wrapper.UseRadiusOffset();
+                    var native = VrcFuryCompatibility.FindSocket(pose);
+                    VrcFuryCompatibility.SetPath(native, new[] { stop.transform }, root.transform, true);
+                    VrcFuryCompatibility.SetPathTangents(native, 0, Vector3.right * .02f, Vector3.up * .03f);
+                    var copyObject = new GameObject("Restored socket"); copyObject.transform.SetParent(root.transform);
+                    var copy = copyObject.AddComponent(native.GetType());
+                    EditorJsonUtility.FromJsonOverwrite(EditorJsonUtility.ToJson(native), copy);
+                    var data = new SerializedObject(copy);
+                    Assert.AreEqual("Compatibility socket", data.FindProperty("name").stringValue);
+                    var mode = data.FindProperty("addLight");
+                    Assert.AreEqual("RingOneWay", mode.enumNames[mode.enumValueIndex]);
+                    Assert.IsTrue(data.FindProperty("useRadiusOffset").boolValue);
+                    const string prefix = "guidedPathStops.Array.data[0].";
+                    Assert.AreEqual(stop.transform, data.FindProperty(prefix + "transform").objectReferenceValue);
+                    Assert.IsTrue(data.FindProperty(prefix + "shrink").boolValue);
+                    Assert.IsTrue(data.FindProperty(prefix + "customizeTangentIn").boolValue);
+                    Assert.IsTrue(data.FindProperty(prefix + "customizeTangentOut").boolValue);
+                    Assert.AreEqual(Vector3.right * .02f, data.FindProperty(prefix + "tangentOutLocal").vector3Value);
+                    Assert.AreEqual(Vector3.up * .03f, data.FindProperty(prefix + "tangentInLocal").vector3Value);
+                }
+            }
+            finally
+            {
+                Undo.FlushUndoRecordObjects();
+                foreach (var component in root.GetComponentsInChildren<Component>()) Undo.ClearUndo(component);
+                foreach (var transform in root.GetComponentsInChildren<Transform>()) Undo.ClearUndo(transform.gameObject);
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
         [TestCase(true, false, SpsFamily.VrcFury)]
         [TestCase(false, true, SpsFamily.SpsForNdmf)]
         [TestCase(true, true, SpsFamily.VrcFury)]

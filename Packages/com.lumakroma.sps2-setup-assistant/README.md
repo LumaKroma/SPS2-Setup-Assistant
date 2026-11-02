@@ -1,3 +1,9 @@
+<!-- Current compatibility amendment, 2026-11-02 -->
+SPS for NDMF: stable 1.x versions from 1.1430.0 are admitted only when the
+required native build integration and serialized capabilities are present.
+Version admission alone does not certify runtime compatibility. This replaces
+the exact-version restriction described in older validation records.
+
 ## 1.2.0-beta.4：各SPS基盤の標準ビルドに対応
 
 SPS for NDMFは標準のビルド処理を使用します。VRCFuryでは、Fix Write DefaultsがDisabledの場合に必要なSocket・Legacy・Stealthの復元処理だけを残しました。

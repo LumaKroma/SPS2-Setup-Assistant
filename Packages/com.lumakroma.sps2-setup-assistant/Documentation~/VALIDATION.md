@@ -1,3 +1,17 @@
+# Issue186 compatibility candidate - 2026-11-02
+
+Baseline: official beta.4 e1fd1f2e50011a337e85959ed6733450c48e98eb.
+This section supersedes exact-version admission claims below, not historical
+test evidence. Current source admits stable SPSNDMF 1.x >=1.1430.0 only after
+identity, producer and actual capability checks. Intended dedicated regression
+matrix: native 1.1430.0/1.1434.0/1.1436.0, Fury 1.1403.0, and native 1.1436.0
+with Stub 1.1436.0 + Migrator 1.0.1. Stub is not treated as real Fury.
+
+Offline core compilation has passed; real Editor compilation, test execution,
+save/reload, clone build and output comparison are pending. No VRC client,
+remote-player or release evidence is claimed. Results will be recorded separately
+with source and dependency hashes; skipped tests do not count as coverage.
+
 # Issue186 Fury Disabled-only restoration — 2026-10-18
 
 Local candidate on `issue/186-ndmf-native-build`, based on `bcf42502bf11cc20acdf367265d3a376f2f687de`. The previous NDMF delegation is retained. Compiled source and asmdef hashes (114 files) match both retained validation packages; only documentation was edited after execution.

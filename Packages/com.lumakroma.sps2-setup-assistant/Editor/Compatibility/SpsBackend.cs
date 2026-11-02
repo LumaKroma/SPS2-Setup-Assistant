@@ -12,6 +12,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
     internal static class SpsBackend
     {
         internal const string NdmfVersion = "1.1430.0";
+        // Version admission is not schema certification. Inspect() and the native
+        // depth probe must still succeed before any authored object is changed.
+        internal static bool IsSupportedNativeVersion(string value) =>
+            Version.TryParse(value, out var version) && version.Major == 1 &&
+            version.Build >= 0 && version.Revision < 0 &&
+            version >= new Version(NdmfVersion);
         internal static SpsFamily ActiveFamily { get; private set; }
         internal static string Prefix(SpsFamily family) => family == SpsFamily.SpsForNdmf ? "SpsNdmf" : "VF";
         internal static string PackageId(SpsFamily family) => family == SpsFamily.SpsForNdmf ? "net.nrzk.spsndmf" : "com.vrcfury.vrcfury";
@@ -77,7 +83,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             {
 #if LUMAKROMA_SPS2_HAS_NATIVE_MA && LUMAKROMA_SPS2_HAS_NATIVE_NDMF
                 return PackageMatches(VrcFuryApi.FindType("SpsNdmf.Plugin.SpsNdmfPlugin"), SpsFamily.SpsForNdmf, out var version) &&
-                    version == NdmfVersion &&
+                    IsSupportedNativeVersion(version) &&
                     HasPackageType("nadena.dev.modular_avatar.core.ModularAvatarBoneProxy", "nadena.dev.modular-avatar") &&
                     HasPackageType("nadena.dev.ndmf.PluginBase", "nadena.dev.ndmf");
 #else
