@@ -77,7 +77,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
                 var added = new GameObject("User addition"); added.transform.SetParent(root.transform, false);
                 var before = root.GetInstanceID();
                 Sps2SetupContext result; string message;
-                Assert.IsFalse(FullSetupGenerator.Apply(avatar, new SetupSettings { family = SpsFamily.SpsForNdmf }, false, out result, out message));
+                var family = VrcFuryCapabilities.For(SpsFamily.SpsForNdmf).CanGenerate ? SpsFamily.SpsForNdmf : SpsFamily.VrcFury;
+            Assert.IsTrue(VrcFuryCapabilities.For(family).CanGenerate, "An installed usable backend is required to reach the ownership check.");
+            Assert.IsFalse(FullSetupGenerator.Apply(avatar, new SetupSettings { family = family }, false, out result, out message));
                 Assert.AreEqual(SpsBackend.MissingSourceGuidance, message);
                 Assert.AreEqual(before, avatar.transform.Find(FullSetupGenerator.RootName).gameObject.GetInstanceID());
                 Assert.AreEqual(root.transform, added.transform.parent);

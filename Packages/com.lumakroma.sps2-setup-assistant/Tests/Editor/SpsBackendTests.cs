@@ -78,8 +78,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
                     Assert.IsTrue(data.FindProperty(prefix + "shrink").boolValue);
                     Assert.IsTrue(data.FindProperty(prefix + "customizeTangentIn").boolValue);
                     Assert.IsTrue(data.FindProperty(prefix + "customizeTangentOut").boolValue);
-                    Assert.AreEqual(Vector3.right * .02f, data.FindProperty(prefix + "tangentOutLocal").vector3Value);
-                    Assert.AreEqual(Vector3.up * .03f, data.FindProperty(prefix + "tangentInLocal").vector3Value);
+                    Assert.AreEqual(Vector3.right * .02f, data.FindProperty(prefix + (caps.LocalTangents ? "tangentOutLocal" : "tangentOut")).vector3Value);
+                    Assert.AreEqual(Vector3.up * .03f, data.FindProperty(prefix + (caps.LocalTangents ? "tangentInLocal" : "tangentIn")).vector3Value);
                 }
             }
             finally
