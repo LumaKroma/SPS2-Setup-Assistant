@@ -124,30 +124,34 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
             Assert.IsFalse(typeof(VrcFuryCapabilities).Assembly.GetReferencedAssemblies().Any(a => a.Name.StartsWith("com.vrcfury")));
         }
 
-        [Test]
-        public void LegacyNameIdentityCanBeRecoveredAndMigratedToOscId()
+        [TestCase(SpsFamily.VrcFury)]
+        [TestCase(SpsFamily.SpsForNdmf)]
+        public void LegacyNameIdentityCanBeRecoveredAndMigratedToOscId(SpsFamily family)
         {
-            if (!VrcFuryCapabilities.Current.CanGenerate) Assert.Ignore("Native SPS fixture unavailable.");
-            var obj = new GameObject("Identity fixture");
-            try
+            using (SpsBackend.Use(family))
             {
-                VrcFuryApi.CreateSocket(obj);
-                var native = VrcFuryCompatibility.FindSocket(obj);
-                var data = new SerializedObject(native);
-                string token = Sps2SetupStorage.Token(new Sps2SetupContext { identity = "0123456789abcdef0123456789abcdef" }, "mouth");
-                data.FindProperty("name").stringValue = token;
-                var osc = data.FindProperty("oscId"); if (osc != null) osc.stringValue = "";
-                data.ApplyModifiedPropertiesWithoutUndo();
-                Assert.AreEqual(token, VrcFuryCompatibility.ReadIdentity(native));
-                VrcFuryCompatibility.SetAuthoringIdentity(native, token);
-                data.Update();
-                Assert.AreEqual(token, (data.FindProperty("oscId") ?? data.FindProperty("name")).stringValue);
-                data.FindProperty("name").stringValue = "Unrelated Socket";
-                if (data.FindProperty("oscId") != null) data.FindProperty("oscId").stringValue = "foreign-id";
-                data.ApplyModifiedPropertiesWithoutUndo();
-                Assert.IsNull(VrcFuryCompatibility.ReadIdentity(native));
+                if (!VrcFuryCapabilities.Current.CanGenerate) Assert.Ignore("Native SPS fixture unavailable.");
+                var obj = new GameObject("Identity fixture");
+                try
+                {
+                    VrcFuryApi.CreateSocket(obj);
+                    var native = VrcFuryCompatibility.FindSocket(obj);
+                    var data = new SerializedObject(native);
+                    string token = Sps2SetupStorage.Token(new Sps2SetupContext { identity = "0123456789abcdef0123456789abcdef" }, "mouth");
+                    data.FindProperty("name").stringValue = token;
+                    var osc = data.FindProperty("oscId"); if (osc != null) osc.stringValue = "";
+                    data.ApplyModifiedPropertiesWithoutUndo();
+                    Assert.AreEqual(token, VrcFuryCompatibility.ReadIdentity(native));
+                    VrcFuryCompatibility.SetAuthoringIdentity(native, token);
+                    data.Update();
+                    Assert.AreEqual(token, (data.FindProperty("oscId") ?? data.FindProperty("name")).stringValue);
+                    data.FindProperty("name").stringValue = "Unrelated Socket";
+                    if (data.FindProperty("oscId") != null) data.FindProperty("oscId").stringValue = "foreign-id";
+                    data.ApplyModifiedPropertiesWithoutUndo();
+                    Assert.IsNull(VrcFuryCompatibility.ReadIdentity(native));
+                }
+                finally { DisposeUndoFixture(obj); }
             }
-            finally { DisposeUndoFixture(obj); }
         }
 
         [Test]
