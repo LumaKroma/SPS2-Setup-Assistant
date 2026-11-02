@@ -19,7 +19,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         {
             var type = VrcFuryApi.FindType("SpsNdmf.Model." + name);
             if (type == null || type.Assembly.GetName().Name != "SPSNDMF" ||
-                !SpsBackend.PackageMatches(type, SpsFamily.SpsForNdmf, out var version) || version != SpsBackend.NdmfVersion)
+                !SpsBackend.PackageMatches(type, SpsFamily.SpsForNdmf, out var version) || !SpsBackend.IsSupportedNativeVersion(version))
                 throw new InvalidOperationException(L("SPS for NDMFの設定schemaを確認できません。生成を中止します。"));
             return type;
         }

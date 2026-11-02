@@ -54,12 +54,28 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             internal Socket(object api, Component native) { this.api = api; this.native = native; }
             public void SetName(string value)
             {
+                // Prefer the supported API when present; retain pre-API/native fallback.
+                if (api != null && Method(api.GetType(), "SetName", typeof(string)) != null)
+                {
+                    Call(api, "SetName", new[] { typeof(string) }, value);
+                    return;
+                }
                 var data = new SerializedObject(native);
                 VrcFuryCompatibility.Require(data, "name", SerializedPropertyType.String).stringValue = value;
                 data.ApplyModifiedPropertiesWithoutUndo();
             }
             public void SetMode(string value)
             {
+                var publicMode = api?.GetType().GetNestedType("Mode", BindingFlags.Public);
+                if (publicMode != null && publicMode.IsEnum &&
+                    Method(api.GetType(), "SetMode", publicMode) != null)
+                {
+                    // Reject undefined names before invoking the public setter.
+                    if (!Enum.GetNames(publicMode).Contains(value))
+                        throw new InvalidOperationException(L("この版に Socket モードがありません: ") + value);
+                    Call(api, "SetMode", new[] { publicMode }, Enum.Parse(publicMode, value));
+                    return;
+                }
                 var data = new SerializedObject(native);
                 var mode = VrcFuryCompatibility.Require(data, "addLight", SerializedPropertyType.Enum);
                 int index = Array.IndexOf(mode.enumNames, value);
@@ -68,6 +84,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             }
             public void UseRadiusOffset()
             {
+                if (api != null && Method(api.GetType(), "UseRadiusOffset", Type.EmptyTypes) != null)
+                {
+                    Call(api, "UseRadiusOffset", Type.EmptyTypes);
+                    return;
+                }
                 var data = new SerializedObject(native);
                 var p = data.FindProperty("useRadiusOffset");
                 if (p == null) return;
