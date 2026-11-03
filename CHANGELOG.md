@@ -1,3 +1,10 @@
+## 1.2.0-beta.5 - Prepared, unpublished (2026-11-03)
+
+- Replace exact native SPS for NDMF version admission with guarded stable 1.x capability/schema checks from 1.1430.0.
+- Prefer available public Socket setters and depth-action creation APIs; preserve existing Plug/Guided Path adapter behavior.
+- Unity regression and local SDK builds passed on the recorded five-environment matrix. These results do not certify every future package version or VRChat runtime behavior.
+- Packaging metadata only differs from the validated functional source c9e33256a043b3237ab0caafda2aa901865860be. Installer dependency constraints are unchanged.
+
 ## 1.2.0-beta.4 - Prepared, unpublished (2026-10-18)
 
 - Delegate NDMF builds to the native SPSNDMF/MA/NDMF pipeline.

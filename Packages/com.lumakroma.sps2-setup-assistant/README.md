@@ -1,3 +1,9 @@
+## 1.2.0-beta.5: SPS for NDMF 互換性更新
+
+SPS for NDMF の対応する 1.x 版について、特定バージョンの完全一致ではなく、必要な機能・構造を確認して利用できるようにしました。利用できる機能は公開 API を使用し、既存の Plug / Guided Path 機能も維持します。
+
+未知の版すべてへの対応を保証するものではありません。更新前にプロジェクトをバックアップし、VCC/ALCOM のプレリリース表示から beta.5 を選択してください。既存アバターへの反映には再ビルド・再アップロードが必要です。
+
 <!-- Current compatibility amendment, 2026-11-02 -->
 SPS for NDMF: stable 1.x versions from 1.1430.0 are admitted only when the
 required native build integration and serialized capabilities are present.
