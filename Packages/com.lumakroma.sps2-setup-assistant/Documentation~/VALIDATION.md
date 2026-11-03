@@ -7,10 +7,17 @@ identity, producer and actual capability checks. Intended dedicated regression
 matrix: native 1.1430.0/1.1434.0/1.1436.0, Fury 1.1403.0, and native 1.1436.0
 with Stub 1.1436.0 + Migrator 1.0.1. Stub is not treated as real Fury.
 
-Offline core compilation has passed; real Editor compilation, test execution,
-save/reload, clone build and output comparison are pending. No VRC client,
-remote-player or release evidence is claimed. Results will be recorded separately
-with source and dependency hashes; skipped tests do not count as coverage.
+The dedicated five-environment Unity matrix completed with 228 passed, zero
+failed and 14 backend-specific skips per environment, with save/clone preservation
+and local SDK builds. Stub/Migrator public-API smoke checks passed. The tested
+functional source is c9e33256a043b3237ab0caafda2aa901865860be. The beta.5 archive
+has the same executable code, asmdefs and asset metadata as the validated local
+candidate; only package version and README differ. Package validation,
+localization validation, deterministic double-builds and official VPAI template
+audit passed. The final beta.5 public VPAI/VCC/ALCOM delivery has not run yet.
+MANUKA local generation/build and an authorized new Private upload succeeded
+on Fury 1.1433.0 / SDK 3.10.5; client runtime behavior and server security review
+remain unverified. No VRC runtime or all-future-version certification is claimed.
 
 # Issue186 Fury Disabled-only restoration — 2026-10-18
 
