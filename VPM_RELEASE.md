@@ -1,3 +1,19 @@
+## 1.2.0-beta.5 preparation (2026-11-03, unpublished)
+
+Use the validated compatibility source c9e33256a043b3237ab0caafda2aa901865860be,
+with metadata-only release preparation. Keep the public beta.4 assets immutable.
+The current stable Latest is 1.1.1; beta.5 remains prerelease, make_latest=false.
+Publish only the common package ZIP, package.json, Fury Installer ZIP and NDMF
+Installer ZIP. Official VPAI 1.1.6, installer dependencies, license files and
+legacy migration GUIDs are unchanged. Local double-build and template audits
+passed; public delivery remains a post-publication check.
+The existing PR #11 is older and conflicted: do not merge it for this release.
+Use a separate product release branch. The separate page-only candidate starts
+from live main a6c9b5a8332f39df4d4767ca6445b2652c132b84 and changes only the two
+installer destinations. Preserve main's current styling and all prior listing
+entries. Publishing, product branch push, release/tag creation and page PR merge
+remain pending explicit approval. No independent shop-page update was identified.
+
 # VPM release handoff
 
 ## 1.2.0-beta.4 preparation (2026-10-18, unpublished)
