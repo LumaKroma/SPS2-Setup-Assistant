@@ -1,3 +1,65 @@
+# 1.1.0 localization and menu names — 2026-09-30 (unreleased)
+
+## Regeneration protects saved Depth Action references
+
+Before replacing an existing setup, regeneration checks every saved Object and
+renderer reference in Depth Actions, including excluded parts, disabled Depth and
+fields retained while another action kind is selected. If a reference points into
+the generated hierarchy that will be destroyed, regeneration stops with guidance
+before creating a settings snapshot, recording Undo or changing any generated object.
+The original settings, references and hierarchy remain intact. No automatic path
+remapping is performed; choose a reference outside the hierarchy being replaced.
+Ordinary Apply with the same part membership is unchanged. This regeneration guard
+does not add a guarantee for ordinary Apply that removes a referenced part.
+References under test Plugs that regeneration preserves by reparenting
+remain supported, as do ordinary avatar objects/renderers and persistent clips.
+This guard changes only authoring rejection; generated runtime behavior is unchanged.
+
+## Paired adjustment Transform names
+
+New standard left/right adjustment children use `SPS_EarSocket_L/R`,
+`SPS_NippleSocket_L/R`, `SPS_HandSocket_L/R` and `SPS_FootSocket_L/R`.
+The paired name belongs to the adjustable Socket pose, not the attachment anchor.
+Anchor names, internal part IDs, menu names, placement, parent coordinate frames
+and native behavior are unchanged. Center and custom parts retain `Socket Pose`.
+
+Ordinary Apply never renames existing poses. Regeneration preserves the previous
+pose name for each surviving part ID, including legacy and authored names, so a
+package upgrade does not silently change those hierarchy paths. Newly added parts
+use the new rule. Existing setups do not automatically migrate; changing a saved
+hierarchy requires separately reviewing its settings paths and external animation
+bindings. This change does not migrate or rewrite third-party AnimationClips.
+
+The side suffixes permit name-based pairing in the inspected SymmetryBoneEditor
+source. Its operations mirror local coordinates, so actual geometric symmetry
+still depends on the avatar's left/right parent frames and axis settings. No
+SymmetryBoneEditor installation, runtime integration or geometric guarantee is added.
+
+## Language and display names
+
+- UI language is a local Editor preference. Menu language is saved per avatar in
+  the existing settings asset. Both support Japanese, English, Korean, Simplified
+  Chinese and Traditional Chinese; Japanese is the default for old and new data.
+- Every socket has an optional menu-name override. Nonblank text is preserved
+  verbatim across language changes, presets, Copy, save/reload, Apply and
+  regeneration. Blank/whitespace uses the standard name in the menu language.
+  Reset clears the override. Custom parts fall back to their authored part name.
+- Old nonstandard stored names migrate once to overrides. The historical chest
+  alias remains normalized. Clearing a migrated override must not resurrect it.
+- The assistant owns the final generated menu name. Edit it in the assistant;
+  native Socket `Name in menu` is used for ownership/build identity and is not
+  the final label. Apply or regenerate to save edited menu settings before build.
+- Build output uses the saved menu language, independent of the current Editor
+  UI language. Settings, Auto Mode, legacy compatibility, Local Only, preserved
+  native-settings container and generated pagination labels are localized.
+  Unrelated/native inner controls and authored custom names are preserved.
+- Stable IDs, build tokens, references, modes, placement, depth actions,
+  parameter names/defaults/persistence, ordering and pagination capacity remain
+  unchanged. A menu-language/override-only Apply does not reconfigure sockets.
+- Third-party exception text, native Inspector labels and internal asset/object
+  names are outside UI localization. Translation and layout review in Unity is
+  still required; source validation is not runtime certification.
+
 # 1.0.2 socket mode amendment — 2026-09-22
 
 Mouth and anus use Ring only when effective penetration is enabled; otherwise Auto.
@@ -166,7 +228,7 @@ not imply an automatic standalone Prefab asset export.
 
 Casual selects mouth, chest middle, both hands and their middle, vagina and anus
 (7). Default adds both feet, their middle and both nipples (12). Full adds ears
-and thigh middle (15). Presets change fixed-part inclusion only; custom parts,
+and thigh middle plus both optional finger loops (17). Presets change fixed-part inclusion only; custom parts,
 depth values and inactive action-type inputs survive switching.
 
 Automatic placement uses avatar-aligned Humanoid measurements plus temporary
@@ -314,7 +376,7 @@ not directly edited.
 The SPS2 menu begins in this order: 設定, 口, 胸, 膣, 肛門, 右手, 左手,
 両手. Remaining generated fixed/custom sockets follow directly in catalog order;
 there is no その他 submenu. Excluded sockets are omitted. Each page has at most
-eight controls including 次へ. Full selects 15 sockets and uses three pages.
+eight controls including 次へ. Full selects 17 sockets and uses three pages.
 設定 contains Auto Mode and Legacy Compatibility when included.
 The authoring Local Only checkbox is unchecked by default. Checking it exposes
 the existing native Stealth control under 設定 as Local Only; unchecking removes
@@ -392,3 +454,173 @@ Official stable-source boundaries: SPS first appears in 1.171.0; SPS2 including
 stops/vector tangents/Collapse in 1.1349.0; local tangent units in 1.1409.0. Beta
 versions can have intermediate schemas. These observations guide detection and
 are not claims that every release passed Unity/VRChat tests; see VALIDATION.md.
+
+## Experimental finger-ring calibration (unreleased 1.1.0)
+
+This is a local prototype with revision-specific Editor evidence and open VRC PC
+and actual-avatar visual gates. Optional IDs
+fingerRingLeft/fingerRingRight are separate from palm sockets, default OFF,
+with Full explicitly including both and Casual/Default excluding both. Presets
+change inclusion only; saved calibration, weights, offsets, rotations, menu names,
+depth settings and custom parts remain intact. Manual selection persists until
+another preset is applied. Native Auto stays OFF for these IDs;
+legacy/custom Auto behavior and the all-avatar 16-socket guard are unchanged.
+
+Initial included loops use automatic calibration as specified below. The Setup
+window presents the same enabled, display-name and depth-action controls as other
+sockets. Loop-specific weight, center, rotation, calibration buttons and Scene
+handles are not exposed. Saved calibration remains serialized, including legacy
+IndexIntermediate joint paths, weights and manually adjusted poses. UI removal
+does not delete or silently replace this data. Ordinary Apply and regeneration
+reuse a valid saved calibration; disabling keeps settings while removing output.
+No gesture clip is edited. Automatic estimation failure leaves output unchanged
+and shows localized guidance to check Humanoid finger mapping or disable the loop.
+
+A two-source ParentConstraint blends the calibrated frames with thumb weight
+[0,1], initial 0.5. This is not the midpoint between anatomical joints: both
+frames coincide with the calibrated center at capture for every weight.
+There is no Hand-fixed rotation or cross-product normal, and therefore no
+collinear-normal fallback. Open hands continue following; no gesture detection
+or automatic activation is added. Actual visible behavior remains a validation
+question. Missing joints, changed joint paths and invalid saved values retain their
+existing validation. Positive uniform scale is the accuracy-supported path. Every
+ancestor is inspected so compensating scales do not hide nonuniform scale or
+reflections. Invertible nonuniform/negative/sheared frames allow generation with
+a yellow warning that only the finger ring's position/orientation/size is not
+guaranteed and requires manual adjustment. A singular/nonfinite finger frame is
+skipped before inverse calculations; other valid parts continue and its stored
+calibration is retained. No valid placements means a warning-only no-op. A singular
+avatar root also returns without changing existing data. These are successful
+warning outcomes (the setup window already displays successful messages in yellow),
+not partial exception rollback or suppression of unrelated SDK/data errors.
+
+Native tracking, generated-avatar SDK conversion and persistence/Auto regression
+have exact-revision evidence in VALIDATION.md and the owning Issue. Converted
+dynamic tracking has a separate Play Mode test through public SDK conversion and
+ApplyConfigurationChanges; its result must be recorded before claiming an SDK
+simulation PASS. All Play Mode results use a persistent public TestRunner callback
+across domain reload. SDK simulation does not certify the VRChat client.
+
+Ring common controls, error messages and standard left/right names use the
+existing Japanese/English/Korean/Simplified/Traditional catalog.
+An authored menu-name override still wins in every language; stable IDs, pose names
+and calibration values are unaffected. Automated translation completeness is not
+native-speaker approval. Actual-avatar aesthetics and VRC PC remain human gates.
+
+### Scale boundary
+
+Calibration stores joint-local positions with InverseTransformPoint and evaluates
+them with TransformPoint. Legacy unit-scale saves already represent these local
+coordinates and do not require a schema migration. Rotation blending is unchanged.
+
+Observed Unity ParentConstraint translation offsets are world distances expressed
+in source rotation axes: native evaluation does not multiply them by source scale.
+Configure therefore multiplies each saved local offset by that joint's current
+positive uniform world scale. Ordinary Apply refreshes these constraint distances,
+including when saved calibration is unchanged, while preserving manual pose/size.
+
+For invertible nonuniform/negative scale, a saved calibration is reused. A pristine
+initial ring uses the midpoint and blended rotation of the current finger frames;
+the user is explicitly told to adjust this provisional placement manually. This
+path does not run the Humanoid closed-pose estimator on a deformed skeleton.
+Native offsets use inverse(sourceRotation) * TransformVector(localOffset) so the
+current finite frame can be represented; its geometry/orientation/size is not
+certified. The positive-uniform branch retains its tested scalar calculation.
+
+Both native offsets are validated before components are added or modified. Only
+numeric frame failures are converted to per-ring skips; unrelated validation or
+SDK errors still use their existing error handling. Partial Apply/regeneration
+retains the skipped ring's saved calibration. With no safe placements the setup
+window accepts a null/new-root no-op without changing existing assets or output.
+
+After editing root, ancestor or joint scale, Apply or regenerate the setup. Runtime
+scale animation is not supported. Source avatar transforms are never corrected
+automatically. The warning-only revision has Unity/native/SDK finite-output and generation
+evidence in VALIDATION.md; this is not an accuracy guarantee for nonuniform or
+negative scale and does not certify the VRC client.
+
+### Issue 180 compact display settings (unreleased 1.1.0)
+The UI language uses the system language only when no explicit Editor preference
+exists. New setup defaults use the system language independently of that preference.
+Japanese, English, Korean and Simplified/Traditional Chinese are supported;
+unsupported system languages use English. Existing serialized settings retain
+their menu language (missing legacy language remains Japanese).
+Menu language stays visible above the avatar field. Each included socket
+shows its effective menu name beside Depth actions and Rename. Rename directly reveals the
+override field; turning it off clears the override and restores the translated
+standard name. Existing overrides remain enabled; IDs, pose paths and Auto behavior
+are unchanged. Window draft supports serialization and Undo. No separate display
+foldout is shown; its legacy serialized bool is retained but no longer gates fields.
+
+
+## Automatic initial finger-loop calibration amendment (unreleased 1.1.0)
+
+New uncalibrated, included fingerRingLeft/fingerRingRight attempt a bounded
+bone-based initial calibration before the authoring transaction. A disposable
+Transform-only copy uses the existing Humanoid Avatar through public
+HumanPoseHandler. Only the selected thumb/index muscles change: thumb stretch
+(-1,-0.75,-0.75), spread-0.75; index stretch(-0.25,-1,-1), spread0. No source
+Animator, scripts, constraints, renderer, pose or clip are modified/copied.
+The copy and HumanPoseHandler are disposed on success/failure. This reference
+pose is not guaranteed to match the user's runtime Gesture.
+
+Seven mapped points (Hand; thumb/index proximal, intermediate, distal) form a
+bone contour. Unmapped/distinctness failures, nonfinite values, tiny segments,
+degenerate frames, estimated tip gap >0.2 index length, area <0.08 span²,
+plane deviation >0.2 span, exterior centroid or uncertain palm-relative normal reject estimation.
+Terminal segments extend by0.6 of the preceding distal segment: this is a bounded
+bone approximation, not a finger-surface measurement. The area centroid and
+palm-relative plane normal supply center/+Z. Both joint-relative offsets are
+captured on the posed copy, then values and original paths are carried back.
+Thumb weight is preserved, not inferred from a single closed pose.
+
+Existing saved/manual calibration is never automatically replaced. Legacy pending
+manual inputs fail closed and remain intact; guidance allows the affected loop
+to be disabled. There is no calibration or automatic-retry control in the UI.
+Generation failure commits no estimate/output. Successful initial calibration
+returns to the window draft and settings snapshot. Regeneration with unchanged
+ring calibration also retains its pose-local manual position/rotation/scale;
+the underlying explicit capture API remains for compatibility. Other regeneration
+semantics and native Auto exclusion/16 limit stay unchanged. Scaled rigs remain unsupported.
+Actual-avatar appearance, actual Gesture match and VRC PC remain human gates.
+
+The menu-language row is always visible in its original top position. Menu display
+fields appear directly when Rename is enabled; no display foldout is shown. Stable IDs and
+user overrides remain unchanged. Japanese standard labels are 左手の指わっか /
+右手の指わっか; English uses finger loop. Historical standard aliases are retained
+as migration inputs. Native-language quality still needs human review.
+
+
+## Real-gesture refinement of the initial loop estimate (unreleased 1.1.0)
+
+The estimated opening contour excludes ThumbProximal, which belongs to the
+palm/web rather than the hole. Its normal is the least-variance axis of the
+contour covariance, with area, rank/planarity and palm-relative direction guards;
+the signed area centroid is projected onto that fitted plane. The existing
+bounded reference pose, tip approximation and unsupported-scale guard remain.
+
+New automatic calibration follows ThumbDistal plus IndexProximal, reducing the
+reference-to-gesture rotation discrepancy measured on MANUKA. Its chosen joint
+is recorded in the existing indexPath field; no settings schema/ID is added.
+Saved IndexIntermediate calibrations continue using IndexIntermediate and are
+never silently upgraded. The underlying uncalibrated capture API retains
+IndexIntermediate; the Setup window exposes no manual/recalibration controls.
+Unknown/remapped paths fail validation. Stored weights and default0.5 remain
+unchanged: a single avatar does not establish a universal tracking weight.
+
+No user Gesture, Animator controller, Avatar asset or mesh is modified. CPU
+mesh projection used during validation is diagnostic evidence only and is not
+included in the runtime estimator or package dependency contract. Other-avatar,
+visible fit and VRC PC validation remain open.
+
+
+## Legacy Assets migration metadata (unpublished 1.1.0)
+
+The package declares exactly Assets/LumaKroma/SPS2SetupAssistant with root GUID
+1824306e4bd4439aaffbd9eab24486e5 in legacyFolders. This standard VPM/VPAI
+mechanism removes the folder and its meta during installation; user additions
+inside that folder are not exempt. Assets/SPS2Settings and unrelated folders
+are not deletion targets. Preserve all shared script/asset GUIDs, retain normal
+installer confirmation, and instruct users to back up and inspect before install.
+No automatic backup, rollback or unconditional duplicate cleanup is guaranteed.
+See repository Docs/LEGACY_MIGRATION_110.md for exact scope and native test gates.

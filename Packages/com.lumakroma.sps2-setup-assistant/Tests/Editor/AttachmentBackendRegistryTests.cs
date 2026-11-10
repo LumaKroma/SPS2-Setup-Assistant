@@ -57,7 +57,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
                     anchor,
                     HumanBodyBones.Head,
                     out var error), Is.False);
-                Assert.That(error, Does.Contain("unavailable"));
+                Assert.That(error, Is.EqualTo(string.Format(Localization.Sps2Localization.L("追従方式 {0} は利用できません。"), "999")));
                 Assert.That(anchor.GetComponents<Component>(), Has.Length.EqualTo(1));
             }
             finally

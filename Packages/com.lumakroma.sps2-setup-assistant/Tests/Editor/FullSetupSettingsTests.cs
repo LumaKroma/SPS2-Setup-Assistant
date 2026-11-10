@@ -10,6 +10,131 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Tests
 {
     public class FullSetupSettingsTests
     {
+        private static System.Collections.Generic.IEnumerable<object[]> DestructiveDepthReferences()
+        {
+            foreach (bool included in new[] { false, true })
+                foreach (bool depth in new[] { false, true })
+                    foreach (DepthActionKind kind in Enum.GetValues(typeof(DepthActionKind)))
+                        foreach (bool renderer in new[] { false, true })
+                            yield return new object[] { included, depth, kind, renderer };
+        }
+
+        [TestCaseSource(nameof(DestructiveDepthReferences))]
+        public void RegenerationRejectsDestructiveDepthReferencesWithoutChangingInput(
+            bool included, bool depth, DepthActionKind kind, bool rendererReference)
+        {
+            var avatar = new GameObject("Avatar");
+            var asset = ScriptableObject.CreateInstance<Sps2SetupAsset>();
+            try
+            {
+                var root = new GameObject("SPS2"); root.transform.SetParent(avatar.transform);
+                var target = new GameObject("Saved target"); target.transform.SetParent(root.transform);
+                target.transform.localPosition = new Vector3(1, 2, 3);
+                var renderer = target.AddComponent<SkinnedMeshRenderer>();
+                var action = new DepthActionSettings { kind = kind,
+                    target = rendererReference ? null : target, renderer = rendererReference ? renderer : null };
+                var settings = new SetupSettings();
+                settings.parts.Add(new SocketSettings { id = "mouth", name = "Mouth", included = included,
+                    depth = depth, actions = new System.Collections.Generic.List<DepthActionSettings> { action } });
+                asset.stateJson = "preserved snapshot";
+                var context = new Sps2SetupContext { gameObject = root, asset = asset, settings = settings };
+                string before = JsonUtility.ToJson(settings);
+                int undoGroup = UnityEditor.Undo.GetCurrentGroup();
+
+                var error = Assert.Throws<InvalidOperationException>(() =>
+                    FullSetupGenerator.ValidateRegenerationReferences(context, settings));
+
+                Assert.That(error.Message, Does.StartWith("Mouth"));
+                Assert.That(JsonUtility.ToJson(settings), Is.EqualTo(before));
+                Assert.That(context.asset, Is.SameAs(asset));
+                Assert.That(asset.stateJson, Is.EqualTo("preserved snapshot"));
+                Assert.That(root != null && target != null && renderer != null, Is.True);
+                Assert.That(root.transform.parent, Is.EqualTo(avatar.transform));
+                Assert.That(target.transform.parent, Is.EqualTo(root.transform));
+                Assert.That(target.transform.localPosition, Is.EqualTo(new Vector3(1, 2, 3)));
+                Assert.That(UnityEditor.Undo.GetCurrentGroup(), Is.EqualTo(undoGroup));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(avatar); UnityEngine.Object.DestroyImmediate(asset); }
+        }
+
+        [TestCase(0)] // Ordinary avatar object/renderer outside the generated hierarchy.
+        [TestCase(1)] // Retained test Plug, including descendants.
+        [TestCase(2)] // Retained long test Plug, including descendants.
+        public void RegenerationAllowsReferencesWhoseObjectsSurvive(int location)
+        {
+            var avatar = new GameObject("Avatar");
+            var clip = new AnimationClip();
+            try
+            {
+                var root = new GameObject("SPS2"); root.transform.SetParent(avatar.transform);
+                var holder = new GameObject("Retained"); holder.transform.SetParent(location == 0 ? avatar.transform : root.transform);
+                var target = new GameObject("Target"); target.transform.SetParent(holder.transform);
+                var renderer = target.AddComponent<SkinnedMeshRenderer>();
+                var settings = new SetupSettings();
+                settings.parts.Add(new SocketSettings { id = "mouth", actions = new System.Collections.Generic.List<DepthActionSettings> {
+                    new DepthActionSettings { kind = DepthActionKind.Object, target = target },
+                    new DepthActionSettings { kind = DepthActionKind.BlendShape, renderer = renderer },
+                    new DepthActionSettings { kind = DepthActionKind.AnimationClip, clip = clip } } });
+                var context = new Sps2SetupContext { gameObject = root,
+                    testPlug = location == 1 ? holder : null, longTestPlug = location == 2 ? holder : null };
+                string before = JsonUtility.ToJson(settings);
+                Assert.DoesNotThrow(() => FullSetupGenerator.ValidateRegenerationReferences(context, settings));
+                Assert.That(JsonUtility.ToJson(settings), Is.EqualTo(before));
+                Assert.That(target.transform.parent, Is.EqualTo(holder.transform));
+            }
+            finally { UnityEngine.Object.DestroyImmediate(avatar); UnityEngine.Object.DestroyImmediate(clip); }
+        }
+
+        [Test]
+        public void RegenerationDoesNotTreatTheDestroyedRootAsARetainedPlug()
+        {
+            var root = new GameObject("SPS2");
+            try
+            {
+                var settings = new SetupSettings();
+                settings.parts.Add(new SocketSettings { actions = new System.Collections.Generic.List<DepthActionSettings> {
+                    new DepthActionSettings { kind = DepthActionKind.Object, target = root } } });
+                var context = new Sps2SetupContext { gameObject = root, testPlug = root };
+                Assert.Throws<InvalidOperationException>(() => FullSetupGenerator.ValidateRegenerationReferences(context, settings));
+                Assert.That(root != null, Is.True);
+            }
+            finally { UnityEngine.Object.DestroyImmediate(root); }
+        }
+
+        [Test]
+        public void NewPairedAdjustmentNamesAreUniqueAndHaveExactSidePartners()
+        {
+            var pairs = new[] { "ear", "nipple", "hand", "foot" };
+            var names = pairs.SelectMany(id => new[] {
+                FullSetupGenerator.SocketPoseName(id + "Left"),
+                FullSetupGenerator.SocketPoseName(id + "Right") }).ToArray();
+            Assert.That(names.Distinct().Count(), Is.EqualTo(names.Length));
+            foreach (var id in pairs)
+            {
+                var left = FullSetupGenerator.SocketPoseName(id + "Left");
+                Assert.That(left, Does.StartWith("SPS_").And.EndWith("_L"));
+                Assert.That(FullSetupGenerator.SocketPoseName(id + "Right"),
+                    Is.EqualTo(left.Substring(0, left.Length - 2) + "_R"));
+            }
+            Assert.That(FullSetupGenerator.SocketPoseName("handLeft"), Is.EqualTo("SPS_HandSocket_L"));
+        }
+
+        [TestCase("Socket Pose")]
+        [TestCase("Authored adjustment L")]
+        [TestCase("")]
+        public void ExistingAdjustmentPathNamesArePreserved(string existingName)
+        {
+            Assert.That(FullSetupGenerator.SocketPoseName("handLeft", existingName), Is.EqualTo(existingName));
+        }
+
+        [TestCase("hands")]
+        [TestCase("mouth")]
+        [TestCase("custom-id")]
+        public void UnpairedAdjustmentNamesRemainCompatible(string id)
+        {
+            Assert.That(FullSetupGenerator.SocketPoseName(id), Is.EqualTo("Socket Pose"));
+        }
+
         [Test]
         public void RetiredInstantSettingIsIgnoredWithoutLosingOtherSettings()
         {

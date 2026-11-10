@@ -1,3 +1,4 @@
+using static LumaKroma.Sps2SetupAssistant.Editor.Localization.Sps2Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -10,7 +11,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
     public sealed class VrcFuryCapabilities
     {
         private VrcFuryCapabilities() { }
-        public const string UpdateGuide = "VCC の Manage Project で VRCFury を最新の安定版に更新してください。未導入の場合は VRCFury の公式導入案内をご確認ください。";
+        public static string UpdateGuide => L("VCC の Manage Project で VRCFury を最新の安定版に更新してください。未導入の場合は VRCFury の公式導入案内をご確認ください。");
         public const string GuideUrl = "https://vrcfury.com/download/";
         private static VrcFuryCapabilities current;
         public static VrcFuryCapabilities Current => current ?? (current = Inspect());
@@ -42,7 +43,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         // Also accepts independently supplied component schemas for contract tests. No test override of Current.
         internal static VrcFuryCapabilities Inspect(Type socketType, Type plugType, bool publicApi = true)
         {
-            var result = new VrcFuryCapabilities { Version = "未導入 / 不明" };
+            var result = new VrcFuryCapabilities { Version = L("未導入 / 不明") };
             var assembly = socketType?.Assembly ?? VrcFuryApi.FindType("com.vrcfury.api.FuryComponents")?.Assembly;
             var package = assembly == null ? null : UnityEditor.PackageManager.PackageInfo.FindForAssembly(assembly);
             if (package != null) result.Version = package.version;
@@ -50,19 +51,19 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             try
             {
                 if (socketType == null || plugType == null)
-                { result.BlockReason = "SPS が見つかりません。プレハブは生成できません。"; return result; }
+                { result.BlockReason = L("SPS が見つかりません。プレハブは生成できません。"); return result; }
                 temporary = new GameObject("SPS compatibility probe") { hideFlags = HideFlags.HideAndDontSave };
                 var plug = new SerializedObject(temporary.AddComponent(plugType));
                 result.HasSps = Has(plug, "enableSps", SerializedPropertyType.Boolean) || Has(plug, "configureSps", SerializedPropertyType.Boolean);
                 if (!result.HasSps)
-                { result.BlockReason = "この VRCFury には SPS が搭載されていません。プレハブは生成できません。"; return result; }
+                { result.BlockReason = L("この VRCFury には SPS が搭載されていません。プレハブは生成できません。"); return result; }
                 result.TestPlug = Has(plug, "autoRenderer", SerializedPropertyType.Boolean) &&
                     Has(plug, "configureTpsMesh", SerializedPropertyType.Generic) && Has(plug, "name", SerializedPropertyType.String);
                 var socket = new SerializedObject(temporary.AddComponent(socketType));
                 result.Sps2 = Has(socket, "useSharedTag", SerializedPropertyType.Boolean);
                 if (!Has(socket, "name", SerializedPropertyType.String) || !Has(socket, "addMenuItem", SerializedPropertyType.Boolean) ||
                     !Has(socket, "addLight", SerializedPropertyType.Enum) || !socket.FindProperty("addLight").enumNames.Contains("Ring"))
-                { result.BlockReason = "SPS の基本設定構造に対応できません。既存設定を守るため生成を停止します。"; return result; }
+                { result.BlockReason = L("SPS の基本設定構造に対応できません。既存設定を守るため生成を停止します。"); return result; }
                 result.AutoMode = Has(socket, "enableAuto", SerializedPropertyType.Boolean);
                 // Both SPS1 and SPS2 have native Stealth; absence is also checked on actual build output.
                 result.LocalOnly = result.AutoMode;
@@ -108,7 +109,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                     VrcFuryApi.Method(attachmentApi, "SetAlign", typeof(bool)) != null;
                 return result;
             }
-            catch (Exception e) { result.BlockReason = "VRCFury の互換性を確認できません: " + e.Message; return result; }
+            catch (Exception e) { result.BlockReason = L("VRCFury の互換性を確認できません: ") + e.Message; return result; }
             finally { if (temporary != null) UnityEngine.Object.DestroyImmediate(temporary); }
         }
 
@@ -116,14 +117,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         {
             var notes = new List<string>();
             if (!CanGenerate) { notes.Add(BlockReason); return notes; }
-            if (!Sps2) notes.Add("SPS無印（SPS1）を検出しました。対応する基本ソケットは生成できますが、SPS2 への更新を推奨します。");
-            void Missing(bool available, string feature) { if (!available) notes.Add(feature + " はこの版では利用できません（生成対象外）。"); }
-            Missing(Path, "貫通");
-            if (Path) { Missing(Collapse, "首付近で太さを0にする"); Missing(Tangents, "貫通経路の曲線調整（標準の経路補間を使用）"); }
-            Missing(AutoMode, "Auto Mode"); Missing(Legacy, "後方互換性の切り替え");
-            Missing(LocalOnly, "Local Only"); Missing(Depth, "深度アクションの自動設定"); Missing(TestPlug, "テストプラグ");
-            if (!RadiusOffset) notes.Add("Radius Offset 非対応のため、標準のソケット配置を使用します。");
-            if (!PublicAttachment) notes.Add("追従の公開 API がないため Unity の Parent Constraint を使用します。");
+            if (!Sps2) notes.Add(L("SPS無印（SPS1）を検出しました。対応する基本ソケットは生成できますが、SPS2 への更新を推奨します。"));
+            void Missing(bool available, string feature) { if (!available) notes.Add(feature + L(" はこの版では利用できません（生成対象外）。")); }
+            Missing(Path, L("貫通"));
+            if (Path) { Missing(Collapse, L("首付近で太さを0にする")); Missing(Tangents, L("貫通経路の曲線調整（標準の経路補間を使用）")); }
+            Missing(AutoMode, L("Auto Mode")); Missing(Legacy, L("後方互換性の切り替え"));
+            Missing(LocalOnly, L("Local Only")); Missing(Depth, L("深度アクションの自動設定")); Missing(TestPlug, L("テストプラグ"));
+            if (!RadiusOffset) notes.Add(L("Radius Offset 非対応のため、標準のソケット配置を使用します。"));
+            if (!PublicAttachment) notes.Add(L("追従の公開 API がないため Unity の Parent Constraint を使用します。"));
             return notes;
         }
 
