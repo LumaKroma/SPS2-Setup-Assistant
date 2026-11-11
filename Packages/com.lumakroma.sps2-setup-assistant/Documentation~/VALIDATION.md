@@ -10,7 +10,7 @@ with Stub 1.1436.0 + Migrator 1.0.1. Stub is not treated as real Fury.
 The dedicated five-environment Unity matrix completed with 228 passed, zero
 failed and 14 backend-specific skips per environment, with save/clone preservation
 and local SDK builds. Stub/Migrator public-API smoke checks passed. The tested
-functional source is c9e33256a043b3237ab0caafda2aa901865860be. The beta.5 archive
+functional source is 45041bdcee390de7a2e10c655f3d39ebfd5d0197. The beta.5 archive
 has the same executable code, asmdefs and asset metadata as the validated local
 candidate; only package version and README differ. Package validation,
 localization validation, deterministic double-builds and official VPAI template

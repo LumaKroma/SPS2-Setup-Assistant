@@ -1,6 +1,31 @@
+## 1.2.0 interim SPS2 distribution
+
+Product code remains that of corrected official beta.5
+47c5c0ff51897a914e125ae491fecbc8e2f198ed. Version 1.2.0 is an interim SPS2
+release, not formal SPS3 support. The NDMF Installer requests SPS for NDMF
+1.1436.0; all other dependency fields and includePrerelease=true are retained.
+
+Distribution consists of the common VPM package ZIP, package.json, Fury
+Installer ZIP and NDMF Installer ZIP. Both family installers use official
+VPAI 1.1.6 and obtain dependencies from their upstream repositories.
+Historical distributions remain unchanged.
+
+Both Installer families passed fresh installation and updates from 1.1.1 and
+beta.5 on the versions documented in VPM_VALIDATION.md. Local MANUKA SDK builds
+passed for Fury and new-default NDMF generation. These results do not certify
+Fury-to-NDMF conversion, all dependency combinations or VRChat runtime.
+The final archive changes documentation only relative to the tested payloads.
+
+The current README and Docs/KNOWN_ISSUES.md disclose Legacy OFF behavior,
+the enableOthers conversion stop, changed duplicate-name/OSC/haptics/menu
+identifiers and possible saved-toggle effects, and the prerelease dependency
+versions actually resolved during validation.
+
+<!-- Historical record below; not current release readiness. -->
+
 ## 1.2.0-beta.5 preparation (2026-11-03, unpublished)
 
-Use the validated compatibility source c9e33256a043b3237ab0caafda2aa901865860be,
+Use the validated compatibility source 45041bdcee390de7a2e10c655f3d39ebfd5d0197,
 with metadata-only release preparation. Keep the public beta.4 assets immutable.
 The current stable Latest is 1.1.1; beta.5 remains prerelease, make_latest=false.
 Publish only the common package ZIP, package.json, Fury Installer ZIP and NDMF

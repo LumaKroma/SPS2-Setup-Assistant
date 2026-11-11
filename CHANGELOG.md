@@ -1,9 +1,28 @@
+## 1.2.0 - Interim stable version (2026-11-11)
+
+SPS3 has been released in VRCFury, and an issue has been confirmed where avatar builds stop when using SPS2 Setup Assistant 1.1.1. Version v2.0.0, which will officially support SPS3, is still in development. We are releasing 1.2.0 as an interim stable version to address this build interruption first.
+
+Based on 1.2.0-beta.5, this version updates SPS for NDMF installed by the NDMF Installer to 1.1436.0 for VRChat SDK 3.10.6 support. Official SPS3 support is planned for the upcoming v2.0.0.
+
+## Known limitations
+
+- **Turning "Legacy Compatibility" OFF may not take effect.**
+  In VRCFury, menus and compatibility mechanisms for the older system may remain on the avatar even when this option is OFF. This version does not fix that issue.
+- **Switching from VRCFury to SPS for NDMF may stop.**
+  Switching the backend on an avatar that has already been set up may stop during settings validation. Replacing the Installer alone does not automatically convert an existing setup.
+- **Check names and saved states when using multiple parts with the same name in NDMF.**
+  The numbering used to distinguish duplicates has changed, which changes names used by menus and external integrations. If you use external tools, review their settings. The ON/OFF states saved for individual parts in VRChat may not carry over.
+
+Back up the entire project before updating. After updating, check the settings and menus, rebuild and re-upload the avatar, and check how each part works.
+
+<!-- Historical record below; not current release readiness. -->
+
 ## 1.2.0-beta.5 - Prepared, unpublished (2026-11-03)
 
 - Replace exact native SPS for NDMF version admission with guarded stable 1.x capability/schema checks from 1.1430.0.
 - Prefer available public Socket setters and depth-action creation APIs; preserve existing Plug/Guided Path adapter behavior.
 - Unity regression and local SDK builds passed on the recorded five-environment matrix. These results do not certify every future package version or VRChat runtime behavior.
-- Packaging metadata only differs from the validated functional source c9e33256a043b3237ab0caafda2aa901865860be. Installer dependency constraints are unchanged.
+- Packaging metadata only differs from the validated functional source 45041bdcee390de7a2e10c655f3d39ebfd5d0197. Installer dependency constraints are unchanged.
 
 ## 1.2.0-beta.4 - Prepared, unpublished (2026-10-18)
 
