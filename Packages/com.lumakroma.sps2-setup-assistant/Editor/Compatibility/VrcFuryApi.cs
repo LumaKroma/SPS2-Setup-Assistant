@@ -64,23 +64,25 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 VrcFuryCompatibility.Require(data, "name", SerializedPropertyType.String).stringValue = value;
                 data.ApplyModifiedPropertiesWithoutUndo();
             }
-            public void SetMode(string value)
+            public string SetMode(string value)
             {
+                string Choose(string[] names) {
+                    if (names.Contains(value)) return value;
+                    if (names.Contains("Ring")) return "Ring";
+                    if (names.Contains("Hole")) return "Hole";
+                    throw new InvalidOperationException("No usable Socket mode is available.");
+                }
                 var publicMode = api?.GetType().GetNestedType("Mode", BindingFlags.Public);
-                if (publicMode != null && publicMode.IsEnum &&
-                    Method(api.GetType(), "SetMode", publicMode) != null)
-                {
-                    // Reject undefined names before invoking the public setter.
-                    if (!Enum.GetNames(publicMode).Contains(value))
-                        throw new InvalidOperationException(L("この版に Socket モードがありません: ") + value);
-                    Call(api, "SetMode", new[] { publicMode }, Enum.Parse(publicMode, value));
-                    return;
+                if (publicMode != null && publicMode.IsEnum && Method(api.GetType(), "SetMode", publicMode) != null) {
+                    var selected = Choose(Enum.GetNames(publicMode));
+                    Call(api, "SetMode", new[] { publicMode }, Enum.Parse(publicMode, selected));
+                    return selected;
                 }
                 var data = new SerializedObject(native);
                 var mode = VrcFuryCompatibility.Require(data, "addLight", SerializedPropertyType.Enum);
-                int index = Array.IndexOf(mode.enumNames, value);
-                if (index < 0) throw new InvalidOperationException(L("この版に Socket モードがありません: ") + value);
-                mode.enumValueIndex = index; data.ApplyModifiedPropertiesWithoutUndo();
+                var fallback = Choose(mode.enumNames);
+                mode.enumValueIndex = Array.IndexOf(mode.enumNames, fallback); data.ApplyModifiedPropertiesWithoutUndo();
+                return fallback;
             }
             public void UseRadiusOffset()
             {
@@ -94,6 +96,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 if (p == null) return;
                 VrcFuryCompatibility.Require(data, "useRadiusOffset", SerializedPropertyType.Boolean).boolValue = true;
                 data.ApplyModifiedPropertiesWithoutUndo();
+            }
+            // Public API only; no fallback into an unrelated backend's serialized state.
+            internal Actions GetActiveActions()
+            {
+                if (SpsBackend.FamilyOf(native) != SpsFamily.VrcFury || api == null ||
+                    Method(api.GetType(), "GetActiveActions") == null)
+                    throw new InvalidOperationException("This backend does not expose Socket active animations.");
+                return new Actions(Call(api, "GetActiveActions", Type.EmptyTypes));
             }
             public Actions AddDepthActions(Vector2 range, float smoothing, bool self) =>
                 SpsBackend.FamilyOf(native) == SpsFamily.SpsForNdmf

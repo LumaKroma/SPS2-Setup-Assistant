@@ -13,13 +13,8 @@ using VRC.SDKBase.Editor.BuildPipeline;
 
 namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
 {
-    // Run after the observed native VRCFury -10000 callback has resolved WD mode.
-    public sealed class Sps2AfterVrcFury : IVRCSDKPreprocessAvatarCallback
-    {
-        public int callbackOrder => -9999;
-        public bool OnPreprocessAvatar(GameObject avatar) => Sps2BuildIntegration.Run(avatar);
-    }
-
+    // Historical restoration helpers are retained only for source compatibility.
+    // Setup intentionally registers no SDK build callbacks.
     public static class Sps2BuildIntegration
     {
         private const string LegacyLabel = "<b>Legacy Compatibility</b>\n<size=20>DPS / TPS / SPS1\nOne socket at a time";
@@ -40,8 +35,44 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 System.Text.RegularExpressions.Regex.IsMatch(p.name, @"^VF W[DEHNPUCABV]*$");
         }
 
+        internal static bool CheckVersionBoundary(GameObject avatar, Action<SpsFamily> checkVersion = null)
+        {
+            try
+            {
+                if (avatar == null) return true;
+                // Exact persisted generation provenance selects the version contract. Reading this
+                // discriminator does not deserialize, migrate or rewrite the user's settings.
+                var owned = SpsBackend.AllSockets(avatar).Select(socket => new {
+                    socket, token = VrcFuryCompatibility.ReadIdentity(socket)
+                }).Where(row => Sps2SetupStorage.TryToken(row.token, out _, out _)).ToArray();
+                if (checkVersion != null)
+                {
+                    // Existing test seam retains its family-only contract.
+                    foreach (var family in owned.Select(row => SpsBackend.FamilyOf(row.socket)).Distinct()) checkVersion(family);
+                }
+                else foreach (var row in owned)
+                {
+                    var family = SpsBackend.FamilyOf(row.socket);
+                    // SPS3 provenance is a Fury-only distinction. Preserve the native-identity-only
+                    // NDMF boundary: Fury callbacks must not load an NDMF authoring asset.
+                    if (family != SpsFamily.VrcFury)
+                    {
+                        SpsBackend.RequireSupportedPackageVersion(family);
+                        continue;
+                    }
+                    Sps2SetupStorage.TryToken(row.token, out var identity, out _);
+                    SpsAuthoringCompatibility.ValidateContract(Sps2SetupStorage.ReadBuildAuthoringContract(identity));
+                    if (!FuryPersistentScriptProbe.HasPersistentBinding(row.socket.GetType(), SpsBackend.PackageId(family), out var issue))
+                        throw new InvalidOperationException("Socket identity unavailable: " + issue);
+                }
+                return true;
+            }
+            catch (Exception e) { Debug.LogError(L("SPS2 ビルドを中止しました: ") + e.Message, avatar); return false; }
+        }
+
         internal static bool Run(GameObject avatar)
         {
+            if (!CheckVersionBoundary(avatar)) return false;
             var descriptor = avatar.GetComponent<VRCAvatarDescriptor>();
             // No authoring-asset lookup or capability probe on native-only builds.
             if (!NeedsDisabledRestoration(descriptor?.expressionParameters)) return true;
@@ -50,10 +81,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 var root = Sps2SetupStorage.Find(descriptor, true, SpsFamily.VrcFury);
                 if (root == null || root.settings.family != SpsFamily.VrcFury) return true;
                 using var backend = SpsBackend.Use(SpsFamily.VrcFury);
-                VrcFuryCompatibility.RequireVersion();
+                SpsAuthoringCompatibility.ValidateContract(root.AuthoringContract);
                 if (root.schema != 1 || string.IsNullOrEmpty(root.identity))
                     throw new InvalidOperationException(L("SPS2 の所有ルートが不正です。"));
-                Complete(descriptor, root);
+                if (root.AuthoringContract == SpsAuthoringContract.LegacySps2) Complete(descriptor, root);
+                else Sps3BuildRestoration.Complete(descriptor, root);
                 return true;
             }
             catch (Exception e) { Debug.LogError(L("SPS2 ビルドを中止しました: ") + e.Message, avatar); return false; }

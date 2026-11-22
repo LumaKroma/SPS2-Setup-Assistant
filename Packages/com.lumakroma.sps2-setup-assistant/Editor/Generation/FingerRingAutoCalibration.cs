@@ -47,6 +47,26 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             });
         }
 
+        // Diagnose only concrete missing mappings. Invalid Humanoid/schema, duplicate
+        // or foreign mappings and calibration failures still take the original fatal path.
+        internal static string[] MissingMappedBones(VRCAvatarDescriptor avatar, SocketSettings part)
+        {
+            var animator = avatar != null ? avatar.GetComponent<Animator>() : null;
+            if (part == null || !part.IsFingerRing || animator == null || animator.avatar == null || !animator.isHuman)
+                throw new InvalidOperationException(L("輪ソケットにはHumanoidアバターが必要です。"));
+            var required = RequiredBones(part.id == "fingerRingLeft");
+            var mapped = required.Select(animator.GetBoneTransform).ToArray();
+            RequireMappedBoneOwnership(avatar.transform, mapped);
+            return required.Where((bone, index) => mapped[index] == null).Select(b => b.ToString()).ToArray();
+        }
+        internal static void RequireMappedBoneOwnership(Transform avatar, IEnumerable<Transform> bones)
+        {
+            var mapped = bones.Where(b => b != null).ToArray();
+            if (avatar == null || mapped.Distinct().Count() != mapped.Length ||
+                mapped.Any(b => !b.IsChildOf(avatar) || avatar.Find(AnimationUtility.CalculateTransformPath(b, avatar)) != b))
+                throw new InvalidOperationException(L("指わっかを自動配置できませんでした。手指のボーン参照がアバター内の一意なボーンを指していません。"));
+        }
+
         private static HumanBodyBones[] RequiredBones(bool left) => left ? new[] {
             HumanBodyBones.LeftHand, HumanBodyBones.LeftThumbProximal, HumanBodyBones.LeftThumbIntermediate,
             HumanBodyBones.LeftThumbDistal, HumanBodyBones.LeftIndexProximal, HumanBodyBones.LeftIndexIntermediate, HumanBodyBones.LeftIndexDistal

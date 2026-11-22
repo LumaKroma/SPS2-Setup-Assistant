@@ -37,10 +37,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Planning
                     skin.BakeMesh(mesh, true);
                 }
                 finally { UnityEngine.Object.DestroyImmediate(source); }
-                world = mesh.vertices.Select(v => renderer.transform.TransformPoint(v)).ToArray();
+
                 helper = new GameObject("SPS2 temporary surface query") { hideFlags = HideFlags.HideAndDontSave };
                 helper.transform.SetPositionAndRotation(renderer.transform.position, renderer.transform.rotation);
                 helper.transform.localScale = renderer.transform.lossyScale;
+                // Match the frame used by the scratch renderer and surface collider.
+                // The original renderer may inherit shear that a flattened TRS cannot represent.
+                world = mesh.vertices.Select(v => helper.transform.TransformPoint(v)).ToArray();
                 collider = helper.AddComponent<MeshCollider>(); collider.sharedMesh = mesh;
                 Physics.SyncTransforms();
             }
@@ -78,9 +81,23 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Planning
                 if (weight.boneIndex < totals.Length) totals[weight.boneIndex] += weight.weight;
             return major.Count(b => { int index = Array.IndexOf(renderer.bones, b); return index >= 0 && totals[index] >= 1; });
         }
+        internal static bool IsUsableFrame(Matrix4x4 matrix)
+        {
+            for (int i = 0; i < 16; i++)
+                if (float.IsNaN(matrix[i]) || float.IsInfinity(matrix[i])) return false;
+            var x = (Vector3)matrix.GetColumn(0); var y = (Vector3)matrix.GetColumn(1); var z = (Vector3)matrix.GetColumn(2);
+            if (!(x.magnitude > 0) || !(y.magnitude > 0) || !(z.magnitude > 0)) return false;
+            float normalizedDeterminant = Vector3.Dot(Vector3.Cross(x.normalized, y.normalized), z.normalized);
+            return !float.IsNaN(normalizedDeterminant) && Mathf.Abs(normalizedDeterminant) > 0.000001f;
+        }
         private Snapshot Get(SkinnedMeshRenderer renderer)
         {
             if (renderer == null || renderer.sharedMesh == null) return null;
+            if (!IsUsableFrame(renderer.transform.localToWorldMatrix))
+            {
+                Debug.LogWarning("SPS surface measurement skipped: invalid or singular renderer transform.", renderer);
+                return null;
+            }
             if (!snapshots.TryGetValue(renderer, out var snapshot)) snapshots.Add(renderer, snapshot = new Snapshot(renderer));
             return snapshot;
         }

@@ -48,7 +48,7 @@ foreach ($relativePath in $requiredFiles) {
 
 $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
 Assert-Condition ($manifest.name -eq 'com.lumakroma.sps2-setup-assistant') 'Unexpected package ID.'
-Assert-Condition ($manifest.version -eq '1.2.0') 'Unexpected release version.'
+Assert-Condition ($manifest.version -eq '2.0.0-beta.1') 'Unexpected release version.'
 Assert-Condition ($manifest.unity -eq '2022.3') 'Unexpected Unity version.'
 Assert-Condition ($manifest.license -eq 'MIT') 'Package license must be MIT.'
 Assert-Condition ($manifest.vpmDependencies.'com.vrchat.avatars' -eq '>=3.10.4 <4.0.0') 'Unexpected VRChat SDK range.'
@@ -63,8 +63,18 @@ Assert-Condition (-not ($manifest.PSObject.Properties.Name -contains 'legacyFile
 
 Assert-Condition (Test-Path -LiteralPath (Join-Path $packageRoot 'Runtime/SetupSettings.cs')) 'Persistent authoring metadata is missing.'
 $authoringFiles = @(Get-ChildItem -LiteralPath (Join-Path $packageRoot 'Runtime') -Recurse -File -Filter '*.cs')
-Assert-Condition ($authoringFiles.Count -eq 1 -and $authoringFiles[0].Name -eq 'SetupSettings.cs') 'Only shared settings data may ship outside Editor.'
-$authoring = Get-Content -Raw -LiteralPath $authoringFiles[0].FullName
+$settingsPath = Join-Path $packageRoot 'Runtime/SetupSettings.cs'
+$ownershipPath = Join-Path $packageRoot 'Runtime/Sps3OptionsOwnership.cs'
+$expectedRuntime = @([IO.Path]::GetFullPath($settingsPath), [IO.Path]::GetFullPath($ownershipPath))
+Assert-Condition ($authoringFiles.Count -eq 2 -and @($authoringFiles | Where-Object { $_.FullName -cnotin $expectedRuntime }).Count -eq 0) 'Unexpected Runtime source set.'
+# This exact historical data-only type and MonoScript GUID must survive loading older scenes.
+# Normalize checkout line endings before checking the approved source.
+$ownershipText = [IO.File]::ReadAllText($ownershipPath).Replace("`r`n", "`n")
+$ownershipHash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($ownershipText)))
+Assert-Condition ($ownershipHash -eq 'daee9a3f944baee545264eda04837f1b0b3a76034cbabad74bb1e749113aec2f') 'Unreviewed legacy ownership source.'
+$ownershipMeta = [IO.File]::ReadAllText($ownershipPath + '.meta')
+Assert-Condition ([regex]::Matches($ownershipMeta, '(?m)^guid: .*').Count -eq 1 -and [regex]::IsMatch($ownershipMeta, '(?m)^guid: 97e330bd1ebc425a88b679829deed7e2\r?$')) 'Legacy ownership script GUID mismatch.'
+$authoring = Get-Content -Raw -LiteralPath $settingsPath
 Assert-Condition (-not $authoring.Contains('MonoBehaviour')) 'Shared settings must not define an authoring component.'
 Assert-Condition (-not [regex]::IsMatch($authoring, '\b(Awake|Start|Update|LateUpdate|FixedUpdate|OnEnable|OnDisable|OnAnimatorMove)\s*\(')) 'No custom runtime behavior is authorized.'
 
@@ -127,7 +137,21 @@ foreach ($pattern in $forbiddenPatterns) {
 Assert-Condition ($compatibility.Contains('CreateSocket') -and $compatibility.Contains('com.vrcfury.api.FuryComponents')) 'Public Socket API late binding is missing.'
 Assert-Condition ($compatibility.Contains('net.nrzk.spsndmf') -and $compatibility.Contains('PackageMatches') -and $compatibility.Contains('SpsNdmf.Plugin.SpsNdmfPlugin') -and $compatibility.Contains('HasNativeNdmfBuildIntegration')) 'Dual-family package and native build boundaries are missing.'
 Assert-Condition (-not $compatibility.Contains('CaptureNdmf') -and -not (Test-Path -LiteralPath (Join-Path $packageRoot 'Editor/Compatibility/Ndmf/Sps2NdmfPlugin.cs'))) 'Assistant NDMF build passes must be absent.'
-Assert-Condition ($compatibility.Contains('CreateArmatureLink') -and -not $compatibility.Contains('BindingFlags.NonPublic')) 'Public-only attachment API binding is missing.'
+Assert-Condition ($compatibility.Contains('CreateArmatureLink')) 'Public attachment API binding is missing.'
+# Two reviewed source snapshots each contain exactly one nonpublic, read-only lookup.
+# No exemption for a directory, an assembly, another lookup, or changed source.
+$reviewedNonPublic = @{
+    'Editor/Compatibility/OwnedNativeMenuAuthoring.cs' = '509c5ab9c6b49cc149d4d57b95c594b0ce85a7141ad1b6e0cba8991422905de7'
+    'Editor/Compatibility/Sps3MenuLayoutSources.cs' = '8be428670c83550cc34f43d346f3d735b4d6b7e303e3c723ef5bb5c4a265604e'
+}
+foreach ($file in $compatibilityFiles) {
+    $code = [IO.File]::ReadAllText($file.FullName).Replace("`r`n","`n")
+    $uses = [regex]::Matches($code, '\bNonPublic\b').Count
+    if ($uses -eq 0) { continue }
+    $rel = [IO.Path]::GetRelativePath($packageRoot,$file.FullName).Replace('\','/')
+    $hash = [Convert]::ToHexString([Security.Cryptography.SHA256]::HashData([Text.Encoding]::UTF8.GetBytes($code)))
+    Assert-Condition ($uses -eq 1 -and $rel -cin $reviewedNonPublic.Keys -and $hash -eq $reviewedNonPublic[$rel]) "Unreviewed nonpublic lookup: $rel"
+}
 Assert-Condition ($source.Contains('ModularAvatarBoneProxy')) 'Public Modular Avatar Bone Proxy integration is missing.'
 Assert-Condition (($source.Contains('AttachmentBackendRegistry.TryApply') -and $source.Contains('Adapters.TryGetValue(backend, out var adapter)'))) 'Backend availability guard is missing.'
 Assert-Condition ($source.Contains('Undo.RevertAllDownToGroup')) 'Atomic Undo rollback is missing.'

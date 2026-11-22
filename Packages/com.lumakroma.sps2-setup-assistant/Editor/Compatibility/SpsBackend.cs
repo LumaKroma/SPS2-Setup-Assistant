@@ -11,13 +11,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
     // UI inspection uses For(family); never changes a persisted setup or picks a family automatically.
     internal static class SpsBackend
     {
-        internal const string NdmfVersion = "1.1430.0";
-        // Version admission is not schema certification. Inspect() and the native
-        // depth probe must still succeed before any authored object is changed.
-        internal static bool IsSupportedNativeVersion(string value) =>
-            Version.TryParse(value, out var version) && version.Major == 1 &&
-            version.Build >= 0 && version.Revision < 0 &&
-            version >= new Version(NdmfVersion);
+        internal static string UnsupportedVersion => L("選択した SPS の版または構成は、この操作では対応していません。既存設定は変更しません。バックアップを確認し、SPS Setup Assistant の対応範囲と導入済みの基盤を確認してください。");
+        internal static void RequireSupportedPackageVersion(SpsFamily family)
+        {
+            var socket = VrcFuryApi.FindType(SocketType(family));
+            if (!PackageMatches(socket, family, out _)) throw new InvalidOperationException(UnsupportedVersion);
+            if (family == SpsFamily.SpsForNdmf) return;
+            if (!FuryPersistentScriptProbe.HasPersistentBinding(socket, PackageId(family), out var issue))
+                throw new InvalidOperationException("Socket cannot be saved safely: " + issue);
+            var capabilities = VrcFuryCapabilities.For(family);
+            if (!capabilities.CanGenerate) throw new InvalidOperationException(capabilities.BlockReason);
+        }
         internal static SpsFamily ActiveFamily { get; private set; }
         internal static string Prefix(SpsFamily family) => family == SpsFamily.SpsForNdmf ? "SpsNdmf" : "VF";
         internal static string PackageId(SpsFamily family) => family == SpsFamily.SpsForNdmf ? "net.nrzk.spsndmf" : "com.vrcfury.vrcfury";
@@ -53,7 +57,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         internal static SpsFamily FamilyOf(Component component)
         {
             foreach (SpsFamily family in Enum.GetValues(typeof(SpsFamily)))
-                if (component != null && (component.GetType().FullName == SocketType(family) || component.GetType().FullName == PlugType(family))) return family;
+                if (component != null && component.GetType().FullName == SocketType(family)) return family;
             throw new InvalidOperationException(L("SPS系列の設定が不明です。生成を中止します。"));
         }
         internal static Component[] AllSockets(GameObject avatar) => avatar.GetComponentsInChildren<Component>(true)
@@ -81,14 +85,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         {
             get
             {
-#if LUMAKROMA_SPS2_HAS_NATIVE_MA && LUMAKROMA_SPS2_HAS_NATIVE_NDMF
-                return PackageMatches(VrcFuryApi.FindType("SpsNdmf.Plugin.SpsNdmfPlugin"), SpsFamily.SpsForNdmf, out var version) &&
-                    IsSupportedNativeVersion(version) &&
+                return PackageMatches(VrcFuryApi.FindType("SpsNdmf.Plugin.SpsNdmfPlugin"), SpsFamily.SpsForNdmf, out _) &&
                     HasPackageType("nadena.dev.modular_avatar.core.ModularAvatarBoneProxy", "nadena.dev.modular-avatar") &&
                     HasPackageType("nadena.dev.ndmf.PluginBase", "nadena.dev.ndmf");
-#else
-                return false;
-#endif
             }
         }
     }

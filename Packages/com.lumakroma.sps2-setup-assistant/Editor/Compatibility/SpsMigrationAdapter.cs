@@ -1,4 +1,4 @@
-using static LumaKroma.Sps2SetupAssistant.Editor.Localization.Sps2Localization;
+﻿using static LumaKroma.Sps2SetupAssistant.Editor.Localization.Sps2Localization;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -12,6 +12,19 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
     // Read/compare native data only inside the existing compatibility boundary.
     internal static class SpsMigrationAdapter
     {
+        // Unity's transient animation-window selection cache is not authoring data. Serializing this exact
+        // CoreModule type emits a native duplicate m_GameObject error on Unity 2022.3.22f1.
+        // Do not generalize this to other editor objects, ScriptableObjects, assets or cross-scene references.
+        internal static bool IsTransientAnimationSelectionCache(UnityEngine.Object obj)
+        {
+            if (obj == null) return false;
+            var type = obj.GetType();
+            return type.FullName == "UnityEditorInternal.AnimationClipSelectionItem" &&
+                type.Assembly == typeof(UnityEditor.Editor).Assembly &&
+                obj.hideFlags == HideFlags.HideAndDontSave && !EditorUtility.IsPersistent(obj) &&
+                string.IsNullOrEmpty(AssetDatabase.GetAssetPath(obj));
+        }
+
         internal static void ValidateReplacementReferences(VRCAvatarDescriptor avatar, HashSet<Component> replaced)
         {
             // Cross-scene and loaded ScriptableObject references are also live inputs.
@@ -21,7 +34,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 .Select(AssetDatabase.GUIDToAssetPath).SelectMany(AssetDatabase.LoadAllAssetsAtPath);
             foreach (var obj in objects.Concat(assets).Distinct())
             {
-                if (obj == null || (obj is Component c && replaced.Contains(c))) continue;
+                if (obj == null || (obj is Component c && replaced.Contains(c)) || IsTransientAnimationSelectionCache(obj)) continue;
                 var p = new SerializedObject(obj).GetIterator();
                 while (p.Next(true))
                     if (p.propertyType == SerializedPropertyType.ObjectReference && p.objectReferenceValue is Component reference && replaced.Contains(reference))
@@ -30,13 +43,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         }
         private static readonly HashSet<string> UnityFields = new HashSet<string> {
             "m_ObjectHideFlags", "m_CorrespondingSourceObject", "m_PrefabInstance", "m_PrefabAsset", "m_GameObject", "m_Script" };
-        internal static string State(Component component)
+        internal static string State(Component component, string rootPath = null)
         {
             var data = new SerializedObject(component);
             var p = data.GetIterator(); var values = new List<string>();
             while (p.Next(true))
             {
                 if (UnityFields.Any(field => p.propertyPath == field || p.propertyPath.StartsWith(field + ".", StringComparison.Ordinal))) continue;
+                if (VrcConstraintBridge.IsVrcParent(component) && (p.propertyPath == "cachedExecutionGroupIndex" || p.propertyPath == "latestValidExecutionGroupIndex")) continue;
+                if (rootPath != null && p.propertyPath != rootPath && !p.propertyPath.StartsWith(rootPath + ".", StringComparison.Ordinal)) continue;
                 string value;
                 switch (p.propertyType)
                 {
@@ -102,6 +117,18 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             var sourceOffsets = from.FindProperty("offsetsInLocalUnits");
             if (stops.Length > 0 && sourceOffsets != null && !sourceOffsets.boolValue)
                 throw new InvalidOperationException("Native offsets have not been upgraded; migration cannot safely preserve the path.");
+            if (stops.Length == 0 && sourceOffsets != null && !sourceOffsets.boolValue)
+            {
+                // An old Socket can have a world-space legacy offset even without
+                // guided stops. This helper does not copy that field or perform
+                // Fury's scale-dependent upgrade; never silently discard it.
+                var legacy = from.FindProperty("legacyOffset");
+                var local = from.FindProperty("legacyOffsetLocal");
+                if (legacy == null || legacy.propertyType != SerializedPropertyType.Vector3 ||
+                    local == null || local.propertyType != SerializedPropertyType.Vector3 ||
+                    !legacy.vector3Value.Equals(Vector3.zero) || !local.vector3Value.Equals(Vector3.zero))
+                    throw new InvalidOperationException("未変換の旧 Socket offset を安全に引き継げません。既存 Socket と設定は変更していません。");
+            }
             targetStops.arraySize = stops.Length;
             for (int i = 0; i < stops.Length; i++)
             {
@@ -153,5 +180,33 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             return targetLocal ? frame.InverseTransformVector(world) : Quaternion.Inverse(frame.rotation) * world;
         }
         internal static string PlugLabel(Component plug) => new SerializedObject(plug).FindProperty("name")?.stringValue ?? "SPS2 Test Plug";
+
+        internal static bool IsSingleOptions(Component component) => IsFuryFeature(component, "VF.Model.Feature.SpsOptions");
+        internal static bool IsSingleArmatureLink(Component component) => IsFuryFeature(component, "VF.Model.Feature.ArmatureLink");
+
+        private static bool IsFuryFeature(Component component, string modelType)
+        {
+            if (component.GetType().FullName != "VF.Model.VRCFury") return false;
+            var data = new SerializedObject(component);
+            var content = data.FindProperty("content");
+            var features = data.FindProperty("config.features");
+            return content != null && content.propertyType == SerializedPropertyType.ManagedReference &&
+                content.managedReferenceValue?.GetType().FullName == modelType &&
+                features != null && features.isArray && features.arraySize == 0;
+        }
+
+        internal static void VisitRemovedReferences(UnityEngine.Object holder, HashSet<UnityEngine.Object> removed,
+            Action<string, UnityEngine.Object> visit)
+        {
+            var data = new SerializedObject(holder);
+            var property = data.GetIterator();
+            while (property.Next(true))
+            {
+                if (holder is Transform && property.propertyPath.StartsWith("m_Children.", StringComparison.Ordinal)) continue;
+                if (property.propertyType == SerializedPropertyType.ObjectReference && property.objectReferenceValue != null && removed.Contains(property.objectReferenceValue)) {
+                    visit(property.propertyPath, property.objectReferenceValue);
+                }
+            }
+        }
     }
 }

@@ -15,16 +15,27 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
 {
     public static partial class FullSetupGenerator
     {
+        // Null follows SDK capability; tests may force the legacy backend.
+        internal static bool? vrcConstraintCandidateForTests;
         private static string UndoName => L("SPS2 セットアップ");
         private const string PathName = "Guided Paths";
         public const string PackagePath = "Packages/com.lumakroma.sps2-setup-assistant";
 
         public const string RootName = "SPS2";
+        internal const string Sps3RootName = "SPS3";
+        internal static bool IsGeneratedRootName(string name) => name == RootName || name == Sps3RootName;
+        internal static Transform ResolveNamedRoot(VRCAvatarDescriptor avatar, Transform excludedStagingRoot = null)
+        {
+            if (avatar == null) return null;
+            var roots = avatar.transform.Cast<Transform>().Where(t => t != excludedStagingRoot && IsGeneratedRootName(t.name)).ToArray();
+            if (roots.Length > 1) throw new InvalidOperationException(L("複数の SPS2 / SPS3 ルートがあります。既存のデータは変更していません。"));
+            return roots.SingleOrDefault();
+        }
         public static bool HasGeneratedRoot(VRCAvatarDescriptor avatar)
         {
             if (avatar == null) return false;
             foreach (Transform child in avatar.transform)
-                if (child.name == RootName) return true;
+                if (IsGeneratedRootName(child.name)) return true;
             return false;
         }
 
@@ -39,9 +50,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         private static void ValidateOwnership(Sps2SetupContext root, bool allowMissing)
         {
             if (root.settings == null || root.sockets == null) throw new InvalidOperationException(L("SPS2 生成データが欠けています。"));
-            if ((root.testPlug != null && root.testPlug.transform.parent != root.transform) ||
-                (root.longTestPlug != null && root.longTestPlug.transform.parent != root.transform))
-                throw new InvalidOperationException(L("テストプラグが所有ルートの外へ移動されています。"));
             var anchors = new HashSet<Transform>();
             var ids = new HashSet<string>();
             foreach (var socket in root.sockets)
@@ -66,7 +74,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             public Quaternion rotation;
         }
 
-        private static Placement Place(SocketSettings part, VRCAvatarDescriptor avatar, BodyBasis basis, AvatarSurface surface)
+        private static Placement Place(SocketSettings part, VRCAvatarDescriptor avatar, BodyBasis basis, AvatarSurface surface, bool scaleValidationOnly = false)
         {
             if (part.IsFingerRing)
             {
@@ -152,6 +160,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             }
             bool middle = part.id == "chest" || part.id == "hands" || part.id == "thighs" || part.id == "feet";
             if (p.first == null || (middle && p.second == null)) return null;
+            // Scale validation reads only first/second/followTransform. Surface
+            // position and normal calculations below do not change those fields.
+            if (scaleValidationOnly) return p;
             p.position = (p.second == null ? p.first.position : (p.first.position + p.second.position) * .5f) + offset;
             if (Vector3.Cross(direction, up).sqrMagnitude < .000001f) up = right;
             Vector3 point;
@@ -305,9 +316,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             }
         }
 
-        private static GeneratedSocket CreatePart(Sps2SetupContext root, SocketSettings part, Placement placement, SetupSettings setup, List<string> warnings, string existingPoseName)
+        private static GeneratedSocket CreatePart(Sps2SetupContext root, SocketSettings part, Placement placement, SetupSettings setup, List<string> warnings, string existingPoseName, Vector3? retainedAnchorScale = null, Vector3? retainedPoseScale = null, bool allowOptionalOmission = false)
         {
             var anchor = Create(part.id, root.transform);
+            if (retainedAnchorScale.HasValue) anchor.transform.localScale = retainedAnchorScale.Value;
             anchor.transform.SetPositionAndRotation(
                 placement.second == null ? placement.first.position : (placement.first.position + placement.second.position) * .5f,
                 placement.second == null ? placement.first.rotation : Quaternion.Slerp(placement.first.rotation, placement.second.rotation, .5f));
@@ -322,29 +334,30 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             {
                 var backend = setup.family == SpsFamily.SpsForNdmf ? AttachmentBackend.SpsNdmfWithModularAvatar
                     : setup.modularAvatar ? AttachmentBackend.VrcFuryWithModularAvatar : AttachmentBackend.VrcFury;
-                if (!AttachmentBackendRegistry.TryApply(backend, anchor, placement.bone, out var error))
+                if (setup.family == SpsFamily.SpsForNdmf && !AttachmentBackendRegistry.IsAvailable(backend)) {
+                    Constrain(anchor, placement.first);
+                    warnings.Add(part.name + ": MA Bone Proxy が利用できないため Parent Constraint を使用しました。");
+                } else if (!AttachmentBackendRegistry.TryApply(backend, anchor, placement.bone, out var error))
                     throw new InvalidOperationException(error);
             }
             var pose = Create(SocketPoseName(part.id, existingPoseName), anchor.transform);
+            if (retainedPoseScale.HasValue) pose.transform.localScale = retainedPoseScale.Value;
             pose.transform.SetPositionAndRotation(placement.position, placement.rotation);
-            var socket = VrcFuryCompatibility.CreateSocket(pose, part, setup, warnings);
+            var socket = VrcFuryCompatibility.CreateSocket(pose, part, setup, warnings, allowOptionalOmission);
             return new GeneratedSocket { id = part.id, anchor = anchor.transform, pose = pose.transform, socket = socket };
         }
 
         internal static void ValidateRegenerationReferences(Sps2SetupContext old, SetupSettings settings)
         {
             if (old == null || old.gameObject == null) return;
-            bool RetainedByPlug(Transform target, GameObject plug) =>
-                plug != null && plug != old.gameObject && target.IsChildOf(plug.transform);
-            bool WillBeDestroyed(Transform target) => target != null && target.IsChildOf(old.transform)
-                && !RetainedByPlug(target, old.testPlug) && !RetainedByPlug(target, old.longTestPlug);
+            bool WillBeDestroyed(Transform target) => target != null && target.IsChildOf(old.transform);
 
             // Dormant fields are still saved input. Check both reference fields, regardless
             // of inclusion, depth enablement or the currently selected action kind.
             foreach (var part in settings.parts)
             {
-                if (part?.actions == null) continue;
-                foreach (var action in part.actions)
+                if (part == null) continue;
+                foreach (var action in Sps3AnimationGroupNative.AllSavedActions(part))
                     if (action != null && (WillBeDestroyed(action.target != null ? action.target.transform : null)
                         || WillBeDestroyed(action.renderer != null ? action.renderer.transform : null)))
                         throw new InvalidOperationException(part.name + L(": 深度アクションが再生成で削除される生成物を参照しています。参照先を生成物の外へ変更してから再生成してください。既存の設定と生成物は変更していません。"));
@@ -353,22 +366,332 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
 
         public static bool Apply(VRCAvatarDescriptor avatar, SetupSettings settings, bool regenerate,
             out Sps2SetupContext root, out string message)
+            => ApplyCore(avatar, settings, regenerate, false, false, null, null, out root, out message, out _);
+
+        internal static bool ApplyWithOutcome(VRCAvatarDescriptor avatar, SetupSettings settings, bool regenerate,
+            out Sps2SetupContext root, out string message, out bool changed)
+            => ApplyCore(avatar, settings, regenerate, false, false, null, null, out root, out message, out changed);
+
+        internal static bool ApplyWithConfirmedImpact(VRCAvatarDescriptor avatar, SetupSettings settings,
+            RegenerationImpact.Report confirmed, out Sps2SetupContext root, out string message, out bool changed)
+            => ApplyCore(avatar, settings, true, false, false, null, confirmed, out root, out message, out changed);
+
+        // Scope is used only by the synchronous fresh replacement route. We retain
+        // path AND GUID and refuse deletion if either no longer identifies our creation.
+        [ThreadStatic] private static FreshAssetScope activeFreshAssetScope;
+        internal static void RecordFreshAsset(string path) {
+            if(activeFreshAssetScope==null || string.IsNullOrEmpty(path)) return;
+            string guid=AssetDatabase.AssetPathToGUID(path);
+            if(string.IsNullOrEmpty(guid)) throw new InvalidOperationException("Cannot identify the newly created asset: "+path);
+            activeFreshAssetScope.Record(path,guid);
+        }
+        private sealed class FreshAssetScope : IDisposable {
+            private readonly List<KeyValuePair<string,string>> items=new List<KeyValuePair<string,string>>();
+            internal readonly Sps2SetupAsset PreviousAsset;
+            internal FreshAssetScope(Sps2SetupAsset previousAsset) { if(activeFreshAssetScope!=null) throw new InvalidOperationException("Nested fresh regeneration is not supported."); PreviousAsset=previousAsset; activeFreshAssetScope=this; }
+            internal void Record(string path,string guid) { items.Add(new KeyValuePair<string,string>(path,guid)); }
+            internal string Rollback() {
+                var failures=new List<string>();
+                foreach(var item in items.AsEnumerable().Reverse()) {
+                    try {
+                        var current=AssetDatabase.AssetPathToGUID(item.Key);
+                        if(string.IsNullOrEmpty(current)) continue; // already removed by inner generation
+                        if(current!=item.Value || !AssetDatabase.DeleteAsset(item.Key)) failures.Add(item.Key);
+                    } catch(Exception) { failures.Add(item.Key); }
+                }
+                return failures.Count==0 ? "" : " 新規アセットを自動回収できませんでした: "+string.Join(", ",failures);
+            }
+            public void Dispose() { if(activeFreshAssetScope==this) activeFreshAssetScope=null; }
+        }
+
+        // Replacement transaction: remove only the identified scene root, then invoke
+        // exactly the normal fresh-generation route. A failed result rolls back all
+        // scene Undo operations, including the old root removal.
+        internal static bool ReplaceWithFresh(VRCAvatarDescriptor avatar, SetupSettings settings,
+            Sps2SetupContext expectedOld, RegenerationImpact.Report confirmedAdditions,
+            out string message)
         {
-            root = null; message = null;
+            message=null;
+            if(avatar==null || expectedOld==null || expectedOld.gameObject==null ||
+               EditorUtility.IsPersistent(expectedOld.gameObject) || expectedOld.avatar!=avatar ||
+               expectedOld.transform.parent!=avatar.transform) {
+                message="既存の生成ルートを一意に確認できません。変更していません。"; return false;
+            }
+            var now=Find(avatar);
+            if(now==null || now.gameObject!=expectedOld.gameObject || now.identity!=expectedOld.identity) {
+                message="生成ルートが変更されました。変更していません。"; return false;
+            }
+            var additions=RegenerationImpact.Inspect(now, null, additionsOnly:true);
+            if(additions.AdditionalObjects.Count!=0 || additions.AdditionalComponents.Count!=0) {
+                if(confirmedAdditions==null || !confirmedAdditions.SameAs(additions)) {
+                    message="生成物内の追加物が変化しました。変更していません。"; return false;
+                }
+            } else if(confirmedAdditions!=null && !confirmedAdditions.SameAs(additions)) {
+                message="生成物内の追加物が変化しました。変更していません。"; return false;
+            }
+            // A native Options component inside the replaced hierarchy is removed with it.
+            // Prove a fresh Options model can be produced first; generic additions were
+            // already listed and confirmed above. All mutations remain in the Undo group.
+            if (Sps3OwnedGlobalOptions.AllOptions(avatar).Any(c => c.transform == now.transform || c.transform.IsChildOf(now.transform))) {
+                if (SpsAuthoringCompatibility.SelectContract(settings.family, null) != SpsAuthoringContract.Sps3Beta14) {
+                    message = L("旧ルート内の SPS Options を SPS2 で再作成できません。保持する Options をルートの外に移してから再生成してください。");
+                    return false;
+                }
+                if (!Sps3OwnedGlobalOptions.TryPrepareReplacement(avatar, settings, out _, out var optionsIssue)) {
+                    message="旧ルートの SPS Options を安全に再作成できないため既存の出力を保持しました: " + optionsIssue;
+                    return false;
+                }
+            }
+            var legacyOffsetWarning = HasUnconvertedLegacyOffset(now)
+                ? "旧 Socket の未変換 offset は新しい出力へ変換していません。元の値が必要な場合は Undo で旧出力に戻して確認してください。" : null;
+            try { Sps3OwnedGlobalOptions.ValidateKeep(avatar, now.transform); }
+            catch (Exception e) { message=SetupFeedback.Error(e, "確認後に対象が変わりました。もう一度選択してください。"); return false; }
+            Undo.IncrementCurrentGroup(); int transaction=Undo.GetCurrentGroup();
+            Undo.SetCurrentGroupName("SPS を再生成");
+            using var freshAssets=new FreshAssetScope(now.asset);
+            string oldIdentity=now.identity;
+            string RollBack() {
+                try { Undo.RevertAllDownToGroup(transaction); }
+                catch(Exception e) { return "\n"+SetupFeedback.Error(e, "Undo を完了できませんでした。既存の生成物と新しいアセットを確認してください。"); }
+                try {
+                    var restored=Find(avatar);
+                    if(restored==null || restored.identity!=oldIdentity)
+                        return " 旧生成物の識別を確認できず新規アセットを保留しました。";
+                } catch(Exception e) { return "\n"+SetupFeedback.Error(e, "旧生成物を確認できないため、新しいアセットを残しました。"); }
+                return freshAssets.Rollback();
+            }
+            try {
+                Sps3OwnedGlobalOptions.PrepareKeepRemoval(avatar, now.transform);
+                SpsPrefabRegeneration.RemoveGeneratedRoot(now);
+                var route=FuryNormalOutputRouter.Resolve(avatar,settings);
+                bool ok; bool changed;
+                if(route.Mode==FuryFeatureOutputPlan.Mode.NativeBasicSps3) {
+                    ok=ApplyBasicSocketOnly(avatar,settings,out var limited,out var basicMessage);
+                    changed=ok && limited!=null; message=basicMessage;
+                } else if(route.Mode==FuryFeatureOutputPlan.Mode.PlacementOnly) {
+                    ok=false; changed=false; message=FuryUnavailableNotice.Explain(route.Reason);
+                } else {
+                    ok=ApplyWithOutcome(avatar,settings,false,out var created,out var freshMessage,out changed);
+                    message=freshMessage;
+                    if(ok && (created==null || created.gameObject==null)) changed=false;
+                }
+                if(!ok || !changed) {
+                    var cleanup=RollBack();
+                    message=L("新規生成できなかったため、Undo で元に戻す処理を行いました。既存生成物をご確認ください。")+cleanup+"\n"+message; return false;
+                }
+                if (!string.IsNullOrEmpty(legacyOffsetWarning)) message = (message ?? "") + "\n" + legacyOffsetWarning;
+                Undo.CollapseUndoOperations(transaction); return true;
+            } catch(Exception e) {
+                var cleanup=RollBack();
+                message=SetupFeedback.Error(e, "再生成できませんでした。Undo 後の生成物を確認してください。")+cleanup; return false;
+            }
+        }
+
+        // Validation/fault entry. Public authoring uses the same admitted preservation plan below.
+        internal static bool ApplyLocalScaleCandidate(VRCAvatarDescriptor avatar, SetupSettings settings,
+            out Sps2SetupContext root, out string message, bool failAfterScaleForTest = false, Action<Sps2SetupContext> checkpointForTest = null)
+            => ApplyCore(avatar, settings, true, true, failAfterScaleForTest, checkpointForTest, null, out root, out message, out _);
+
+        internal const string LegacyOffsetPreservedNotice = "旧 Socket の未変換 offset を保持するため、既存 Socket・配置・設定は変更していません。再生成や入力した変更の適用は実施していません。";
+        internal static string LegacyOffsetPreservedNoticeFor(Sps2SetupContext existing, SetupSettings requested)
+        {
+            try {
+                if (existing?.settings?.parts == null || requested?.parts == null ||
+                    existing.settings.parts.Any(p => p == null || string.IsNullOrEmpty(p.id)) ||
+                    requested.parts.Any(p => p == null || string.IsNullOrEmpty(p.id)) ||
+                    existing.settings.parts.GroupBy(p => p.id).Any(g => g.Count() != 1) ||
+                    requested.parts.GroupBy(p => p.id).Any(g => g.Count() != 1))
+                    return LegacyOffsetPreservedNotice + " 未適用項目の詳細は比較できません。";
+                var changes = new List<string>();
+                var oldGlobal = existing.settings.Copy(); var newGlobal = requested.Copy();
+                oldGlobal.parts.Clear(); newGlobal.parts.Clear();
+                if (JsonUtility.ToJson(oldGlobal) != JsonUtility.ToJson(newGlobal)) changes.Add("全体設定");
+                foreach (var id in existing.settings.parts.Select(p => p.id).Union(requested.parts.Select(p => p.id))) {
+                    var oldPart = existing.settings.parts.SingleOrDefault(p => p.id == id);
+                    var newPart = requested.parts.SingleOrDefault(p => p.id == id);
+                    if (oldPart == null || newPart == null || JsonUtility.ToJson(oldPart) != JsonUtility.ToJson(newPart))
+                        changes.Add((newPart?.name ?? oldPart?.name ?? id) + "（" + id + "）");
+                }
+                var protectedIds = UnconvertedLegacyOffsetPartIds(existing);
+                var protectedInfo = protectedIds.Count == 0 ? "" : " 保持対象 Socket: " + string.Join("、", protectedIds) + "。";
+                return LegacyOffsetPreservedNotice + protectedInfo + (changes.Count == 0
+                    ? " 設定入力の差分はありませんが、再配置も行っていません。"
+                    : " 未適用: " + string.Join("、", changes) + "。");
+            } catch (Exception) { return LegacyOffsetPreservedNotice + " 未適用項目の詳細は比較できません。"; }
+        }
+        internal static bool HasUnconvertedLegacyOffset(Sps2SetupContext existing)
+            => UnconvertedLegacyOffsetPartIds(existing).Count != 0;
+        private static List<string> UnconvertedLegacyOffsetPartIds(Sps2SetupContext existing)
+        {
+            var result = new List<string>();
+            if (existing == null || existing.AuthoringContract != SpsAuthoringContract.LegacySps2 ||
+                existing.settings?.family != SpsFamily.VrcFury || existing.sockets == null) return result;
+            foreach (var socket in existing.sockets) {
+                if (socket?.socket == null) continue;
+                if (VrcFuryCompatibility.HasUnconvertedOffset(socket.socket)) result.Add(socket.id ?? "不明");
+            }
+            return result;
+        }
+
+        // Apply operates on a copy. Unsupported optional kinds retain their last
+        // saved representation; the window draft itself is never changed.
+        private static void RetainUnsupportedOptionalGroups(SetupSettings draft, Sps2SetupContext existing, List<string> warnings) {
+            if (existing?.settings?.parts == null) return;
+            foreach (var part in draft.parts.Where(p => p != null && p.included && p.animationModelVersion == 1 && p.animationGroups != null)) {
+                var saved = existing.settings.parts.SingleOrDefault(p => p != null && p.id == part.id);
+                if (saved == null) continue;
+                foreach (var kind in new[] { SocketAnimationKind.Depth, SocketAnimationKind.PlugEntryRadius, SocketAnimationKind.Active }) {
+                    if (!part.animationGroups.Any(g => g != null && g.kind == kind)) continue;
+                    bool pendingLoss = kind == SocketAnimationKind.Depth && part.animationGroups
+                        .Where(g => g != null && g.kind == kind && Sps3AnimationGroupNative.WeightPending(g.depthSettings))
+                        .Any(g => saved.EffectiveAnimationGroups().Any(old => old != null && old.id == g.id &&
+                            old.kind == kind && Sps3AnimationGroupNative.WeightActive(old.depthSettings)));
+                    var canWrite = Sps3AnimationGroupNative.CanWriteOptional(part, kind, out var reason);
+                    if (canWrite && !pendingLoss) continue;
+                    var before = saved.EffectiveAnimationGroups().Where(g => g != null && g.kind == kind).Select(g => g.Copy()).ToList();
+                    int first = part.animationGroups.FindIndex(g => g != null && g.kind == kind);
+                    part.animationGroups.RemoveAll(g => g != null && g.kind == kind);
+                    part.animationGroups.InsertRange(Math.Min(first, part.animationGroups.Count), before);
+                    if (part.animationEnabled != saved.AnimationEnabled) {
+                        part.animationEnabled = saved.AnimationEnabled;
+                        warnings.Add(part.name + ": アニメーション全体の有効／無効変更は、保留中の機能を保持するため反映していません。");
+                    }
+                    warnings.Add(part.name + ": " + kind + " は未反映です。既存の設定を保持しました: " +
+                        (pendingLoss ? "半径のしきい値が未確定です。" : reason));
+                }
+            }
+        }
+
+        private static bool ApplyCore(VRCAvatarDescriptor avatar, SetupSettings settings, bool regenerate,
+            bool localScaleCandidate, bool failAfterScaleForTest, Action<Sps2SetupContext> checkpointForTest,
+            RegenerationImpact.Report confirmedImpact, out Sps2SetupContext root, out string message, out bool changed)
+        {
+            root = null; message = null; changed = false;
+            var warnings = new List<string>();
             int group = -1;
             Sps2SetupAsset createdAsset = null;
+            var authoringContract = SpsAuthoringContract.LegacySps2;
             try
             {
+                if (regenerate && avatar != null) {
+                    var preserved = Find(avatar);
+                    if (!localScaleCandidate && preserved?.AuthoringContract == SpsAuthoringContract.Sps3Beta14 &&
+                        settings?.family == SpsFamily.VrcFury && preserved.settings.family == settings.family &&
+                        SpsAuthoringCompatibility.SelectContract(settings.family, preserved, true) == SpsAuthoringContract.LegacySps2) {
+                        // Non-window callers use the same identity, loss confirmation and Undo transaction.
+                        bool replaced = ReplaceWithFresh(avatar, settings, preserved, confirmedImpact, out message);
+                        root = replaced ? Find(avatar) : preserved;
+                        changed = replaced;
+                        return replaced;
+                    }
+                    if (HasUnconvertedLegacyOffset(preserved)) {
+                        root = preserved; message = LegacyOffsetPreservedNoticeFor(preserved, settings);
+                        return false; // No regeneration occurred; never report API success.
+                    }
+                }
+                if (!regenerate && avatar != null && settings != null) {
+                    var existing = Find(avatar);
+                    if (existing != null) {
+                        root = existing;
+                        if (existing.settings.family != settings.family) {
+                            message = "基盤の変更には再生成を使用してください。既存 Socket の参照と OSC ID は保持しました。";
+                            return false;
+                        }
+                        return ApplySceneFields(existing, settings, out message, out changed);
+                    }
+                }
+                var requestedDraft = settings;
+                settings = settings.Copy();
+                // Native NDMF handles optional animation rows on staging, without invoking the Fury writer.
+                bool directNdmf = settings.family == SpsFamily.SpsForNdmf;
                 using var backend = SpsBackend.Use(settings.family);
+                Sps2SetupContext selectedExisting = null;
+                if (settings.family == SpsFamily.VrcFury && SpsAuthoringCompatibility.ReviewedSps3Installed)
+                {
+                    selectedExisting = Find(avatar);
+                    authoringContract = SpsAuthoringCompatibility.SelectContract(settings.family, selectedExisting, regenerate);
+                }
+                bool writeSps3Groups = authoringContract == SpsAuthoringContract.Sps3Beta14 && !directNdmf;
+                HashSet<string> deferredRadius = null;
+                if (writeSps3Groups) {
+                    CustomBlendShapeOutput.Validate(avatar, settings);
+                    settings = RadiusAutoCorrection.Resolve(avatar, settings, warnings, regenerate, out deferredRadius);
+                }
+                bool useVrcConstraint = authoringContract == SpsAuthoringContract.Sps3Beta14 &&
+                    (vrcConstraintCandidateForTests ?? true) && VrcConstraintBridge.Available;
+                using var authoring = SpsAuthoringCompatibility.Use(authoringContract);
                 VrcFuryCompatibility.RequireVersion();
+                if (!regenerate && authoringContract == SpsAuthoringContract.Sps3Beta14 && selectedExisting != null)
+                    RetainUnsupportedOptionalGroups(settings, selectedExisting, warnings);
+                // Validate stored models even when excluded. Capability checks for included
+                // requested operations are performed by the selected authoring route.
+                foreach (var part in settings.parts.Where(p => !directNdmf && (writeSps3Groups || p.animationModelVersion == 0)))
+                    Sps3AnimationGroupNative.RequireModel(part,
+                        depth: authoringContract != SpsAuthoringContract.Sps3Beta14 || regenerate || selectedExisting != null,
+                        active: authoringContract != SpsAuthoringContract.Sps3Beta14 || regenerate || selectedExisting != null,
+                        entry: authoringContract != SpsAuthoringContract.Sps3Beta14 || regenerate || selectedExisting != null);
                 if (avatar == null || EditorUtility.IsPersistent(avatar)) throw new InvalidOperationException(L("Scene または Prefab Mode のアバターを選択してください。"));
                 if (!HumanoidSnapshot.TryCapture(avatar, out var snapshot, out var error)) throw new InvalidOperationException(error);
-                var old = Find(avatar);
-                if (old != null && old.settings.family != settings.family)
-                    return MigrateFamily(avatar, old, settings, out root, out message);
+                var old = selectedExisting ?? Find(avatar);
+                RegenerationImpact.Report currentImpact = null;
+                if (regenerate && old != null)
+                {
+                    currentImpact = RegenerationImpact.Inspect(old, requestedDraft);
+                    if (currentImpact.HasImpact && (confirmedImpact == null || !confirmedImpact.SameAs(currentImpact)))
+                        throw new InvalidOperationException("RegenerationRequiresConfirmation: Existing additions or external references would be affected; no data was changed.");
+                }
+                bool migratingLegacy = authoringContract == SpsAuthoringContract.Sps3Beta14 &&
+                    ((regenerate && SpsAuthoringCompatibility.CanRegenerateLegacy(settings.family, old)) ||
+                     SpsAuthoringCompatibility.CanMigrateNdmfToSps3(settings.family, old));
+                if (old != null && old.AuthoringContract != authoringContract && !migratingLegacy)
+                    throw new InvalidOperationException("Existing setup authoring contract does not match the selected native generation.");
+                if (authoringContract == SpsAuthoringContract.Sps3Beta14)
+                    SpsAuthoringCompatibility.ValidateRequestedSettings(avatar, settings, old, migratingLegacy, regenerate, warnings,
+                        allowPrefabAdditions: currentImpact != null && currentImpact.HasImpact && confirmedImpact != null);
+                LocalScaleCandidatePlan localScales = null;
+                if (localScaleCandidate)
+                    localScales = PrepareLocalScaleCandidate(avatar, settings, old, authoringContract, currentImpact != null && currentImpact.HasImpact && confirmedImpact != null, currentImpact != null && currentImpact.NativeEdits.Count != 0 && confirmedImpact != null);
+                else if (authoringContract == SpsAuthoringContract.Sps3Beta14 && regenerate)
+                {
+                    // Only a retained active Local slot needs preservation. The identical narrow
+                    // plan proved by the candidate tests owns admission; any mismatch fails closed.
+                    if (SpsAuthoringCompatibility.HasRetainedActiveLocalDepth(settings, old))
+                        localScales = PrepareLocalScaleCandidate(avatar, settings, old, authoringContract, currentImpact != null && currentImpact.HasImpact && confirmedImpact != null, currentImpact != null && currentImpact.NativeEdits.Count != 0 && confirmedImpact != null);
+                    else SpsAuthoringCompatibility.RequireLocalRegenerationScaleProof(settings, old);
+                }
+                if (old != null && (regenerate || old.settings.family != settings.family))
+                    Sps3NativeEditProtection.RequireDiscardSafe(old.gameObject);
+                if (old != null && old.settings.family != settings.family) {
+                    var migrated = MigrateFamily(avatar, old, settings, out root, out message);
+                    changed = migrated;
+                    return migrated;
+                }
                 SpsBackend.ValidateExisting(old, settings.family);
-                if (regenerate) ValidateRegenerationReferences(old, settings);
+                if (regenerate) {
+                    ValidateRegenerationReferences(old, settings);
+                    if (authoringContract == SpsAuthoringContract.Sps3Beta14 && SpsPrefabRegeneration.IsSourceOwned(old))
+                        SpsPrefabRegeneration.ValidateReplacementReferences(old, settings,
+                            allowAdditionalObjects: currentImpact != null && currentImpact.HasImpact && confirmedImpact != null,
+                            allowExternalReferences: currentImpact != null && currentImpact.HasImpact && confirmedImpact != null,
+                            allowNativeEdits: currentImpact != null && currentImpact.NativeEdits.Count != 0 && confirmedImpact != null);
+                }
                 if (old != null && !regenerate) ValidateOwnership(old, false);
+                if (old != null && !regenerate) {
+                    foreach (var socket in old.sockets.Where(s => s?.anchor != null && s.anchor.GetComponents<Component>().Any(VrcConstraintBridge.IsVrcParent))) {
+                        var prior = old.settings.parts.SingleOrDefault(p => p.id == socket.id);
+                        var next = settings.parts.SingleOrDefault(p => p.id == socket.id);
+                        if (prior == null || next == null || !next.included || prior.custom != next.custom ||
+                            prior.custom && prior.target != next.target ||
+                            prior.IsFingerRing && JsonUtility.ToJson(prior.fingerRing) != JsonUtility.ToJson(next.fingerRing))
+                            throw new InvalidOperationException("VRC attachment changes require regeneration so the existing data can be reviewed.");
+                    }
+                    bool structureChanges = !new HashSet<string>(old.sockets.Select(s => s.id)).SetEquals(settings.parts.Where(p => p != null && p.included).Select(p => p.id)) ||
+                        old.settings.penetration != settings.penetration;
+                    if (structureChanges && VrcConstraintBridge.HasOwned(old) &&
+                        (old.asset == null || string.IsNullOrEmpty(old.asset.vrcConstraintEvidence) ||
+                         !VrcConstraintBridge.EvidenceEquals(old.asset.vrcConstraintEvidence, VrcConstraintBridge.CaptureOwned(old))))
+                        throw new InvalidOperationException("Existing VRC attachment changes require regeneration and confirmation before changing the generated structure.");
+                }
                 // A singular avatar root cannot safely place any generated child.
                 // Return a warning without touching existing output or saved data.
                 if (settings.parts.Any(p => p.included && p.IsFingerRing) && !FingerRingCalibrationUtility.CanUseFrame(avatar.transform))
@@ -376,7 +699,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     root = old; message = L("アバターの座標変換が0scaleなどで退化しているため、安全に配置できません。既存の設定と生成物は変更していません。scaleを確認してください。"); return true;
                 }
                 var basis = BodyBasisBuilder.Build(snapshot);
-                var warnings = new List<string>();
                 settings = VrcFuryCapabilities.Current.Effective(settings, warnings);
                 FullSetupCatalog.UpgradeDisplayNames(settings);
                 if (settings.parts.GroupBy(p => p.id).Any(g => string.IsNullOrEmpty(g.Key) || g.Count() != 1))
@@ -384,14 +706,21 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 using var surface = new AvatarSurface(avatar);
                 if (!surface.HasBody) warnings.Add(L("体の表面を特定できませんでした。ボーンを基準に配置したため、位置と向きを確認してください。"));
                 var placements = new Dictionary<string, Placement>();
-                int skippedRings = 0;
                 foreach (var part in settings.parts.Where(p => p.included))
                 {
                     if (part.custom && old != null && part.target != null && part.target.IsChildOf(old.transform))
                         throw new InvalidOperationException(L("カスタム追従先に自分の生成物は指定できません。"));
+                    if (directNdmf && part.IsFingerRing && !VrcFuryCapabilities.Current.AutoMode) {
+                        warnings.Add(part.name + ": Auto 対象外を保存できないため、この指リングを省略しました。");
+                        continue;
+                    }
                     Placement placement;
                     if (part.IsFingerRing)
                     {
+                        if (GenerationWarningPolicy.TryMissingNewRingBones(avatar, part, old, out var ringWarning)) {
+                            warnings.Add(ringWarning);
+                            continue;
+                        }
                         var value = part.fingerRing;
                         bool pristine = value == null || (!value.calibrated && string.IsNullOrEmpty(value.thumbPath) && string.IsNullOrEmpty(value.indexPath) && value.center == Vector3.zero && value.euler == Vector3.zero);
                         var saved = old?.settings.parts.Find(p => p.id == part.id)?.fingerRing;
@@ -402,7 +731,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                         if (!FingerRingCalibrationUtility.CanUseFrame(thumb) || !FingerRingCalibrationUtility.CanUseFrame(index))
                         {
                             warnings.Add(part.name + ": " + L("指わっかのscaleが0または座標変換が無効なため、この指わっかの生成を省略しました。他の生成可能な部位は続行します。保存済みの校正は保持します。"));
-                            skippedRings++; continue;
+                            continue;
                         }
                         bool bestEffort = !FingerRingCalibrationUtility.HasGuaranteedScale(thumb) || !FingerRingCalibrationUtility.HasGuaranteedScale(index);
                         if (bestEffort) warnings.Add(part.name + ": " + L("指わっかの階層に非一様または負のscaleがあります。生成は続行しますが、この指わっかの位置・向き・サイズは保証されません。生成後に確認し、手動で調整してください。"));
@@ -411,6 +740,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                         {
                             if (part.fingerRing == null || !part.fingerRing.calibrated)
                             {
+                                if (!pristine && old == null) {
+                                    warnings.Add(part.name + ": 指追従の校正が未完成のため、この部位を省略しました。入力は保持します。");
+                                    continue;
+                                }
                                 if (!pristine) throw new InvalidOperationException(L("未完了の指わっか調整が残っています。設定を保持して処理を中止しました。該当する指わっかをオフにしてください。"));
                                 part.fingerRing = bestEffort
                                     ? FingerRingCalibrationUtility.CaptureProvisional(avatar.transform, thumb, index, part.fingerRing?.thumbWeight ?? .5f)
@@ -426,24 +759,52 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                         {
                             part.fingerRing = calibrationBefore;
                             warnings.Add(part.name + ": " + L("指わっかのscaleが0または座標変換が無効なため、この指わっかの生成を省略しました。他の生成可能な部位は続行します。保存済みの校正は保持します。"));
-                            skippedRings++; continue;
+                            continue;
                         }
                     }
                     else placement = Place(part, avatar, basis, surface);
                     if (placement == null) warnings.Add(part.name + L(": 追従先が見つからないため省きました。"));
                     else placements.Add(part.id, placement);
                 }
-                if (placements.Count == 0 && skippedRings > 0)
+                // Missing optional inputs may omit a never-generated slot, never an
+                // existing recorded slot (including one whose actual objects disappeared).
+                GenerationWarningPolicy.RequireRetainedPlacements(old, settings, placements.Keys);
+                if (placements.Count == 0)
                 {
                     root = old;
-                    warnings.Add(L("生成できる部位が残らないため、既存の設定と生成物は変更していません。"));
+                    warnings.Add(L(GenerationWarningPolicy.NoOutputNotice));
+                    if (old != null && old.sockets.Any(socket => !settings.parts.Any(part => part.id == socket.id && part.included)))
+                        warnings.Add(L(GenerationWarningPolicy.UnappliedExclusionNotice));
                     message = string.Join("\n", warnings.Distinct());
                     return true;
                 }
-                if (placements.Count == 0) throw new InvalidOperationException(L("生成できる部位がありません。"));
+                // Check every conflict before asset allocation, Undo, exclusions or replacement.
+                if (old != null && !regenerate)
+                    foreach (var removed in old.sockets.Where(s => s != null && !placements.ContainsKey(s.id)))
+                        Sps3NativeEditProtection.RequireDiscardSafe(removed.anchor != null ? removed.anchor.gameObject : null);
+                if (authoringContract == SpsAuthoringContract.Sps3Beta14)
+                {
+                    Sps3NativeEditProtection.RequireBeforeMutation(old, settings, regenerate, placements.Keys,
+                        allowConfirmedNativeEdits: regenerate && confirmedImpact != null && currentImpact != null && currentImpact.NativeEdits.Count != 0,
+                        allowConfirmedExternalReferences: regenerate && confirmedImpact != null && currentImpact != null && currentImpact.ExternalReferences.Count != 0);
+                    ValidateNativePathBeforeMutation(old, avatar, settings, regenerate, placements, basis, surface);
+                }
                 if (old != null && old.settings.modularAvatar != settings.modularAvatar && !regenerate)
                     throw new InvalidOperationException(L("追従方式の変更には再生成を使用してください。"));
+                Sps3OwnedGlobalOptions.ReplacementPlan optionsReplacement = null;
+                if (authoringContract == SpsAuthoringContract.Sps3Beta14 &&
+                    !Sps3OwnedGlobalOptions.TryPrepareReplacement(avatar, settings, out optionsReplacement, out var optionsReason)) {
+                    // A failed optional preflight must not destroy old Options located in the removed root.
+                    if (regenerate && old != null && Sps3OwnedGlobalOptions.AllOptions(avatar).Any(c => c.transform.IsChildOf(old.transform)))
+                        throw new InvalidOperationException("旧生成物内の SPS Options を安全に保全できません: " + optionsReason);
+                    warnings.Add(SetupFeedback.OptionalIssue(optionsReason, "SPS Options を安全に書き込めなかったため、既存の設定を保持しました。"));
+                }
+                Sps3OwnedGlobalOptions.ValidateKeep(avatar, regenerate ? old?.transform : null);
                 Undo.IncrementCurrentGroup(); group = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName(UndoName);
+                if (regenerate && currentImpact != null && currentImpact.HasImpact)
+                    RegenerationImpact.RecordExternalUndo(currentImpact);
+                // Apply and Regenerate share the same optional native Options plan.
+                var previousAsset = old?.asset ?? activeFreshAssetScope?.PreviousAsset;
                 var previous = old != null ? old.settings.Copy() : null;
                 // Capture before regeneration destroys the previous hierarchy. Do not rename
                 // existing adjustment paths merely because this package was upgraded.
@@ -452,33 +813,36 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 var previousRingPoses = old?.sockets.Where(s => s.pose != null && previous.parts.Any(p => p.id == s.id && p.IsFingerRing))
                     .ToDictionary(s => s.id, s => (position: s.pose.localPosition, rotation: s.pose.localRotation, scale: s.pose.localScale));
                 // Preserve the settings referenced by saved scenes and Prefabs when edits are discarded.
-                var asset = createdAsset = Sps2SetupStorage.Create(avatar.name);
+                var asset = createdAsset = Sps2SetupStorage.Create(avatar.name, authoringContract);
+                if (!regenerate && old?.asset != null) asset.vrcConstraintEvidence = old.asset.vrcConstraintEvidence;
+                if (writeSps3Groups) CustomBlendShapeOutput.Prepare(avatar, settings, asset);
                 var identity = Sps2SetupStorage.Identity(asset);
-                GameObject existingPlug = old != null ? old.testPlug : null;
-                GameObject existingLongPlug = old != null ? old.longTestPlug : null;
-                if (regenerate && existingLongPlug != null) Undo.SetTransformParent(existingLongPlug.transform, avatar.transform, UndoName);
-                if (regenerate && existingPlug != null) Undo.SetTransformParent(existingPlug.transform, avatar.transform, UndoName);
-                if (regenerate && old != null) Undo.DestroyObjectImmediate(old.gameObject);
+                // Unity records source-owned children as Removed GameObject overrides. Never
+                // apply this override to the source, unpack, or edit the saved prefab/settings.
+                if (regenerate && old != null) {
+                    if (authoringContract == SpsAuthoringContract.Sps3Beta14) SpsPrefabRegeneration.RemoveGeneratedRoot(old);
+                    else Undo.DestroyObjectImmediate(old.gameObject);
+                }
                 root = regenerate ? null : old;
                 if (root == null)
                 {
-                    var obj = Create(RootName, avatar.transform);
+                    var obj = Create(authoringContract == SpsAuthoringContract.Sps3Beta14 ? Sps3RootName : RootName, avatar.transform);
+                    if (localScales != null) obj.transform.localScale = localScales.rootScale;
                     root = new Sps2SetupContext { gameObject = obj, avatar = avatar, asset = asset, identity = identity, settings = settings.Copy() };
-                    if (existingPlug != null) { Undo.SetTransformParent(existingPlug.transform, root.transform, UndoName); root.testPlug = existingPlug; }
-                    if (existingLongPlug != null) { Undo.SetTransformParent(existingLongPlug.transform, root.transform, UndoName); root.longTestPlug = existingLongPlug; }
                 }
                 root.asset = asset; root.identity = identity;
                 // RegisterCreatedObjectUndo ends pending RecordObject tracking. The metadata
                 // list spans many subsequent creations, so keep a complete-object snapshot.
                 if (root.asset == null)
                 {
-                    root.asset = createdAsset ?? Sps2SetupStorage.Create(avatar.name);
+                    root.asset = createdAsset ?? Sps2SetupStorage.Create(avatar.name, authoringContract);
                     createdAsset = root.asset;
                     root.identity = Sps2SetupStorage.Identity(root.asset);
                 }
                 Undo.RegisterCompleteObjectUndo(root.asset, UndoName);
                 string metadataBefore = root.asset.stateJson;
                 bool structureChanged = false;
+                var newAttachmentAnchors = new List<Transform>();
                 foreach (var generated in root.sockets.ToArray())
                     if (!placements.ContainsKey(generated.id))
                     {
@@ -493,13 +857,45 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     if (generated == null)
                     {
                         previousPoseNames.TryGetValue(part.id, out var previousPoseName);
-                        var created = CreatePart(root, part, placements[part.id], settings, warnings, previousPoseName);
+                        Vector3? retainedAnchorScale = null, retainedPoseScale = null;
+                        if (localScales != null && localScales.scales.TryGetValue(part.id, out var retainedScales))
+                        { retainedAnchorScale = retainedScales.anchor; retainedPoseScale = retainedScales.pose; }
+                        var created = CreatePart(root, part, placements[part.id], settings, warnings, previousPoseName, retainedAnchorScale, retainedPoseScale,
+                            allowOptionalOmission: old == null && !regenerate && authoringContract == SpsAuthoringContract.Sps3Beta14);
+                        newAttachmentAnchors.Add(created.anchor);
                         if (part.IsFingerRing && oldPart != null && JsonUtility.ToJson(oldPart.fingerRing) == JsonUtility.ToJson(part.fingerRing) && previousRingPoses != null && previousRingPoses.TryGetValue(part.id, out var adjustment))
                         {
                             created.pose.localPosition = adjustment.position;
                             created.pose.localRotation = adjustment.rotation;
                             created.pose.localScale = adjustment.scale;
                         }
+                        if (localScales != null && localScales.scales.TryGetValue(part.id, out var preservedScales))
+                        {
+                            // The preflight compared every old constraint field against a factory
+                            // created in the original avatar frame. Keep those proven rest values:
+                            // AddComponent on the restored hand-scaled root otherwise rebakes them.
+                            if (!preservedScales.modularAvatar) {
+                                var retainedConstraint = created.anchor.GetComponent<ParentConstraint>();
+                                Undo.RecordObject(retainedConstraint, UndoName);
+                                retainedConstraint.translationAtRest = preservedScales.restPosition;
+                                retainedConstraint.rotationAtRest = preservedScales.restRotation;
+                                // Full canonical payload comparison already proved these source offsets.
+                                // Recomputing a mathematical zero under restored scale can change float bits
+                                // and make the next exact comparison reject our own regenerated output.
+                                retainedConstraint.SetTranslationOffset(0, preservedScales.translationOffset);
+                                retainedConstraint.SetRotationOffset(0, preservedScales.rotationOffset);
+                            } else if (!created.anchor.GetComponents<Component>().Any(SpsHistoricalPrefabComparison.IsModularAvatarBoneProxy)) {
+                                throw new InvalidOperationException("LocalRegenerationScalePostcondition: Modular Avatar attachment missing: " + part.id);
+                            }
+                            // Local scales are restored at the original paths, before automatic placement.
+                            // Do not flatten ancestor scale into the pose: that changes animation semantics.
+                            checkpointForTest?.Invoke(root); // Capture objects before either postcondition or injected rollback.
+                            if (!LocalRegenerationScaleMath.Equivalent(preservedScales.world, StrictUniformWorldScale(created.pose)))
+                                throw new InvalidOperationException("LocalRegenerationScalePostcondition: " + part.id);
+                            if (failAfterScaleForTest) throw new InvalidOperationException("Injected Local scale transaction failure.");
+                        }
+                        if (writeSps3Groups && RadiusAutoCorrection.ResolveDeferred(part,created.pose,deferredRadius,warnings))
+                            VrcFuryCompatibility.Configure(created.socket,part,settings,warnings,true,false,false);
                         root.sockets.Add(created);
                         structureChanged = true;
                     }
@@ -507,11 +903,23 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     {
                         if (generated.anchor == null || generated.pose == null || generated.socket == null)
                             throw new InvalidOperationException(part.name + L(": 生成物が欠けています。再生成してください。"));
-                        if (!SamePart(oldPart, part)) VrcFuryCompatibility.Configure(generated.socket, part, settings, warnings);
-                        else if (previous.autoMode != settings.autoMode || previous.legacy != settings.legacy)
-                            VrcFuryCompatibility.ConfigureCommon(generated.socket, settings, !part.IsFingerRing);
-                        VrcFuryCompatibility.ConfigureDisplayName(generated.socket, part, settings);
-                        if (part.IsFingerRing)
+                        if (authoringContract == SpsAuthoringContract.Sps3Beta14)
+                        {
+                            bool rewriteRange = !Sps3AnimationGroupNative.SameOutput(oldPart,part,3);
+                            bool rewriteEntry = !Sps3AnimationGroupNative.SameOutput(oldPart,part,4);
+                            bool rewriteActive = !Sps3AnimationGroupNative.SameOutput(oldPart,part,2);
+                            if (rewriteRange || rewriteEntry || rewriteActive)
+                                VrcFuryCompatibility.Configure(generated.socket, part, settings, warnings, rewriteRange, false, rewriteActive, rewriteEntry);
+                            VrcFuryCompatibility.ConfigureSps3CommonChanges(generated.socket, oldPart, previous, part, settings);
+                        }
+                        else
+                        {
+                            if (!SamePart(oldPart, part)) VrcFuryCompatibility.Configure(generated.socket, part, settings, warnings);
+                            else if (previous.autoMode != settings.autoMode || previous.legacy != settings.legacy)
+                                VrcFuryCompatibility.ConfigureCommon(generated.socket, settings, !part.IsFingerRing);
+                            VrcFuryCompatibility.ConfigureDisplayName(generated.socket, part, settings);
+                        }
+                        if (part.IsFingerRing && !generated.anchor.GetComponents<Component>().Any(VrcConstraintBridge.IsVrcParent))
                         {
                             var placement = placements[part.id];
                             Undo.RecordObject(generated.anchor, UndoName);
@@ -534,38 +942,98 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                         }
                     }
                 }
-                foreach (var socket in root.sockets.Where(s => s.id == "mouth" || s.id == "anus"))
-                    VrcFuryCompatibility.ConfigurePenetrationMode(socket.socket, settings);
-                if (regenerate || structureChanged || previous == null || previous.penetration != settings.penetration ||
-                    previous.parts.Any(p => (p.id == "mouth" || p.id == "anus") && p.included != settings.parts.Find(n => n.id == p.id)?.included))
+                bool omitNewGuidedPath = authoringContract == SpsAuthoringContract.Sps3Beta14 && old == null &&
+                    settings.penetration && !Sps3OwnedPath.Supported;
+                var pathSettings = settings;
+                if (omitNewGuidedPath) {
+                    pathSettings = settings.Copy(); pathSettings.penetration = false;
+                    warnings.Add(L("口・肛門: Guided Path は対応を確認できないため省略しました。入力設定は保持します。"));
+                }
+                if (authoringContract != SpsAuthoringContract.Sps3Beta14 || previous == null || regenerate || previous.penetration != settings.penetration)
+                    foreach (var socket in root.sockets.Where(s => s.id == "mouth" || s.id == "anus"))
+                        VrcFuryCompatibility.ConfigurePenetrationMode(socket.socket, pathSettings);
+                bool rebuiltPath = regenerate || structureChanged || previous == null || previous.penetration != settings.penetration ||
+                    previous.parts.Any(p => (p.id == "mouth" || p.id == "anus") && p.included != settings.parts.Find(n => n.id == p.id)?.included);
+                if (rebuiltPath && !omitNewGuidedPath)
                     ConfigurePath(root, avatar, settings, warnings, basis, surface);
-                else if (previous.showInternalThickness != settings.showInternalThickness)
+                else if (!rebuiltPath && previous.showInternalThickness != settings.showInternalThickness)
                     foreach (var socket in root.sockets.Where(s => s.id == "mouth" || s.id == "anus"))
                         VrcFuryCompatibility.SetPathCollapse(socket.socket, !settings.showInternalThickness,
                             root.oralBoundaryPath ? (socket.id == "mouth" ? 0 : 2) : -1);
+                if (useVrcConstraint) {
+                    var ownedAnchors = old == null || regenerate ? root.sockets.Where(s => s.anchor != null).Select(s => s.anchor).ToList() : newAttachmentAnchors;
+                    var guided = root.transform.Find(PathName);
+                    if (guided != null && (old == null || regenerate || rebuiltPath)) ownedAnchors.AddRange(guided.GetComponentsInChildren<Transform>(true));
+                    var ownedConstraints = ownedAnchors.Distinct().Select(t => t.GetComponent<ParentConstraint>()).Where(c => c != null).ToArray();
+                    if (ownedConstraints.Length != 0) {
+                        var original = ownedConstraints.Select(c => (host:c.gameObject, state:SpsMigrationAdapter.State(c))).ToArray();
+                        Undo.IncrementCurrentGroup(); int conversionGroup = Undo.GetCurrentGroup();
+                        try { VrcConstraintBridge.ConvertNewOwned(root.transform, avatar, ownedConstraints); }
+                        catch (Exception) {
+                            Undo.RevertAllDownToGroup(conversionGroup);
+                            if (original.Any(x => x.host == null || x.host.GetComponent<ParentConstraint>() == null ||
+                                x.host.GetComponents<Component>().Any(VrcConstraintBridge.IsVrcParent) ||
+                                SpsMigrationAdapter.State(x.host.GetComponent<ParentConstraint>()) != x.state))
+                                throw new InvalidOperationException("VRC conversion failed and the original attachments could not be verified; rolling back setup.");
+                            warnings.Add(L("VRC Constraint を使用できなかったため、Unity Constraint を使用しました。"));
+                        }
+                    }
+                    if (ownedConstraints.Length != 0) {
+                        root.asset.vrcConstraintEvidence = VrcConstraintBridge.CaptureOwned(root);
+                        if (root.oralBoundaryPath) root.nativePathProof = Sps3OwnedPath.CaptureHierarchy(root);
+                    }
+                }
+                // If an existing VRC-backed structure was intentionally rebuilt while the
+                // SDK converter is unavailable, retain the verified remaining attachments.
+                if (!useVrcConstraint && old != null && !regenerate && (structureChanged || rebuiltPath) &&
+                    !string.IsNullOrEmpty(root.asset.vrcConstraintEvidence))
+                    root.asset.vrcConstraintEvidence = VrcConstraintBridge.CaptureOwned(root);
+                if (localScales != null && old != null && old.settings.penetration && !string.IsNullOrEmpty(old.nativePathProof) &&
+                    !Sps3OwnedPath.ProofEquals(Sps3OwnedPath.CaptureHierarchy(root), old.nativePathProof))
+                    throw new InvalidOperationException("LocalRegenerationPathPostcondition: generated guided path differs from the saved path; rolled back.");
+                if (authoringContract == SpsAuthoringContract.Sps3Beta14) {
+                    GameObject settingsHost = null;
+                    if (optionsReplacement != null) {
+                        Sps3OwnedGlobalOptions.CommitReplacement(avatar, root, optionsReplacement, previousAsset, out settingsHost);
+                        if (optionsReplacement.keepDuplicates) warnings.Add(L("複数の Options を残すと Fury の重複エラーが残ります。"));
+                    }
+                    else {
+                        Undo.RecordObject(root.asset, UndoName);
+                        root.asset.globalOptionsUnmanaged = true;
+                        EditorUtility.SetDirty(root.asset);
+                    }
+                    if (optionsReplacement != null)
+                        OwnedNativeMenuAuthoring.ApplyAutomatic(avatar, root, previousAsset, settings, warnings, settingsHost);
+                }
                 root.settings = settings.Copy();
-                if (VrcFuryCapabilities.Current.Legacy && VrcFuryCompatibility.AutoSocketCount(avatar.gameObject) > 16)
-                    throw new InvalidOperationException(L("既存分を含む Auto Mode 対象が16個を超えます。Auto Mode を外すか対象を減らしてください。"));
-                Undo.RecordObject(root.gameObject, UndoName); root.gameObject.name = RootName;
+                if (authoringContract == SpsAuthoringContract.LegacySps2 && VrcFuryCapabilities.Current.Legacy && VrcFuryCompatibility.AutoSocketCount(avatar.gameObject) > 16)
+                {
+                    var limit = L("既存分を含む Auto Mode 対象が16個を超えます。Auto Mode を外すか対象を減らしてください。");
+                    if (directNdmf) warnings.Add(limit);
+                    else throw new InvalidOperationException(limit);
+                }
                 UpdateAuthoringIdentities(root);
                 CommitMetadata(root, metadataBefore);
                 EditorSceneManager.MarkSceneDirty(avatar.gameObject.scene);
                 Selection.activeGameObject = root.gameObject;
                 Undo.CollapseUndoOperations(group);
                 message = string.Join("\n", warnings.Distinct());
+                changed = true;
                 return true;
             }
             catch (Exception e)
             {
                 if (group >= 0) Undo.RevertAllDownToGroup(group);
-                if (createdAsset != null) AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(createdAsset));
-                root = null; message = e.Message; return false;
+                if (createdAsset != null && authoringContract == SpsAuthoringContract.LegacySps2)
+                    AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(createdAsset));
+                // SPS3 failures retain the newly allocated settings asset; never delete saved test/user data.
+                root = null; message = SetupFeedback.Error(e, "Socket を保存できませんでした。対象と設定を確認してください。"); return false;
             }
         }
 
         private static bool SamePart(SocketSettings a, SocketSettings b)
         {
-            if (a == null || a.name != b.name || a.target != b.target || a.depth != b.depth || a.range != b.range || a.units != b.units || a.actions.Count != b.actions.Count) return false;
+            if (a == null || a.name != b.name || a.target != b.target || a.depth != b.depth || a.range.x != b.range.x || a.range.y != b.range.y || a.units != b.units || a.actions.Count != b.actions.Count) return false;
             for (int i = 0; i < a.actions.Count; i++)
             {
                 var x = a.actions[i]; var y = b.actions[i];
@@ -592,6 +1060,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         private static void ClearPath(Sps2SetupContext root, VRCAvatarDescriptor avatar)
         {
             root.oralBoundaryPath = false;
+            root.nativePathProof = null;
             var old = root.transform.Find(PathName);
             foreach (var socket in root.sockets.Where(s => s.id == "mouth" || s.id == "anus"))
             { VrcFuryCompatibility.SetPath(socket.socket, Array.Empty<Transform>(), avatar.transform); socket.pathStops = Array.Empty<Transform>(); }
@@ -601,9 +1070,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         private static void ConfigurePath(Sps2SetupContext root, VRCAvatarDescriptor avatar, SetupSettings settings, List<string> warnings,
             BodyBasis basis, AvatarSurface surface)
         {
-            ClearPath(root, avatar);
+            bool native = root.AuthoringContract == SpsAuthoringContract.Sps3Beta14;
+            if (!native) ClearPath(root, avatar);
             var mouth = root.sockets.Find(s => s.id == "mouth"); var anus = root.sockets.Find(s => s.id == "anus");
-            if (!settings.penetration || (mouth == null && anus == null)) return;
+            if (!settings.penetration || (mouth == null && anus == null)) { if (native) ClearPath(root, avatar); return; }
             var animator = avatar.GetComponent<Animator>();
             var throat = animator.GetBoneTransform(HumanBodyBones.Neck);
             if (throat == null) { throat = animator.GetBoneTransform(HumanBodyBones.Head); warnings.Add(L("貫通: Neck がないため Head を使用しました。喉の通過点を確認してください。")); }
@@ -618,6 +1088,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             if (surface.Ray(throat.position, avatar.transform.forward, reach, out var front) &&
                 surface.Ray(throat.position, -avatar.transform.forward, reach, out var back))
                 throatCenter = (front + back) * .5f;
+            Sps3NativePathGeometry.StopPose[] oral = null, reverse = null;
+            if (native) {
+                if (!Sps3NativePathGeometry.TryBuild(mouth != null ? mouth.pose.position : virtualMouth.position,
+                    anus != null ? anus.pose.position : virtualAnus.position, throatCenter, hips.position,
+                    mouth != null ? mouth.pose.forward : virtualMouth.rotation * Vector3.forward,
+                    anus != null ? anus.pose.forward : virtualAnus.rotation * Vector3.forward,
+                    avatar.transform.forward, avatar.transform.up, avatar.transform.right,
+                    !settings.showInternalThickness, out oral, out reverse, out var reason))
+                    throw new InvalidOperationException("SPS3 path was not changed: " + reason);
+                ClearPath(root, avatar);
+            }
             var path = Create(PathName, root.transform);
             Transform VirtualPose(string id, Placement placement)
             {
@@ -639,6 +1120,22 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (position.HasValue) point.transform.position = position.Value;
                 point.transform.rotation = Quaternion.LookRotation(direction.normalized, avatar.transform.right);
                 return point.transform;
+            }
+            if (native) {
+                var nativeHead = animator.GetBoneTransform(HumanBodyBones.Head) ?? throat;
+                Transform NativeStop(string name, Transform source, Sps3NativePathGeometry.StopPose pose) =>
+                    Stop(name, source, pose.Rotation * Vector3.forward, pose.Position);
+                if (mouth != null) mouth.pathStops = new[] { NativeStop("Mouth Interior", nativeHead, oral[0]),
+                    NativeStop("Mouth Throat", throat, oral[1]), NativeStop("Anus Exit", anusPose, oral[2]) };
+                if (anus != null) anus.pathStops = new[] { NativeStop("Anus Throat", throat, reverse[0]),
+                    NativeStop("Anus Interior", nativeHead, reverse[1]), NativeStop("Mouth Exit", mouthPose, reverse[2]) };
+                foreach (var socket in new[] { mouth, anus }.Where(s => s != null)) {
+                    VrcFuryCompatibility.SetPath(socket.socket, socket.pathStops, avatar.transform);
+                    VrcFuryCompatibility.SetPathCollapse(socket.socket, !settings.showInternalThickness, socket.id == "mouth" ? 0 : 2);
+                }
+                root.oralBoundaryPath = true;
+                root.nativePathProof = Sps3OwnedPath.CaptureHierarchy(root);
+                return;
             }
             // Split the accepted mouth-to-throat cubic without changing its shape.
             // The interior split replaces the waist waypoint, keeping three stops.
@@ -690,74 +1187,60 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             {
                 var root = Find(avatar);
                 using var backend = SpsBackend.Use(root?.settings.family ?? SpsFamily.VrcFury);
-                VrcFuryCompatibility.RequireVersion();
                 if (root == null) throw new InvalidOperationException(L("先にセットアップを生成してください。"));
-                var selectedPlug = longPlug ? root.longTestPlug : root.testPlug;
+                using var contract = SpsAuthoringCompatibility.Use(root.AuthoringContract);
+                VrcFuryCompatibility.RequireVersion();
+                var material = AssetDatabase.LoadAssetAtPath<Material>(PackagePath + "/Assets/IcePop/IcePop.mat");
+                if (material == null || material.shader == null) throw new InvalidOperationException(L("プラグの表示用アセットが見つかりません。"));
+                if (longPlug && root.sockets.Find(s => s.id == "mouth")?.pose == null)
+                    throw new InvalidOperationException(L("貫通テストには口のソケットを生成してください。"));
                 Undo.IncrementCurrentGroup(); group = Undo.GetCurrentGroup(); Undo.SetCurrentGroupName(L("SPS2 テストプラグ"));
-                if (root.asset == null || selectedPlug == null)
+                // Each test is independent from the generated Setup root and its metadata.
+                var selectedPlug = Create(longPlug ? "SPS2 Long Test Plug" : "SPS2 Test Plug", avatar.transform);
+                GameObject mesh;
+                if (longPlug)
                 {
-                    root.asset = createdAsset ?? Sps2SetupStorage.Create(avatar.name);
-                    createdAsset = root.asset;
-                    root.identity = Sps2SetupStorage.Identity(root.asset);
+                    // Separate asset owns the procedural mesh; never add it to the Setup asset.
+                    createdAsset = Sps2SetupStorage.Create(avatar.name + " Test Plug", root.AuthoringContract);
+                    mesh = LongTestPlugMesh.Create(selectedPlug.transform, createdAsset, material);
                 }
-                bool metadataChanged = createdAsset != null || selectedPlug == null;
-                if (metadataChanged) Undo.RegisterCompleteObjectUndo(root.asset, UndoName);
-                string metadataBefore = root.asset.stateJson;
-                if (selectedPlug == null)
+                else
                 {
-                    var material = AssetDatabase.LoadAssetAtPath<Material>(PackagePath + "/Assets/IcePop/IcePop.mat");
-                    if (material == null || material.shader == null) throw new InvalidOperationException(L("プラグの表示用アセットが見つかりません。"));
-                    var plug = Create(longPlug ? "SPS2 Long Test Plug" : "SPS2 Test Plug", root.transform);
-                    GameObject mesh;
-                    if (longPlug) mesh = LongTestPlugMesh.Create(plug.transform, root.asset, material);
-                    else
-                    {
-                        var model = AssetDatabase.LoadAssetAtPath<GameObject>(PackagePath + "/Assets/IcePop/IcePop.fbx");
-                        if (model == null) throw new InvalidOperationException(L("IcePop の表示用アセットが見つかりません。"));
-                        mesh = UnityEngine.Object.Instantiate(model, plug.transform, false);
-                        Undo.RegisterCreatedObjectUndo(mesh, UndoName);
-                        mesh.transform.localRotation = Quaternion.Euler(90, 0, 0);
-                        foreach (var renderer in mesh.GetComponentsInChildren<Renderer>(true))
-                            renderer.sharedMaterials = Enumerable.Repeat(material, renderer.sharedMaterials.Length).ToArray();
-                    }
-                    VrcFuryCompatibility.CreateTestPlug(plug, mesh.GetComponentsInChildren<Renderer>(true), longPlug ? "SPS2 貫通テストプラグ" : "SPS2 テストプラグ");
-                    selectedPlug = plug;
-                    if (longPlug) root.longTestPlug = plug; else root.testPlug = plug;
+                    var model = AssetDatabase.LoadAssetAtPath<GameObject>(PackagePath + "/Assets/IcePop/IcePop.fbx");
+                    if (model == null) throw new InvalidOperationException(L("IcePop の表示用アセットが見つかりません。"));
+                    mesh = UnityEngine.Object.Instantiate(model, selectedPlug.transform, false);
+                    Undo.RegisterCreatedObjectUndo(mesh, UndoName);
+                    mesh.transform.localRotation = Quaternion.Euler(90, 0, 0);
                 }
-                Undo.RecordObject(selectedPlug.transform, UndoName);
+                VrcFuryCompatibility.CreateTestPlug(selectedPlug, mesh.GetComponentsInChildren<Renderer>(true), longPlug ? "SPS2 貫通テストプラグ" : "SPS2 テストプラグ");
                 if (!longPlug)
                 {
-                    var ice = AssetDatabase.LoadAssetAtPath<Material>(PackagePath + "/Assets/IcePop/IcePop.mat");
                     var stick = AssetDatabase.LoadAssetAtPath<Material>(PackagePath + "/Assets/IcePop/IcePopStick.mat");
-                    if (ice == null || stick == null) throw new InvalidOperationException(L("IcePop の表示用マテリアルが見つかりません。"));
+                    if (stick == null) throw new InvalidOperationException(L("IcePop の表示用マテリアルが見つかりません。"));
                     selectedPlug.transform.localScale = Vector3.one * .7f;
-                    foreach (var renderer in selectedPlug.GetComponentsInChildren<Renderer>(true))
-                    {
-                        Undo.RecordObject(renderer, UndoName);
-                        renderer.sharedMaterials = Enumerable.Repeat(renderer.name == "Stick" ? stick : ice, renderer.sharedMaterials.Length).ToArray();
-                    }
+                    foreach (var renderer in mesh.GetComponentsInChildren<Renderer>(true))
+                        renderer.sharedMaterials = Enumerable.Repeat(renderer.name == "Stick" ? stick : material, renderer.sharedMaterials.Length).ToArray();
                 }
-                var head = avatar.GetComponent<Animator>().GetBoneTransform(HumanBodyBones.Head);
+                var animator = avatar.GetComponent<Animator>();
+                var head = animator != null && animator.isHuman ? animator.GetBoneTransform(HumanBodyBones.Head) : null;
                 selectedPlug.transform.SetPositionAndRotation((head != null ? head.position : avatar.transform.position + avatar.transform.up) + avatar.transform.forward * .35f, Quaternion.LookRotation(-avatar.transform.forward, avatar.transform.up));
                 if (longPlug)
                 {
-                    var mouth = root.sockets.Find(s => s.id == "mouth")?.pose;
-                    if (mouth == null) throw new InvalidOperationException(L("貫通テストには口のソケットを生成してください。"));
+                    var mouth = root.sockets.Find(s => s.id == "mouth").pose;
                     float length = LongTestPlugMesh.Length * Mathf.Abs(selectedPlug.transform.lossyScale.z);
                     selectedPlug.transform.SetPositionAndRotation(mouth.position + mouth.forward * (length + .08f), Quaternion.LookRotation(-mouth.forward, mouth.up));
-                }
-                Undo.RecordObject(selectedPlug, UndoName); selectedPlug.SetActive(true);
-                Undo.RecordObject(root.gameObject, UndoName); root.gameObject.name = RootName;
-                if (metadataChanged)
-                {
-                    UpdateAuthoringIdentities(root);
-                    CommitMetadata(root, metadataBefore);
+                    AssetDatabase.SaveAssetIfDirty(createdAsset);
                 }
                 EditorSceneManager.MarkSceneDirty(avatar.gameObject.scene);
                 Selection.activeGameObject = selectedPlug;
                 Undo.CollapseUndoOperations(group); error = null; return true;
             }
-            catch (Exception e) { if (group >= 0) Undo.RevertAllDownToGroup(group); if (createdAsset != null) AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(createdAsset)); error = e.Message; return false; }
+            catch (Exception e) {
+                if (group >= 0) Undo.RevertAllDownToGroup(group);
+                if (createdAsset != null) AssetDatabase.DeleteAsset(AssetDatabase.GetAssetPath(createdAsset));
+                error = SetupFeedback.Error(e, "テストプラグを配置できませんでした。配置先を確認してください。"); return false;
+            }
         }
+
     }
 }
