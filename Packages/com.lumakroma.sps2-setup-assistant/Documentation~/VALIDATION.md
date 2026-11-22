@@ -1,3 +1,186 @@
+# 1.1.1 yellow-warning revision (2026-10-02, unpublished)
+
+The user requested yellow-only scale guidance after the strict-scale candidate
+was tested. The earlier ZIP SHA256 613dd6400a81be10591c16358bcb7a542eb48708e8a173febd0041ac3a62b5a2
+is superseded and must not be published as this revision.
+
+Implemented: invertible nonuniform/negative/sheared frames produce finite current-
+pose placement or reuse saved calibration; non-invertible finger frames are skipped;
+no safe output is a warning-only no-op. Manual adjustment and lack of position,
+orientation and size guarantees are explicit in all five languages. The positive-
+uniform scalar offset path and old unit-scale settings representation are retained.
+
+Verified on local commit f6bb05149b71bd619028d305e079920bb7ba40a8:
+- Related Unity regression: 128 passed, 0 failed, 0 skipped in one run. Includes
+  positive-uniform native/SDK tracking, legacy settings, mirrored/nonuniform finite
+  native/SDK output, shear/compensated ancestors, zero-frame guards and five-language
+  manual-adjustment wording. This current-revision run replaces the old aggregate.
+- Warning generation: 62 checks passed. Fresh nonuniform/negative generation,
+  partial zero-thumb skips with right-ring/palm continuation, saved calibration
+  across Apply/regeneration, only-invalid selection preserving old output/settings,
+  singular-root no-change and first-generation no-output creating no empty setup.
+- Positive-uniform generation: all 7 cases / 177 checks passed again. Covers root,
+  ancestor and hand scale 0.5/2, old unit-scale saved frames, JSON reload, ordinary
+  Apply after rescale, manual position/rotation/size, regeneration and SDK conversion.
+- Source prefab skeleton transforms were unchanged. Original saved scene setup
+  was restored clean; Play/recording stopped, Editor PID 59768 exited normally and
+  its lease was released. Shared server PID 31084 was preserved.
+- Product/tests and the generation probe compiled offline. The existing package
+  check and 206 localization entries with four translations each passed.
+
+Raw results, tested file hashes and the superseding local ZIP are retained under
+task-3/sps2-scale-111/warning-revision. Final documentation-only changes do not
+alter the tested product/test C# bytes. Nonuniform/negative scale remains an explicit
+manual-adjustment path without position/orientation/size accuracy guarantees.
+
+Historical strict-scale candidate evidence follows and is not a PASS claim for the
+warning-only revision. VRC-client behavior and runtime scale animation remain outside
+the verified scope. No release, push or upload is authorized/performed.
+
+---
+
+# 1.1.1 scale patch candidate (2026-10-02, unpublished)
+
+Baseline a27de786638c73c50935900d73f5fb1c0e5702d9 plus the local scale patch.
+The exact tested product file hashes and raw results are retained in
+`C:/Users/konoh/Documents/Codex/2026-10-02/task-3/sps2-scale-111/`.
+
+- Initial native test failed: using joint-local offsets directly gave 0.023097621m
+  error at scale 0.5; the native world-distance expectation differed by 3.84e-9m.
+- Fixed native and SDK-converted PlayMode scale tracking: 2 passed, 0 failed.
+  Covers root 0.5/2, combined ancestor/joint scale, motion/return, preserved socket
+  scale, and native reconfiguration after changing root/joint scale.
+- Related regression: 124 passed and 1 failed initially. The remaining unit-scale
+  SDK test compared floating vectors exactly; after correcting its expected native
+  distance and applying a 1e-6m tolerance, that one test passed on rerun.
+  The product code was unchanged between these runs. Aggregate: 125 distinct tests
+  covered successfully; this is a combined result, not a new 125-test single run.
+  The passing follow/return/reactivation samples had maximum error 1.1781e-8m and
+  zero measured rotation error. The existing 1e-4m motion limit was not relaxed.
+- Generation: 7 cases / 177 checks passed on disposable Transform-only copies.
+  Covers root/ancestor/hand scale 0.5 and 2, both rings plus a palm socket, legacy
+  unit-scale saved calibration, JSON reload, Apply after rescale, regeneration,
+  retained manual local position/rotation/size and generated SDK conversion.
+  The source prefab's skeleton transforms remained unchanged.
+- Five-language warning subjects, unsafe scales, compensated unsafe ancestors,
+  old settings and geometry scale invariance are covered by the related tests.
+
+Only authored positive uniform scale is supported. Apply/regenerate after editing
+hierarchy scale. Runtime scale animation, VRC-client scale behavior and subjective
+avatar appearance have not been certified. No runtime scripts or dependency
+changes were added. No release/push/upload was performed.
+
+The original saved scene configuration was restored clean, test recording and
+Play stopped, and the owned Editor was closed normally before releasing its lease.
+Historical checkpoints follow; their older limitations describe those revisions.
+
+---
+
+# Finger-ring prototype checkpoint (2026-09-30)
+
+Current code fix: 3a71771fce4c2f1a416085c532290090ef735e3f, local-only.
+This is an experimental implementation, not a release-ready feature.
+
+At 139451c14c4445deea5a4badb7844cd55374cdb3, the public Unity Test Runner
+completed 61/61 tests, including real Play Mode native ParentConstraint movement,
+return to calibration and release after disable. Calibration tests cover multiple
+weights, extreme initial rotations, rotated reference frames, coincident points,
+JSON/copy independence, changed/missing joint paths and legacy/preset defaults.
+A prior Slerp expectation differed by 3.978959 degrees from Unity's rotation blend;
+normalized linear blending matched the actual solver. Failed evidence is retained.
+
+The subsequent synthetic finger-avatar authoring probe passed five setup checks,
+including missing-bone rejection, valid finger Humanoid creation and refusal to
+generate uncalibrated rings. Generation then failed because C# ?? did not treat
+Unity's missing-component wrapper as null. Fix 3a71771 uses == null and adds an
+Editor creation regression. Core and test compilation pass; exact-fix Unity tests
+and the remaining generation/Auto/Undo/save/regeneration matrix are NOT yet passed.
+RMS took the shared execution resource priority, so further Unity work is deferred.
+
+The failed probe's RingHumanoid.asset is preserved. Its disposable clone scene
+was clean/untitled after rollback and was not saved by the conditional failure
+handler before normal shutdown. No original fixture or user scene was changed.
+A reviewed recovery probe reconstructs only those finger transforms from the saved
+skeleton, saves before Apply, and unconditionally saves its known scene on failure.
+It has compiled but has not run. Future save audits must catch nonempty untitled
+scenes even when isDirty is false. Do not resend the original fixture creation.
+
+Evidence in management checkout .codex-staging/sps2-i18n-110:
+ring-constraint-observation.json (SDK conversion observed; Edit Mode did not move),
+ring-runtime-test.json plus .failures.txt (60 pass, 1 failure),
+ring-runtime-test-v2.json (61 pass), ring-authoring-result.json (generation failure),
+ring-third-audit.json and ring-authoring-recovery.cs (not yet executed).
+The initial transient test callback was lost across domain reload; a test-only
+InitializeOnLoad recorder now persists public Test Runner results correctly.
+
+Remaining prototype gates: exact-fix Unity tests, complete authoring/native-build
+and converted-constraint runtime checks, left/right real-avatar visual evaluation,
+scaled rigs (currently rejected), localized calibration UI and VRC PC. Old tooltip,
+fresh installation and native-speaker gates remain open. Auto Casual restriction
+and legacy installation migration are still unimplemented proposals. Existing
+naming changes remain preserved. No push, merge, package export or publication.
+# 1.1.0 paired naming - Shared Unity validation (2026-09-30)
+
+Code revision: 82aeac4831bef0ce9a5e31c298c915735b8ca5d2, local-only.
+Unity 2022.3.22f1, VRChat SDK 3.10.4, VRCFury 1.1403.0, dedicated Issue180
+Shared project. Actual EditMode suites: 55/55 passed. Isolated saved-fixture
+regression: 68 assertions passed, covering retained legacy paths and local poses
+on Apply, retained paths on regeneration/Undo/Redo, all eight new paired names,
+unique counterpart names, stable 16 IDs including custom, regeneration and scene
+reload. Actual SDK preprocessing on the new names: 43 assertions passed, including
+native menus, pagination, owned/default/persistence parameters and unrelated menu.
+Package/localization validation (168 entries), compile and diff checks passed.
+
+The initial disposable probe renamed a Transform directly before Apply and failed:
+metadata stores relative paths, so arbitrary external renaming invalidates lookup.
+The failed evidence is retained. Restoring that isolated clone's original name
+and testing normal generator operations passed. This does not validate arbitrary
+user renaming, automated migration or external AnimationClip rewriting. Existing
+objects are not renamed by this change; new paired poses receive the new names.
+SymmetryBoneEditor was read as source, not installed or run. Matching suffix names
+is verified from that source; geometric mirroring with different parent frames
+still requires a visual test.
+
+Evidence (management checkout .codex-staging/sps2-i18n-110):
+editor-tests-82aeac4.json, naming-regression-82aeac4.json (failed probe),
+naming-regression-v2-82aeac4.json, naming-native-82aeac4.json,
+naming-save-state.json, naming-residue-audit.json, naming-close.json,
+naming-release.json. Editor PID 58572 exited normally, all scenes were saved,
+and the owned lease was formally released; shared server was left running.
+
+Earlier b328e006 validation includes 126 authoring assertions and five-language
+native/UI observations. Parameter signatures matched after replacing only the
+per-Apply settings snapshot GUID; raw parameter names are not byte-stable even
+between repeated same-language Applies. Twelve lower-window screenshots and
+English 430px layout were reviewed. Those observations are scoped to b328e006.
+Outstanding: real tooltip popup, fresh 1.1.0 installation, native-speaker review,
+actual avatar/geometric symmetry and VRC PC. The warm synthetic fixture is not
+fresh-install or real-avatar evidence. No version bump, push, PR update, package
+export or release occurred. Ring socket and Casual-only Auto remain proposals.
+# 1.1.0 source-only validation — 2026-09-30
+
+Baseline: 4902a77f31e37ccfb6e8b22d6e987c40a6a797bb (public 1.0.2).
+Unity was not launched, as requested. Package/static localization validation
+passes: 168 entries with all four translations, all literal localization calls
+and standard-name/category coverage. Core source compilation against installed
+Unity 2022.3.22f1 and real VRChat SDK assemblies passes without starting Unity.
+The core Editor tests also compile using the installed Unity NUnit assembly and
+Unity's .NET compatibility reference shims. This is a C# source/type check, not
+Unity import/build/EditMode validation.
+
+New Editor tests cover legacy JSON/migration/reset, deep-copy and JSON roundtrip,
+all-language/preset override preservation, UI/menu independence, invalid-language
+fallback, and pagination identity/order/parameters. Execution is pending Unity.
+
+Next exact-head gates: compile/import and all EditMode tests; five-language UI
+layout/tooltips/diagnostics; old 1.0.2 asset reopen and migration; name/language-only
+Apply preserving manually adjusted Socket poses and configuration; Undo/Redo;
+save/reload and regeneration; native build menus including all parts/customs and
+pagination in each language; unchanged parameters/defaults/persistence and
+unrelated native menus. Inspect translated terminology and font rendering.
+Fresh package/VCC import and VRC PC remain unverified. No release or publication
+is authorized by this source-only work. Earlier VRC PC gaps below remain open.
+
 # 1.0.2 candidate verification — 2026-09-22
 
 Source cd4227d97c2ef619f0666e4a4d79419b5a51b241, Unity 2022.3.22f1,
@@ -739,3 +922,107 @@ its MCP bridge unavailable: installed CoplayDev 10.2.0 differs from the bridge's
 verified 10.1.2. Its guard was preserved; no runtime smoke-test pass is claimed.
 Both final owned Editor sessions exited normally, with bridge shutdown,
 preferences restored and the official lock released.
+# 1.1.0 paired adjustment naming — implementation checkpoint
+
+Baseline: b328e0065486ce144eabc625a407b19379082f72. The naming change is
+limited to newly introduced paired pose objects and preserves existing pose names
+on Apply and regeneration. Static package/localization validation passes. The
+additional Editor regressions cover paired-name uniqueness, legacy/authored-name
+preservation and unchanged center/custom defaults.
+
+Exact-revision Unity tests, old-fixture/new-setup path and reference regression,
+Undo/reload and native build checks must be rerun on this change. Earlier
+48-test, 126-assertion authoring and multilingual build observations apply only
+to b328e006 and are not evidence for this naming revision. SymmetryBoneEditor
+was inspected as source only; local-axis geometric mirroring and VRC PC remain
+unverified. No fresh-install or native-speaker review is claimed.
+
+### Corrected prototype and localization/scale follow-up (2026-09-30 UTC)
+
+Observed at e451b25db1a7fffb912c6533bd7431ac7e26faea (code 3a71771):
+62/62 Unity package tests, 26/26 recovered-fixture authoring assertions, and 9/9
+public SDK conversion assertions passed. Source/package/profile matched; own
+Editor normally closed and lease released. Evidence and limitations are recorded
+in management Issue180 comment 5918700877 and its preserved local JSON artifacts.
+These results include native tracking and generated conversion, not converted
+runtime or VRC-client certification.
+
+The bounded follow-up adds 25 five-language translation rows for ring names,
+UI/actions/status/errors, preserving stable IDs and authored overrides. The
+localization catalog (193 complete rows) and core/editor-test compilation passed
+before Unity. Native-speaker quality is unverified. Runtime tests use documented
+public DoConvertUnityConstraints and ApplyConfigurationChanges on inactive
+isolated objects before enabling them; no private SDK reinitialization or manual
+scheduler manipulation is used. The new test exercises mirrored sides at .3/.7
+weights, closed/open/return poses, disable and reactivation. Actual results must
+be recorded against the follow-up code revision in the owning Issue.
+
+Scale analysis is calculated evidence: fixed positive whole-avatar uniform scale
+preserves angles and is potentially a bounded future extension; changing scale
+after capture needs offset rescaling. Nonuniform scaled/rotated bone chains can
+shear (an example has unit basis lengths but an XY dot product of -0.6). The
+prototype's unit-world-scale limitation is retained. Added rejection checks cover
+non-finite scale/UI values and world-matrix distortion; added tests cover .5/2
+whole-avatar scale, NaN/infinity/zero/negative/nonuniform scale and compensated
+shear. No scaled-rig support claim follows from these rejection tests.
+
+Public API documentation: https://creators.vrchat.com/common-components/constraints/constraints-api/
+Remaining human gates include actual-avatar visual calibration, translation
+quality and exact-revision VRC PC. Fresh install and tooltip display remain open.
+
+
+## 2026-10-01 automatic initial finger-loop calibration / UI correction
+
+Baseline1eaafa9; approved Context Check Issue180 comment5928921248. Public
+HumanPoseHandler Get/Set on an isolated Transform-only synthetic skeleton was
+observed through the Shared entry; source local position/rotation stayed equal.
+This reference rig did not close under the measured muscle values, so its
+anatomical suitability is NOT asserted. New source adds geometry rejection,
+copy cleanup and preservation tests; exact-head Unity results are recorded in
+the owning Issue and local auto-ring-evidence. Five-language/native review and
+actual-avatar/VRC PC visual quality remain separate gates. Static compilation
+uses installed Unity2022.3.22f1/reference SDK assemblies. No release is implied.
+
+Reference-pose refinement: read-only MANUKA prefab bones were copied without
+components; public Humanoid sampling observed320 coarse and324 refined cases.
+The chosen fixed pose above yielded estimated gap/index-length ratios0.11720
+for both sides, plane deviations0.15464 span, normal agreement0.74493.
+These are geometry observations, not visible surface/actual Gesture acceptance.
+The runtime estimator performs no pose search. Closure guard tightened to0.2.
+
+
+## 2026-10-01 real V3 gesture refinement checkpoint
+
+Baselineccab1118; Context Check Issue180 comment5931623770. Saved RingRuntimeHost
+has MANUKA, GestureManager and MA MergeAnimator using AdvancedHandGestureV3.
+Public controller traversal maps OK.anim into both hand layers with motion-time
+parameters smoothedLeftWeight/smoothedRightWeight. Both-hand authored muscle
+curves match. A disposable Transform-only copy sampled16 poses: reference,
+OK time0/.25/.5/.75/1, open and fist on each side. Source Transform snapshot
+and scene cleanliness stayed equal. Copied renderer CPU BakeMesh plus software
+projection supplied isolated front/side observations without GPU rendering.
+
+The baseline comparison showed about5mm projected center discrepancy and
+about22-degree tilt against a diagnostic fitted finger-loop plane. A trimmed
+contour, fitted plane and IndexProximal tracking candidate at unchanged weight0.5
+reduced the sampled mean projected discrepancy to about1.7mm and maximum tilt
+to about11 degrees. These are measured comparisons on one rig, not universal
+surface guarantees; middle-finger occlusion affects the visible-hole diagnostic.
+Product source tests add palm-point independence and legacy/new saved-frame
+resolution coverage. Exact revised-head generation/runtime/native regression
+results must be recorded in the owning Issue and gesture-refinement-evidence.
+Native-language quality and VRC PC remain unverified. No release is implied.
+
+
+## Finger-loop UI simplification (unreleased 1.1.0, Issue180)
+
+User-approved 2026-10-01: remove loop-only weight/center/rotation/capture and Scene
+handle UI; retain common enabled/name/depth controls and serialized calibration.
+Automatic and legacy-pending/path-change failures give five-language guidance
+without pointing to removed controls. Tracking/calibration algorithms, default
+weights, settings schema and saved-data preservation are unchanged.
+
+Exact resulting revision, five-language 430px captures, initial/existing-generation
+regressions and latest user-state restoration are recorded in Issue180 completion
+evidence. Earlier 101-test and converted-runtime results remain pinned to their
+own revision; UI evidence does not certify mother-tongue quality or VRC PC.

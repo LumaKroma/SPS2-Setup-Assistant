@@ -1,3 +1,5 @@
+using LumaKroma.Sps2SetupAssistant.Editor.Model;
+using static LumaKroma.Sps2SetupAssistant.Editor.Localization.Sps2Localization;
 using System;
 using System.Collections.Generic;
 using System.Linq;
@@ -74,18 +76,18 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         {
             var asset = AssetDatabase.LoadAssetAtPath<Sps2SetupAsset>(AssetDatabase.GUIDToAssetPath(identity));
             if (asset == null || asset.schema != 1 || string.IsNullOrEmpty(asset.stateJson))
-                throw new InvalidOperationException("SPS2 の設定アセットが見つからないか形式が一致しません。Prefab と対応する設定 .asset を一緒に配置してください。");
+                throw new InvalidOperationException(L("SPS2 の設定アセットが見つからないか形式が一致しません。Prefab と対応する設定 .asset を一緒に配置してください。"));
             return asset;
         }
         private static string Path(Transform value, Transform root)
         {
             if (value == null) return null;
-            if (value != root && !value.IsChildOf(root)) throw new InvalidOperationException("設定の参照が対象アバターの外にあります。");
+            if (value != root && !value.IsChildOf(root)) throw new InvalidOperationException(L("設定の参照が対象アバターの外にあります。"));
             var names = new List<string>();
             for (var t = value; t != root; t = t.parent)
             {
                 if (t.name.Contains("/") || t.parent.Cast<Transform>().Count(c => c.name == t.name) != 1)
-                    throw new InvalidOperationException("設定参照の階層名が重複しているか、/ を含んでいます: " + t.name);
+                    throw new InvalidOperationException(L("設定参照の階層名が重複しているか、/ を含んでいます: ") + t.name);
                 names.Add(t.name);
             }
             names.Reverse(); return string.Join("/", names);
@@ -101,7 +103,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (value is AnimationClip)
                 {
                     if (!AssetDatabase.TryGetGUIDAndLocalFileIdentifier(value, out reference.guid, out reference.localId))
-                        throw new InvalidOperationException("Animation Clip は保存済みアセットを指定してください。");
+                        throw new InvalidOperationException(L("Animation Clip は保存済みアセットを指定してください。"));
                 }
                 else
                 {
@@ -156,14 +158,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             if (owned.Length == 0)
             {
                 if (!build && avatar.transform.Find(FullSetupGenerator.RootName) != null)
-                    throw new InvalidOperationException("SPS2 という名前の生成物がありますが、所有情報を確認できません。");
+                    throw new InvalidOperationException(L("SPS2 という名前の生成物がありますが、所有情報を確認できません。"));
                 return null;
             }
             var identities = owned.Select(s => { TryToken(s.token, out var id, out _); return id; }).Distinct().ToArray();
-            if (identities.Length != 1) throw new InvalidOperationException("対象アバターに複数の SPS2 設定があります。");
+            if (identities.Length != 1) throw new InvalidOperationException(L("対象アバターに複数の SPS2 設定があります。"));
             var asset = LoadAsset(identities[0]); var state = JsonUtility.FromJson<State>(asset.stateJson);
             var transform = avatar.transform.Find(FullSetupGenerator.RootName);
-            if (!build && transform == null) throw new InvalidOperationException("SPS2 生成ルートが見つかりません。");
+            if (!build && transform == null) throw new InvalidOperationException(L("SPS2 生成ルートが見つかりません。"));
             var result = new Sps2SetupContext { avatar = avatar, asset = asset, identity = identities[0], gameObject = transform != null ? transform.gameObject : avatar.gameObject,
                 settings = build ? state.settings.Copy() : BindSettings(state, avatar), oralBoundaryPath = state.oralBoundaryPath };
             if (!build && !string.IsNullOrEmpty(state.plug)) result.testPlug = Resolve(transform, state.plug)?.gameObject;
@@ -171,14 +173,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             foreach (var record in state.sockets)
             {
                 var sockets = owned.Where(s => s.token == Token(result, record.id)).ToArray();
-                if (sockets.Length > 1) throw new InvalidOperationException("SPS2 Socket の識別子が重複しています。");
+                if (sockets.Length > 1) throw new InvalidOperationException(L("SPS2 Socket の識別子が重複しています。"));
                 var socket = sockets.SingleOrDefault()?.socket;
                 var pose = build ? socket?.transform : Resolve(transform, record.pose);
                 result.sockets.Add(new GeneratedSocket { id=record.id, socket=socket, pose=pose,
                     anchor=build ? pose?.parent : Resolve(transform, record.anchor),
                     pathStops=build ? Array.Empty<Transform>() : record.stops.Select(p => Resolve(transform, p)).ToArray() });
             }
-            if (owned.Length != result.sockets.Count(s => s.socket != null)) throw new InvalidOperationException("設定アセットに記録されていない SPS2 Socket があります。");
+            if (owned.Length != result.sockets.Count(s => s.socket != null)) throw new InvalidOperationException(L("設定アセットに記録されていない SPS2 Socket があります。"));
+            FullSetupCatalog.UpgradeDisplayNames(result.settings);
             return result;
         }
     }
