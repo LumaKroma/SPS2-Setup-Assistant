@@ -1,4 +1,4 @@
-# SPS3 Setup Assistant 2.0.0-beta.1
+# SPS3 Setup Assistant 2.0.0-beta.2
 
 SPS2 Setup Assistant が SPS3 に対応しました。
 
