@@ -19,6 +19,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         private static readonly string[] PolicyFields = { "autoModeAvailable", "autoModeDefaultOn", "autoModeSaved", "saveSockets",
             "legacyModeAvailable", "legacyModeEnabledOnAvatarLoad", "legacyModeSaved",
             "legacySocketCompatibility", "tpsDepthAnimationCompatibility", "addDpsTipLight" };
+        private static readonly Lazy<bool> MenuPathAvailable = new Lazy<bool>(() => VrcFuryApi.FindType(ModelType)?.GetField("menuPath")?.FieldType == typeof(string));
+        internal static bool SupportsMenuPath => MenuPathAvailable.Value;
         private static int RequestedPolicy(SetupSettings s) => (s.sps3AutoAvailable ? 1 : 0) | (s.sps3AutoDefaultOn ? 2 : 0) |
             (s.sps3AutoSaved ? 4 : 0) | (s.sps3SaveSockets ? 8 : 0) | (s.sps3PolicyVersion == 2 ? s.LegacyTreeMask() :
             (s.sps3LegacyAvailable ? 16 : 0) | (s.sps3LegacyDefaultOn ? 32 : 0) | (s.sps3LegacySaved ? 64 : 0));
@@ -235,8 +237,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
         }
         private static void WriteOptionAt(SerializedObject data, string path, SetupSettings settings) {
             var model = VrcFuryApi.FindType(ModelType);
-            VrcFuryCompatibility.Require(data, path, SerializedPropertyType.ManagedReference).managedReferenceValue = Activator.CreateInstance(model, true);
-            VrcFuryCompatibility.Require(data, path + ".version", SerializedPropertyType.Integer).intValue = 0;
+            var slot = VrcFuryCompatibility.Require(data, path, SerializedPropertyType.ManagedReference);
+            if (slot.managedReferenceValue?.GetType() != model) {
+                slot.managedReferenceValue = Activator.CreateInstance(model, true);
+                VrcFuryCompatibility.Require(data, path + ".version", SerializedPropertyType.Integer).intValue = 0;
+            }
+            var destination = data.FindProperty(path + ".menuPath");
+            if (destination != null && destination.propertyType == SerializedPropertyType.String)
+                destination.stringValue = settings.sps3MenuPath ?? "";
             foreach (var field in Controlled.Where(f => settings.sps3PolicyVersion != 2))
                 VrcFuryCompatibility.Require(data, path + "." + field, SerializedPropertyType.Boolean).boolValue = settings.legacy;
             if (settings.sps3PolicyVersion >= 1)

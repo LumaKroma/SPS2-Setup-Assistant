@@ -16,7 +16,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         private static bool Custom(DepthActionSettings a)=>a!=null&&a.kind==DepthActionKind.BlendShape&&a.blendShapeMode==BlendShapeMode.Custom;
         internal static IEnumerable<SocketAnimationGroup> EmissionGroups(SocketSettings part)
         {
-            foreach(var group in Sps3AnimationGroupNative.Ordered(part)) {
+            foreach (var saved in Sps3AnimationGroupNative.Ordered(part)) {
+                var group = saved;
+                var actions = GenerationWarningPolicy.OutputActions(part, saved);
+                if (actions != saved.actions) {
+                    if (actions.Count == 0) continue;
+                    group = saved.Copy();
+                    group.actions = actions;
+                }
                 if(group.kind==SocketAnimationKind.Active||!group.actions.Any(Custom)){yield return group;continue;}
                 // Do not make ordinary static actions opt into Fury's group-wide MotionTime.
                 var normal=group.Copy();normal.actions=group.actions.Where(a=>!Custom(a)).ToList();
@@ -25,6 +32,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     var separate=group.Copy();separate.actions=new List<DepthActionSettings>{action};yield return separate;
                 }
             }
+            if (!part.custom && part.id == "mouth" && part.AnimationEnabled)
+                foreach (var g in part.EffectiveAnimationGroups().Where(g => g.kind == SocketAnimationKind.Depth &&
+                    g.mouthNeutralEnabled && g.mouthNeutral?.clip != null)) {
+                    var hold = g.Copy();
+                    hold.depthSettings.radiusWeightEnabled = false;
+                    hold.depthSettings.radiusKeepNative = false;
+                    hold.depthSettings.radiusFull = hold.depthSettings.radiusZero = 0;
+                    hold.actions = new List<DepthActionSettings> { new DepthActionSettings {
+                        kind = DepthActionKind.AnimationClip, clip = g.mouthNeutral.clip } };
+                    yield return hold;
+                }
         }
         internal static void Validate(VRCAvatarDescriptor avatar,SetupSettings settings)
         {
@@ -34,6 +52,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             foreach(var part in settings.parts.Where(p=>p.included&&p.AnimationEnabled))
                 foreach(var group in part.EffectiveAnimationGroups().Where(g=>g!=null && g.kind!=SocketAnimationKind.Active))
                     foreach(var action in (group.actions ?? new List<DepthActionSettings>()).Where(a=>a!=null && a.kind==DepthActionKind.BlendShape)) {
+                        if (GenerationWarningPolicy.MissingMouthShape(part, group, action)) continue;
                         BlendShapePointPlan.Validate(action);
                         if(!Custom(action))continue;
                         if(part.animationModelVersion!=1||settings.family!=SpsFamily.VrcFury||
@@ -46,6 +65,26 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                         if(action.generatedBlendShapeClip!=null)RequireClip(action);
                         else if(!string.IsNullOrEmpty(action.generatedBlendShapeSignature))throw new InvalidOperationException("保存済みカスタム Clip の参照が欠けています。再生成で消さず停止します。");
                     }
+        }
+        internal static bool CanAuthorHold => clipApiAvailable.Value;
+        private static readonly Lazy<bool> clipApiAvailable = new Lazy<bool>(() => {
+                var type=VrcFuryApi.FindType("com.vrcfury.api.Actions.FuryActionSet");
+                return SpsBackend.PackageMatches(type, SpsFamily.VrcFury, out _) &&
+                    VrcFuryApi.Method(type, "AddAnimationClip", typeof(AnimationClip))?.ReturnType == typeof(void);
+        });
+        internal static bool TryHoldBinding(VRCAvatarDescriptor avatar, DepthActionSettings binding, out string path)
+        {
+            try { path = Path(avatar,binding); return true; }
+            catch (InvalidOperationException) { path=null; return false; }
+        }
+        internal static AnimationClip MakeHoldClip(VRCAvatarDescriptor avatar, DepthActionSettings binding, string groupId)
+        {
+            var clip = new AnimationClip { name = "SPS Mouth Hold " + groupId, frameRate = 60, wrapMode = WrapMode.ClampForever };
+            var curve = AnimationCurve.Constant(1f/60f, 1f, binding.weight);
+            curve.preWrapMode = curve.postWrapMode = WrapMode.ClampForever;
+            AnimationUtility.SetEditorCurve(clip, EditorCurveBinding.FloatCurve(Path(avatar,binding), typeof(SkinnedMeshRenderer),
+                "blendShape." + binding.shape), curve);
+            return clip;
         }
         private static void RequireClipContract()
         {
@@ -102,12 +141,33 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 throw new InvalidOperationException("生成カスタム Clip が欠落または編集されています。元データを保全して停止します。");
             return clip;
         }
-        internal static void Prepare(VRCAvatarDescriptor avatar,SetupSettings settings,Sps2SetupAsset owner)
+        internal static void Prepare(VRCAvatarDescriptor avatar,SetupSettings settings,Sps2SetupAsset owner, List<string> warnings)
         {
+            var mouth = settings.parts.FirstOrDefault(p => p.id == "mouth" && !p.custom);
+            if (mouth?.animationGroups != null)
+                foreach (var g in mouth.animationGroups.Where(g => g?.mouthNeutral != null)) g.mouthNeutral.clip = null;
+            if (mouth?.animationModelVersion == 1 && mouth.included && mouth.AnimationEnabled) {
+                foreach (var group in mouth.animationGroups.Where(g => g.kind == SocketAnimationKind.Depth && g.mouthNeutral != null)) {
+                    var binding = group.mouthNeutral;
+                    if (!group.mouthNeutralEnabled) continue;
+                    var problem = Sps3AnimationGroupNative.MouthNeutralProblem(settings, mouth, group);
+                    if (problem == null && !CanAuthorHold) problem = "この環境では口形状の固定に必要なクリップを設定できません。";
+                    if (problem == null && !Sps3AnimationGroupNative.CanWriteOptional(mouth, SocketAnimationKind.Depth, out _))
+                        problem = "この環境では口形状の固定に必要なクリップを設定できません。";
+                    if (problem == null && !TryHoldBinding(avatar, binding, out _))
+                        problem = "口形状の固定先を一意に特定できません。";
+                    if (problem != null) { warnings?.Add(Localization.Sps2Localization.L(problem)); continue; }
+                    var clip = MakeHoldClip(avatar, binding, group.id);
+                    AssetDatabase.AddObjectToAsset(clip, owner);
+                    EditorUtility.SetDirty(clip);
+                    binding.clip = clip;
+                }
+            }
             foreach(var part in settings.parts.Where(p=>p.included&&p.AnimationEnabled&&p.animationModelVersion==1))
                 foreach(var group in part.animationGroups.Where(g=>g!=null && g.kind!=SocketAnimationKind.Active))
                     foreach(var action in (group.actions ?? new List<DepthActionSettings>()).Where(Custom)){
-                        if (!Sps3AnimationGroupNative.CanWriteOptional(part, group.kind, out _)) continue;
+                        if (GenerationWarningPolicy.MissingMouthShape(part, group, action) ||
+                            !Sps3AnimationGroupNative.CanWriteOptional(part, group.kind, out _)) continue;
                         var clip=MakeClip(action,Path(avatar,action));
                         var signature=Signature(clip);
                         if(action.generatedBlendShapeClip!=null&&action.generatedBlendShapeSignature==signature){UnityEngine.Object.DestroyImmediate(clip);continue;}

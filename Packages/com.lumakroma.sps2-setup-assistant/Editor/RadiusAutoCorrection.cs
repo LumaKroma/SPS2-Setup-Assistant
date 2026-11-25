@@ -31,14 +31,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         internal static Vector2 Estimate(VRCAvatarDescriptor avatar,SetupSettings setup,SocketSettings part,SocketAnimationGroup group,bool regenerate=false)
         {
-            if(group==null || group.kind!=SocketAnimationKind.Depth || group.actions==null || group.actions.Count==0 ||
-                group.actions.Any(x=>x==null || x.kind!=DepthActionKind.BlendShape || x.blendShapeMode!=BlendShapeMode.Normal))
+            var actions = group?.actions == null ? null : GenerationWarningPolicy.OutputActions(part, group);
+            if(group==null || group.kind!=SocketAnimationKind.Depth || actions==null || actions.Count==0 ||
+                actions.Any(x=>x==null || x.kind!=DepthActionKind.BlendShape || x.blendShapeMode!=BlendShapeMode.Normal))
                 throw new InvalidOperationException("通常 BlendShape のみを含むアクションが必要です。");
-            var source=group.actions[0].renderer;var mesh=source!=null?source.sharedMesh:null;
+            var source=actions[0].renderer;var mesh=source!=null?source.sharedMesh:null;
             if(source==null||mesh==null||avatar==null||!source.transform.IsChildOf(avatar.transform)||!mesh.isReadable||mesh.vertexCount>200000)
                 throw new InvalidOperationException("対象アバター内の読み取り可能な単一 Renderer が必要です。");
             var shapes=new List<KeyValuePair<int,float>>(); var unique=new HashSet<int>();
-            foreach(var action in group.actions) {
+            foreach(var action in actions) {
                 if(action.renderer!=source) throw new InvalidOperationException("複数 Renderer の合成は推定できません。");
                 int shape=mesh.GetBlendShapeIndex(action.shape);
                 if(shape<0 || !unique.Add(shape)) throw new InvalidOperationException("BlendShape の欠落または重複があります。");
@@ -50,10 +51,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             foreach(var otherPart in setup.parts.Where(p=>p.included&&p.AnimationEnabled))
                 foreach(var otherGroup in otherPart.EffectiveAnimationGroups())
                     foreach(var other in otherGroup.actions)
-                        if(other!=null && !group.actions.Any(x=>ReferenceEquals(x,other)) && (other.kind==DepthActionKind.AnimationClip ||
+                        if(other!=null && !group.actions.Contains(other) && !GenerationWarningPolicy.MissingMouthShape(otherPart, otherGroup, other) && (other.kind==DepthActionKind.AnimationClip ||
                             other.kind==DepthActionKind.BlendShape && other.renderer==source))
                             throw new InvalidOperationException("別のアクションとの合成を安全に推定できません。");
-            for(int i=0;i<mesh.blendShapeCount;i++)if(source.GetBlendShapeWeight(i)!=0)
+            foreach (var shape in shapes) if (source.GetBlendShapeWeight(shape.Key) != 0)
                 throw new InvalidOperationException("現在の BlendShape が有効です。複合変形を推定しません。");
             FullSetupGenerator.RequireRadiusFrame(source.transform.localToWorldMatrix);
             var worldToSocket=FullSetupGenerator.RadiusEstimateFrame(avatar,setup,part,regenerate);
@@ -65,7 +66,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 temp.transform.localScale=source.transform.lossyScale;
                 var copy=temp.AddComponent<SkinnedMeshRenderer>();copy.sharedMesh=mesh;copy.bones=source.bones;copy.rootBone=source.rootBone;copy.quality=source.quality;
                 before=new Mesh{hideFlags=HideFlags.HideAndDontSave};after=new Mesh{hideFlags=HideFlags.HideAndDontSave};
-                foreach(var shape in shapes) copy.SetBlendShapeWeight(shape.Key,0);
+                // Measure on the visible face, retaining unrelated expression weights at both endpoints.
+                // The selected shapes start at zero as checked above.
+                for (int i = 0; i < mesh.blendShapeCount; ++i) {
+                    float weight = source.GetBlendShapeWeight(i);
+                    if (float.IsNaN(weight) || float.IsInfinity(weight))
+                        throw new InvalidOperationException("現在の BlendShape が有効です。複合変形を推定しません。");
+                    if (weight != 0) copy.SetBlendShapeWeight(i, weight);
+                }
                 copy.BakeMesh(before,false);
                 foreach(var shape in shapes) copy.SetBlendShapeWeight(shape.Key,shape.Value);
                 copy.BakeMesh(after,false);
@@ -101,6 +109,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 var probeForward=worldToSocket.inverse.MultiplyVector(Vector3.forward).normalized;
                 var bakeToWorld=Matrix4x4.TRS(copy.transform.position,copy.transform.rotation,Vector3.one);
                 double best=double.PositiveInfinity;double[] result=null;
+                RadiusOpeningEstimate.Point[] bestClosed=null, bestOpened=null;
                 foreach(var loop in loops) {
                     if(loop.Length<3 || !loop.Any(i=>(a[i]-b[i]).sqrMagnitude>1e-14f))continue;
                     var closed=loop.Select(i=>Convert(a[i])).ToArray();var opened=loop.Select(i=>Convert(b[i])).ToArray();
@@ -116,9 +125,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                             depths.Add(Vector3.Dot(hit.point-pt,probeForward));
                     }
                     if(depths.Count>=loop.Length*.8f) { depths.Sort();score+=2.0*Math.Max(0,depths[depths.Count/2])/r1; }
-                    if(score<best){best=score;result=new[]{Math.Min(r0,r1),r1};}
+                    if(score<best){best=score;result=new[]{Math.Min(r0,r1),r1};bestClosed=closed;bestOpened=opened;}
                 }
                 if(result==null)throw new InvalidOperationException("No finite moving opening contour; using native fallback.");
+                // A signed area can look usable even when opposing lobes cross.
+                // Validate the winning anatomical candidate instead of substituting a different contour.
+                if (!IsSimpleProjection(bestClosed) || !IsSimpleProjection(bestOpened))
+                    throw new InvalidOperationException(Localization.Sps2Localization.L("輪郭を単一の開口として確認できません。"));
                 if(SpsBackend.PackageMatches(VrcFuryApi.FindType(SpsBackend.SocketType(SpsFamily.VrcFury)),SpsFamily.VrcFury,out _) &&
                     !FuryNativeFeatureShapes.InspectInstalled().RadiusZero && result[0]!=0)
                     throw new InvalidOperationException("このFury版は重み0の半径を設定できません。標準の0始点へフォールバックします。");
@@ -127,6 +140,32 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 if(surfaceProbe!=null)Object.DestroyImmediate(surfaceProbe);if(surfaceScene.IsValid() && surfaceScene.isLoaded)UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(surfaceScene);if(before!=null)Object.DestroyImmediate(before);if(after!=null)Object.DestroyImmediate(after);if(temp!=null)Object.DestroyImmediate(temp);
             }
         }
+        internal static bool IsSimpleProjection(RadiusOpeningEstimate.Point[] ring)
+        {
+            int count = ring.Length;
+            int Next(int i) => (i + 1) % count;
+            var edges = Enumerable.Range(0, count).OrderBy(i => Math.Min(ring[i].X, ring[Next(i)].X)).ToArray();
+            int budget = 1000000;
+            for (int a = 0; a < count; a++) {
+                int i = edges[a];
+                var p = ring[i]; var q = ring[Next(i)];
+                double endX = Math.Max(p.X, q.X);
+                for (int b = a + 1; b < count; b++) {
+                    int j = edges[b];
+                    var r = ring[j]; var s = ring[Next(j)];
+                    if (Math.Min(r.X, s.X) > endX) break;
+                    if (--budget == 0) return false;
+                    if (Next(i) == j || Next(j) == i || Math.Max(p.Y, q.Y) < Math.Min(r.Y, s.Y) ||
+                        Math.Max(r.Y, s.Y) < Math.Min(p.Y, q.Y)) continue;
+                    if (Side(p,q,r) * Side(p,q,s) <= 0 && Side(r,s,p) * Side(r,s,q) <= 0) return false;
+                }
+            }
+            return true;
+        }
+
+        private static double Side(RadiusOpeningEstimate.Point a, RadiusOpeningEstimate.Point b, RadiusOpeningEstimate.Point p)
+            => (b.X - a.X) * (p.Y - a.Y) - (b.Y - a.Y) * (p.X - a.X);
+
         // Ignore branched and stationary components individually; preserve every closed, moving loop.
         // A separate candidate, never modifies the source mesh or the strict estimator.
         private static System.Collections.Generic.List<int[]> ApproximateBoundaries(int[] triangles,int vertices,Func<int,bool> moving) {
@@ -170,6 +209,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             var existing=FullSetupGenerator.Find(avatar);
             foreach(var part in copy.parts.Where(p=>p.included&&p.AnimationEnabled&&p.animationModelVersion==1))
                 foreach(var group in part.animationGroups.Where(g=>g!=null&&g.kind==SocketAnimationKind.Depth&&g.depthSettings!=null&&g.depthSettings.radiusWeightEnabled&&g.depthSettings.radiusAutoCorrection)) {
+                    if (group.actions != null && group.actions.Count > 0 &&
+                        group.actions.All(a => GenerationWarningPolicy.MissingMouthShape(part, group, a))) continue;
                     try {var result=Estimate(avatar,copy,part,group,regenerate);group.depthSettings.RecordRadiusAutoResult(result.x,result.y,false,"");}
                     catch(InvalidOperationException e){
                         group.depthSettings.radiusKeepNative=true;

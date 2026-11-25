@@ -74,7 +74,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             public Quaternion rotation;
         }
 
-        private static Placement Place(SocketSettings part, VRCAvatarDescriptor avatar, BodyBasis basis, AvatarSurface surface, bool scaleValidationOnly = false)
+        private static Placement Place(SocketSettings part, VRCAvatarDescriptor avatar, BodyBasis basis, AvatarSurface surface, bool scaleValidationOnly = false, bool estimateAperture = false)
         {
             if (part.IsFingerRing)
             {
@@ -168,8 +168,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             Vector3 point;
             if (part.id == "mouth" && surface.Mouth(out point))
             {
-                p.position = point;
-                if (surface.MouthDirection(point, h, out var mouthDirection)) direction = mouthDirection;
+                p.position = surface.VisibleMouthCenter(point, h, part);
+                if (surface.MouthDirection(point, h, out var mouthDirection)) {
+                    direction = mouthDirection;
+                    if (estimateAperture) {
+                        try { p.position = surface.RestingApertureCenter(p.position, direction, h, part); }
+                        catch (UnityException) { /* Incomplete mesh data keeps the visible-surface placement. */ }
+                    }
+                }
             }
             else if (part.id == "earLeft" || part.id == "earRight")
             {
@@ -178,7 +184,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             }
             else if (part.id == "nippleLeft" || part.id == "nippleRight")
             {
-                if (p.followTransform && surface.Extreme(p.first, forward, 1, out point)) p.position = point;
+                if (p.followTransform && surface.Extreme(p.first, forward, 1, out point))
+                    p.position = surface.BreastRingCenter(point, h, part.id == "nippleLeft" ? -1 : 1);
                 else if (surface.Ray(p.position, forward, h * .15f, out point)) p.position = point;
             }
             else if (part.id == "chest")
@@ -442,6 +449,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     return false;
                 }
             }
+            bool useCurrentMouthPlacement = now.AuthoringContract == SpsAuthoringContract.Sps3Beta14;
             var legacyOffsetWarning = HasUnconvertedLegacyOffset(now)
                 ? "旧 Socket の未変換 offset は新しい出力へ変換していません。元の値が必要な場合は Undo で旧出力に戻して確認してください。" : null;
             try { Sps3OwnedGlobalOptions.ValidateKeep(avatar, now.transform); }
@@ -471,7 +479,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 } else if(route.Mode==FuryFeatureOutputPlan.Mode.PlacementOnly) {
                     ok=false; changed=false; message=FuryUnavailableNotice.Explain(route.Reason);
                 } else {
-                    ok=ApplyWithOutcome(avatar,settings,false,out var created,out var freshMessage,out changed);
+                    ok=ApplyCore(avatar,settings,false,false,false,null,null,out var created,out var freshMessage,out changed,
+                        allowNewMouthEstimate: useCurrentMouthPlacement);
                     message=freshMessage;
                     if(ok && (created==null || created.gameObject==null)) changed=false;
                 }
@@ -564,7 +573,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
 
         private static bool ApplyCore(VRCAvatarDescriptor avatar, SetupSettings settings, bool regenerate,
             bool localScaleCandidate, bool failAfterScaleForTest, Action<Sps2SetupContext> checkpointForTest,
-            RegenerationImpact.Report confirmedImpact, out Sps2SetupContext root, out string message, out bool changed)
+            RegenerationImpact.Report confirmedImpact, out Sps2SetupContext root, out string message, out bool changed,
+            bool allowNewMouthEstimate = true)
         {
             root = null; message = null; changed = false;
             var warnings = new List<string>();
@@ -633,6 +643,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if (avatar == null || EditorUtility.IsPersistent(avatar)) throw new InvalidOperationException(L("Scene または Prefab Mode のアバターを選択してください。"));
                 if (!HumanoidSnapshot.TryCapture(avatar, out var snapshot, out var error)) throw new InvalidOperationException(error);
                 var old = selectedExisting ?? Find(avatar);
+                MouthShapeHoldEdit.Observe(old);
                 RegenerationImpact.Report currentImpact = null;
                 if (regenerate && old != null)
                 {
@@ -762,7 +773,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                             continue;
                         }
                     }
-                    else placement = Place(part, avatar, basis, surface);
+                    else placement = Place(part, avatar, basis, surface, estimateAperture:
+                        allowNewMouthEstimate && old == null && selectedExisting == null && !regenerate && writeSps3Groups);
                     if (placement == null) warnings.Add(part.name + L(": 追従先が見つからないため省きました。"));
                     else placements.Add(part.id, placement);
                 }
@@ -815,7 +827,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 // Preserve the settings referenced by saved scenes and Prefabs when edits are discarded.
                 var asset = createdAsset = Sps2SetupStorage.Create(avatar.name, authoringContract);
                 if (!regenerate && old?.asset != null) asset.vrcConstraintEvidence = old.asset.vrcConstraintEvidence;
-                if (writeSps3Groups) CustomBlendShapeOutput.Prepare(avatar, settings, asset);
+                if (writeSps3Groups) CustomBlendShapeOutput.Prepare(avatar, settings, asset, warnings);
                 var identity = Sps2SetupStorage.Identity(asset);
                 // Unity records source-owned children as Removed GameObject overrides. Never
                 // apply this override to the source, unpack, or edit the saved prefab/settings.

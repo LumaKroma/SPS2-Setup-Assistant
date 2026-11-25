@@ -197,6 +197,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 return ApplyLegacySceneAuto(root, draft, out message, out changed);
             if (root.AuthoringContract != SpsAuthoringContract.Sps3Beta14 || draft.family != SpsFamily.VrcFury)
                 return false;
+            MouthShapeHoldEdit.Observe(root);
             var baseline = root.settings.Copy();
             SynchronizeNativeAuto(root, baseline);
             var weightTarget = ProbeNativeFloat(root);
@@ -206,6 +207,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 group.actions[0].weight = weightTarget.value;
                 baseline.parts.Single(p => p.id == weightTarget.part.id).animationGroups.Single(g => g.kind == SocketAnimationKind.Depth).actions[0].weight = weightTarget.value;
             }
+            if (MouthShapeHoldEdit.TryApply(root, draft, projected, () => SameOutputProjection(root, projected, draft),
+                out var completeHold, out changed, out message)) return completeHold;
             var pending = new List<string>();
             var requested = draft.parts.ToDictionary(p => p.id);
             if (!new HashSet<string>(projected.parts.Select(p => p.id)).SetEquals(requested.Keys))
@@ -288,7 +291,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
         {
             // A draft can contain an unresolved reference. That leaves the complete
             // projection unverified, but does not invalidate an independently matched leaf.
-            try { return ExistingSettingsState(root, projected) == ExistingSettingsState(root, requested); }
+            try {
+                var normalized = requested.Copy();
+                foreach (var p in normalized.parts.Where(p=>p?.id=="mouth" && p.animationGroups!=null))
+                    foreach (var g in p.animationGroups.Where(g=>g.mouthNeutral!=null)) {
+                        var saved = projected.parts.Find(v=>v.id==p.id)?.animationGroups?.Find(v=>v.id==g.id);
+                        g.mouthNeutral.clip = saved?.mouthNeutral?.clip;
+                    }
+                return ExistingSettingsState(root, projected) == ExistingSettingsState(root, normalized);
+            }
             catch (InvalidOperationException) { return false; }
             catch (ArgumentException) { return false; }
         }
@@ -312,6 +323,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             message = null; var root = Find(avatar); var target = ProbeNativeFloat(root);
             if (target == null || draft?.parts == null || root.asset == null) return false;
             if (!CanEditSocketInstance(avatar)) return false;
+            MouthShapeHoldEdit.Observe(root);
             var baseline = root.settings.Copy();
             SynchronizeNativeAuto(root, baseline);
             var saved = baseline.parts.Single(p => p.id == target.part.id).animationGroups.Single(g => g.kind == SocketAnimationKind.Depth).actions[0];

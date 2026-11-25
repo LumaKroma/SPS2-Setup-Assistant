@@ -55,7 +55,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility {
             if (string.IsNullOrEmpty(evidence?.manualMenuPlan)) return null;
             try {
                 var plan = JsonUtility.FromJson<Plan>(evidence.manualMenuPlan);
-                return plan != null && plan.automatic && plan.menu == "SPS" ? plan : null;
+                return plan != null && plan.automatic && !string.IsNullOrWhiteSpace(plan.menu) ? plan : null;
             } catch (ArgumentException) { return null; }
         }
 
@@ -63,13 +63,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility {
             var types = evidence?.manualMenuModelTypes;
             var payloads = evidence?.manualMenuModelJson;
             if (plan == null || !plan.Includes(slot) || types == null || payloads == null || types.Length != payloads.Length ||
-                !WithinSps(slot.source) || (slot.destination != null && !WithinSps(slot.destination))) return false;
+                !WithinMenu(plan.menu, slot.source) || (slot.destination != null && !WithinMenu(plan.menu, slot.destination))) return false;
             for (int i = 0; i < types.Length; i++)
                 if (slot.type == types[i] && slot.json == payloads[i]) return true;
             return false;
         }
 
-        private static bool WithinSps(string path) => path != null && path.StartsWith("SPS/", StringComparison.Ordinal);
+        private static bool WithinMenu(string menu, string path) => path != null && path.StartsWith(menu + "/", StringComparison.Ordinal);
 
         internal static bool HasRecordedRulesBelow(VRCAvatarDescriptor avatar, Transform host, Sps2SetupAsset evidence) {
             var types = evidence?.manualMenuModelTypes;
@@ -139,14 +139,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility {
                 var content = data.FindProperty("content");
                 if (content?.managedReferenceValue?.GetType().FullName != "VF.Model.Feature.SpsOptions") { warnings.Add("SPS menu: native Options layout is unknown; native menu retained."); return; }
                 var menuPath = content.FindPropertyRelative("menuPath");
-                if (menuPath == null || !string.IsNullOrWhiteSpace(menuPath.stringValue)) { warnings.Add("SPS menu: custom menu path remains native."); return; }
+                string destination = menuPath?.propertyType == SerializedPropertyType.String ? menuPath.stringValue : null;
+                if (string.IsNullOrWhiteSpace(destination)) destination = "SPS";
                 var autoProp=content.FindPropertyRelative("autoModeAvailable");
                 var legacyProp=content.FindPropertyRelative("legacyModeAvailable");
                 var compat=content.FindPropertyRelative("legacySocketCompatibility");
                 var dps=content.FindPropertyRelative("addDpsTipLight");
                 if (autoProp==null || legacyProp==null || compat==null || dps==null) { warnings.Add("SPS menu: required native menu capabilities unavailable; native menu retained."); return; }
                 var menu=avatar.expressionsMenu;
-                if (menu != null && menu.controls.Any(c=>c != null && string.Equals(c.name, "SPS", StringComparison.OrdinalIgnoreCase))) { warnings.Add("SPS menu: avatar already has an SPS menu; native menu retained."); return; }
+                if (menu != null && SpsMenuDestination.Exists(menu, destination)) { warnings.Add("SPS menu: avatar already has an SPS menu; native menu retained."); return; }
                 bool participant=false;
                 foreach (var socket in root.sockets) {
                     if (socket?.socket == null) { warnings.Add("SPS menu: socket capabilities unavailable; native menu retained."); return; }
@@ -181,13 +182,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility {
                     var generated=root.sockets.FirstOrDefault(x=>x.id==part.id);
                     if(generated?.socket==null) continue;
                     var add=new SerializedObject(generated.socket).FindProperty("addMenuItem");
-                    if(add!=null && add.boolValue) paths.Add("SPS/"+(string)menuName.Invoke(null,new object[]{generated.socket}));
+                    if(add!=null && add.boolValue) paths.Add(destination+"/"+(string)menuName.Invoke(null,new object[]{generated.socket}));
                 }
                 if(paths.Count!=allNames.Count) { warnings.Add("SPS menu: external socket ownership is uncertain; native order retained."); return; }
                 const string autoName="<b>Auto<\\/b>";
                 const string legacyName="<b>Legacy Support<\\/b>\n<size=20>DPS\\/TPS\\/SPS1\\/SPS2\nOne socket at a time";
                 desired = new Plan {
-                    menu = "SPS",
+                    menu = destination,
                     first = autoEnabled ? autoName : (legacyEnabled ? legacyName : ""),
                     second = autoEnabled && legacyEnabled ? legacyName : "",
                     group = autoEnabled && legacyEnabled ? Sps3MenuLayoutBuild.SettingsLabel(settings.menuLanguage) : "",

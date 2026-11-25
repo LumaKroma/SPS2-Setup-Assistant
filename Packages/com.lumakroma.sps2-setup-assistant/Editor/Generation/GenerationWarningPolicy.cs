@@ -61,8 +61,22 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
             return true;
         }
 
-        // A managed null is distinct from a destroyed Unity reference. A nonempty
-        // shape name is a real saved selection even if its renderer cannot resolve.
+        internal static bool MissingMouthShape(SocketSettings part, SocketAnimationGroup group, DepthActionSettings action) =>
+            !part.custom && part.id == "mouth" && part.animationModelVersion == 1 &&
+            group.kind == SocketAnimationKind.Depth && action?.kind == DepthActionKind.BlendShape &&
+            (action.renderer == null || action.renderer.sharedMesh == null || string.IsNullOrEmpty(action.shape) ||
+             action.renderer.sharedMesh.GetBlendShapeIndex(action.shape) < 0);
+
+        // Filter only the generated bindings. Keep the original rows and references in the authoring draft.
+        internal static List<DepthActionSettings> OutputActions(SocketSettings part, SocketAnimationGroup group)
+        {
+            var actions = group.actions;
+            if (part.custom || part.id != "mouth" || group.kind != SocketAnimationKind.Depth ||
+                !actions.Any(a => MissingMouthShape(part, group, a))) return actions;
+            return actions.Where(a => !MissingMouthShape(part, group, a)).ToList();
+        }
+
+        // A nonempty shape name remains a saved selection even if its renderer cannot resolve.
         internal static bool Unassigned(DepthActionSettings action)
         {
             if (action == null || !ReferenceEquals(action.renderer, null) || !ReferenceEquals(action.target, null) ||

@@ -3,6 +3,7 @@ using System.Linq;
 using System.Collections.Generic;
 using static LumaKroma.Sps2SetupAssistant.Editor.Localization.Sps2Localization;
 using LumaKroma.Sps2SetupAssistant.Editor.Generation;
+using LumaKroma.Sps2SetupAssistant.Editor.Model;
 using UnityEditor;
 using UnityEngine;
 using VRC.SDK3.Avatars.Components;
@@ -146,7 +147,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 if (part.animationModelVersion != 0 && ((existing == null && !regenerate) || previewOptionalOmission) &&
                     !Sps3AnimationGroupNative.CanWriteOptional(part, group.kind, out _)) continue;
                 var values = group.ActiveSettings;
-                if (group.kind == SocketAnimationKind.Depth && Sps3AnimationGroupNative.WeightPending(values))
+                if (group.kind == SocketAnimationKind.Depth && Sps3AnimationGroupNative.WeightPending(values) &&
+                    !(group.actions?.Count > 0 && group.actions.All(a => GenerationWarningPolicy.MissingMouthShape(part, group, a))))
                     warnings?.Add(part.name + ": " + L("半径の重み0・1を入力するか、自動補正をオンにしてください。重み付けを適用せず、他の生成を続けます。"));
                 if (group.actions == null ||
                     group.kind != SocketAnimationKind.Active && ((values.units != DepthUnits.Meters && values.units != DepthUnits.Plugs && values.units != DepthUnits.Local) ||
@@ -156,6 +158,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 {
                     var action = group.actions[index];
                     if (action == null) throw new InvalidOperationException("Missing depth action: " + part.id);
+                    if ((existing == null || previewOptionalOmission || regenerate) &&
+                        GenerationWarningPolicy.MissingMouthShape(part, group, action)) {
+                        warnings?.Add(string.Format(L("{0}の BlendShape はメッシュまたはシェイプを確認できないため反映できませんでした。"), SocketDisplayNames.Resolve(part, settings.menuLanguage)));
+                        continue;
+                    }
                     if (GenerationWarningPolicy.CanSkipUnassignedGroupAction(part, group, index, previewOptionalOmission ? null : existing)) {
                         warnings?.Add(part.name + ": " + L(GenerationWarningPolicy.EmptyDepthNotice));
                         continue;

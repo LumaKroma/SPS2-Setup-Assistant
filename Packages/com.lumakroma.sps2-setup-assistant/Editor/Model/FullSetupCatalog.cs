@@ -120,26 +120,43 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
         {
             var mouth = setup.parts.Find(p => p.id == "mouth");
             if (mouth == null || descriptor == null || descriptor.VisemeSkinnedMesh == null) return;
+            // Legacy callers can repair a missing default renderer while depth is off.
+            // The shape comparison is only run for an enabled, new SPS3 mouth action.
+            if (mouth.animationModelVersion == 1 && (!mouth.included || !mouth.AnimationEnabled)) return;
             var mesh = descriptor.VisemeSkinnedMesh.sharedMesh;
             int index = (int)VRC.SDKBase.VRC_AvatarDescriptor.Viseme.oh;
             var names = descriptor.VisemeBlendShapes;
-            if (mesh == null || names == null || index >= names.Length || string.IsNullOrEmpty(names[index]) || mesh.GetBlendShapeIndex(names[index]) < 0) return;
+            if (mesh == null || names == null || index >= names.Length || string.IsNullOrEmpty(names[index])) return;
+            int reference = mesh.GetBlendShapeIndex(names[index]);
+            if (reference < 0) return;
             var actions = mouth.animationModelVersion == 0 ? mouth.actions :
                 mouth.animationGroups.Find(g => g.kind == SocketAnimationKind.Depth)?.actions;
-            if (actions == null) return;
-            if (actions.Count == 0) actions.Add(new DepthActionSettings());
+            if (actions == null || actions.Count == 0) return;
             var action = actions[0];
-            if (action.kind != DepthActionKind.BlendShape || action.renderer != null) return;
+            if (action == null || action.kind != DepthActionKind.BlendShape || action.renderer != null) return;
             // A saved default shape can outlive its renderer reference. Only repair
             // that known default; never replace a manually chosen expression.
             if (!string.IsNullOrEmpty(action.shape) && action.shape != names[index]) return;
             action.renderer = descriptor.VisemeSkinnedMesh;
-            action.shape = names[index];
+            int selected = mouth.animationModelVersion == 1 && string.IsNullOrEmpty(action.shape)
+                ? MouthOpeningSelection.Choose(action.renderer, descriptor.transform, reference) : reference;
+            action.shape = mesh.GetBlendShapeName(selected);
         }
 
         // Project only depth ranges to reversed visual coordinates. Stored Fury values remain ordered.
         public static Vector2 DepthRangeToSlider(Vector2 range) => new Vector2(1f - DistanceToSlider(range.y), 1f - DistanceToSlider(range.x));
         public static Vector2 DepthRangeFromSlider(float left, float right) => new Vector2(SliderToDistance(1f - right), SliderToDistance(1f - left));
+
+        internal static bool TryDepthRangeFields(float outside, float inside, out Vector2 range)
+        {
+            range = default;
+            if (float.IsNaN(outside) || float.IsInfinity(outside) || float.IsNaN(inside) || float.IsInfinity(inside))
+                return false;
+            outside = Mathf.Clamp(outside, -1, 3);
+            inside = Mathf.Clamp(inside, -1, 3);
+            range = new Vector2(Mathf.Min(outside, inside), Mathf.Max(outside, inside));
+            return true;
+        }
 
         public static float SliderToDistance(float position)
         {

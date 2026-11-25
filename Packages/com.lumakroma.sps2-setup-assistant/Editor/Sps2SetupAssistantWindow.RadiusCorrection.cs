@@ -12,6 +12,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
     public sealed partial class Sps2SetupAssistantWindow
     {
         [NonSerialized] private bool blendPreviewTransition;
+        [NonSerialized] private int previewSelectionId;
         [NonSerialized] private AnimationModeDriver blendPreviewDriver;
         [NonSerialized] private AnimationClip blendPreviewClip;
         [NonSerialized] private Matrix4x4 blendPreviewFrame;
@@ -79,6 +80,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             return false;
         }
         private void EndBlendPreview() {
+            EditorApplication.update -= CheckPreviewSelection;
             var driver=blendPreviewDriver; var clip=blendPreviewClip;
             blendPreviewDriver=null; blendPreviewClip=null; blendPreviewRadiiValid=false; blendPreviewPartId=null; blendPreviewGroupId=null;
             if(driver==null && clip==null && previewOriginals==null) return;
@@ -143,7 +145,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     AnimationMode.AddPropertyModification(item.binding,modification,item.keepOverride);
                     item.renderer.SetBlendShapeWeight(item.index,item.value);
                 }
-                blendPreviewDriver=driver; blendPreviewClip=clip; blendPreviewPartId=part.id; blendPreviewGroupId=group.id; driver=null; clip=null; SceneView.RepaintAll();
+                blendPreviewDriver=driver; blendPreviewClip=clip; blendPreviewPartId=part.id; blendPreviewGroupId=group.id; driver=null; clip=null;
+                previewSelectionId=Selection.activeInstanceID;
+                EditorApplication.update += CheckPreviewSelection;
+                SceneView.RepaintAll();
             } catch(Exception e) { blendPreviewMessage=SetupFeedback.Error(e, "プレビューを開始できませんでした。対象のメッシュを確認してください。"); }
             finally {
                 if(driver!=null) { if(AnimationMode.InAnimationMode(driver)) AnimationMode.StopAnimationMode(driver); DestroyImmediate(driver); }
@@ -159,8 +164,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             try { Handles.matrix=blendPreviewFrame; Handles.color=Color.cyan; Handles.DrawWireDisc(Vector3.zero,Vector3.forward,blendPreviewRadii.x); Handles.color=Color.magenta; Handles.DrawWireDisc(Vector3.zero,Vector3.forward,blendPreviewRadii.y); }
             finally { Handles.matrix=matrix; Handles.color=color; }
         }
+        private void CheckPreviewSelection() {
+            // The Hierarchy selection can become current before Unity dispatches selectionChanged.
+            if (Selection.activeInstanceID != previewSelectionId) PreviewSelectionChanged();
+        }
         private void PreviewSelectionChanged() {
             if(blendPreviewDriver==null) return;
+            previewSelectionId=Selection.activeInstanceID;
             var selected=Selection.activeGameObject;
             if(selected==null || descriptor==null || !(selected.transform==descriptor.transform || selected.transform.IsChildOf(descriptor.transform))) { EndBlendPreview(); Repaint(); }
         }

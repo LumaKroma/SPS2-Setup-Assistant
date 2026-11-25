@@ -84,10 +84,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             EditorApplication.delayCall += RecoverAvatar;
             SceneView.duringSceneGui += DrawBlendPreviewScene; Selection.selectionChanged += PreviewSelectionChanged; AssemblyReloadEvents.beforeAssemblyReload += EndBlendPreview; UnityEditor.SceneManagement.EditorSceneManager.sceneSaving += StopPreviewOnSceneSaving;
         }
-        private void OnDisable() { SaveWindowDraft(); SceneView.duringSceneGui -= DrawBlendPreviewScene; Selection.selectionChanged -= PreviewSelectionChanged; AssemblyReloadEvents.beforeAssemblyReload -= EndBlendPreview; UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= StopPreviewOnSceneSaving; EndBlendPreview(); DisableAutoDisplayCache(); InvalidateShapeSelection(); EditorApplication.playModeStateChanged -= PlayModeChanged; EditorApplication.delayCall -= RecoverAvatar; }
+        private void OnDisable() { EndBlendPreview(); SaveWindowDraft(); SceneView.duringSceneGui -= DrawBlendPreviewScene; Selection.selectionChanged -= PreviewSelectionChanged; AssemblyReloadEvents.beforeAssemblyReload -= EndBlendPreview; UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= StopPreviewOnSceneSaving; DisableAutoDisplayCache(); InvalidateShapeSelection(); EditorApplication.playModeStateChanged -= PlayModeChanged; EditorApplication.delayCall -= RecoverAvatar; }
         private void PlayModeChanged(PlayModeStateChange state)
         {
-            if (state == PlayModeStateChange.ExitingEditMode) { SaveWindowDraft(); EndBlendPreview(); RememberAvatar(); }
+            if (state == PlayModeStateChange.ExitingEditMode) { EndBlendPreview(); SaveWindowDraft(); RememberAvatar(); }
             if (state == PlayModeStateChange.EnteredEditMode) RecoverAvatar();
             Repaint();
         }
@@ -138,9 +138,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             internal bool saveBlocked, cannotLoad; internal string warning; internal string[] unresolved, assignedReferences;
         }
         private static readonly System.Collections.Generic.Dictionary<int,WindowDraftSession> windowDraftSessions = new System.Collections.Generic.Dictionary<int,WindowDraftSession>();
-        [NonSerialized] private bool draftSaveBlocked, draftCannotLoad;
-        [NonSerialized] private string draftReferenceWarning;
-        [NonSerialized] private string[] draftUnresolvedKeys;
+        [SerializeField] private bool draftSaveBlocked, draftCannotLoad;
+        [SerializeField] private string draftReferenceWarning;
+        [SerializeField] private string[] draftUnresolvedKeys;
         private string WindowDraftKey(VRCAvatarDescriptor avatar)
         {
             if(avatar==null || !avatar.gameObject.scene.IsValid() || !avatar.gameObject.scene.isLoaded || string.IsNullOrEmpty(avatar.gameObject.scene.path)) return null;
@@ -170,9 +170,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         public void BindAvatar(VRCAvatarDescriptor next)
         {
-            SaveWindowDraft(); EndBlendPreview(); InvalidateShapeSelection();
+            EndBlendPreview(); SaveWindowDraft(); InvalidateShapeSelection();
             externalWatch = null; assetWatch = null; assetDependencies = null;
-            descriptor = next; avatarId = null; nameEditors.Clear(); draftSaveBlocked=false; draftCannotLoad=false; draftReferenceWarning=null; draftUnresolvedKeys=null;
+            descriptor = next; avatarId = null; nameEditors.Clear(); menuSelectionError = null; draftSaveBlocked=false; draftCannotLoad=false; draftReferenceWarning=null; draftUnresolvedKeys=null;
             legacyOrigin = default;
             bool restored = false;
             bool newDraft = false;
@@ -192,7 +192,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                         var existing=FullSetupGenerator.Find(next);
                         if (existing != null) {
                             bool savedAuto = existing.settings.autoMode;
-                            FullSetupGenerator.SynchronizeNativeFloat(existing);
+                            MouthShapeHoldEdit.Observe(existing);
+                    FullSetupGenerator.SynchronizeNativeFloat(existing);
                             FullSetupGenerator.SynchronizeNativeAuto(existing, existing.settings);
                             if (existing.AuthoringContract == SpsAuthoringContract.LegacySps2 && existing.settings.family == SpsFamily.VrcFury)
                                 legacyOrigin = new Sps2SetupStorage.LegacyDraftOrigin {
@@ -258,6 +259,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 if (legacySetupNotice.State == Sps3LegacySetupState.NeedsInspection)
                     EditorGUILayout.HelpBox(legacySetupNotice.Message(UiLanguage), MessageType.Warning);
                 DrawFamilySelection();
+                if (legacySetupNotice.State == Sps3LegacySetupState.VerifiedLegacySetup && !draftCannotLoad &&
+                    SpsAuthoringCompatibility.ReviewedSps3Installed)
+                    EditorGUILayout.HelpBox(L("SPS2 Setup Assistantで設定したプレハブが読み込まれています。SPS3用の推奨設定を使うには、下の「すべての設定を初期値に戻す」を押してください。"), MessageType.Info);
+                DrawResetSettings();
                 scroll = EditorGUILayout.BeginScrollView(scroll);
                 ProfileDraw("SPS Setup/Compatibility", DrawCompatibility);
                 ProfileDraw("SPS Setup/Presets", DrawPresets);
@@ -272,6 +277,32 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 GUILayout.Space(8);
             }
         }
+        private void DrawResetSettings()
+        {
+            using (new EditorGUI.DisabledScope(descriptor == null || draftCannotLoad || EditorApplication.isPlayingOrWillChangePlaymode))
+                if (GUILayout.Button(L("すべての設定を初期値に戻す")) &&
+                    EditorUtility.DisplayDialog(L("すべての設定を初期値に戻す"),
+                        L("選択中のアバターのSetup設定を初期値に戻します。生成済みのプレハブは変更しません。"),
+                        L("リセット"), L("キャンセル")))
+                    ResetSettings();
+        }
+
+        internal void ResetSettings()
+        {
+            var avatar = descriptor;
+            if (avatar == null || draftCannotLoad || EditorApplication.isPlayingOrWillChangePlaymode) return;
+            EndBlendPreview();
+            var defaults = SettingsForAvatar(null);
+            FullSetupCatalog.DetectMouth(defaults, avatar);
+            Change(() => {
+                settings = defaults;
+                nameEditors.Clear();
+                legacyOrigin = default;
+                menuSelectionError = null;
+            });
+            SetMessage(L("Setup設定を初期値に戻しました。"), true);
+        }
+
         private static void ProfileDraw(string name, Action draw)
         {
             UnityEngine.Profiling.Profiler.BeginSample(name);
@@ -485,6 +516,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     CompatibleToggle(L("首付近で太さを0にする"), !settings.showInternalThickness, v => settings.showInternalThickness = !v, DepthCapabilitiesForDrawing.Collapse);
                 }
             }
+            if (Sps3ControlsForDrawing) DrawSpsMenuDestination();
             if (Sps3ControlsForDrawing)
                 Sps3Toggle("ソケットの状態を保存", settings.sps3PolicyVersion >= 1 && settings.sps3SaveSockets, v => settings.sps3SaveSockets = v);
             GUILayout.Space(20);
@@ -662,8 +694,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 float start = EditorGUILayout.FloatField(L("外側"), part.range.y), end = EditorGUILayout.FloatField(L("内側"), part.range.x);
                 int units = EditorGUILayout.Popup((int)part.units, DepthUnitLabels, GUILayout.MinWidth(100));
                 if (input && (start != part.range.y || end != part.range.x || units != (int)part.units))
-                    if (!float.IsNaN(start) && !float.IsInfinity(start) && !float.IsNaN(end) && !float.IsInfinity(end))
-                        Change(() => { start = Mathf.Clamp(start, -1, 3); end = Mathf.Clamp(end, -1, 3); part.range = new Vector2(Mathf.Min(start, end), Mathf.Max(start, end)); part.units = (DepthUnits)units; });
+                    if (FullSetupCatalog.TryDepthRangeFields(start, end, out var range))
+                        Change(() => { part.range = range; part.units = (DepthUnits)units; });
                 EditorGUIUtility.labelWidth = 155;
             }
         }

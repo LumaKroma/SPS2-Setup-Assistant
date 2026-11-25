@@ -237,7 +237,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 if(part.custom && missing.Contains(part.id+":target")) part.included=false;
                 if(part.actions!=null) for(int i=part.actions.Count-1;i>=0;i--) if(MissingAction(part.id+":"+i)) part.actions.RemoveAt(i);
                 if(part.animationGroups!=null) foreach(var group in part.animationGroups.Where(g=>g!=null && g.actions!=null))
-                    for(int i=group.actions.Count-1;i>=0;i--) if(MissingAction(group.ReferenceKey(part.id,i))) group.actions.RemoveAt(i);
+                    for(int i=group.actions.Count-1;i>=0;i--) {
+                        var key = group.ReferenceKey(part.id,i);
+                        if (!MissingAction(key)) continue;
+                        // An unresolved mouth renderer is already cleared on bind. Keep its authoring
+                        // row so the native writer can omit it without producing an empty depth group.
+                        if (missing.Contains(key + ":renderer") && group.actions[i]?.renderer == null &&
+                            GenerationWarningPolicy.MissingMouthShape(part, group, group.actions[i]) &&
+                            !missing.Contains(key + ":customBlendShapeClip") && !missing.Contains(key + ":clip") &&
+                            !missing.Contains(key + ":object")) continue;
+                        group.actions.RemoveAt(i);
+                    }
             }
             return output;
         }
@@ -504,9 +514,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                     if (part.actions[i] != null) yield return new KeyValuePair<string, DepthActionSettings>(part.id + ":" + i, part.actions[i]);
             if (part.animationModelVersion != 0 && part.animationGroups != null)
                 foreach (var group in part.animationGroups)
+                {
+                    if (!part.custom && part.id == "mouth" && group?.kind == SocketAnimationKind.Depth && group.mouthNeutral != null)
+                        yield return new KeyValuePair<string, DepthActionSettings>(part.id + ":group:" + group.id + ":mouthNeutral", group.mouthNeutral);
                     if (group?.actions != null)
                         for (int i = 0; i < group.actions.Count; i++)
                             if (group.actions[i] != null) yield return new KeyValuePair<string, DepthActionSettings>(group.ReferenceKey(part.id, i), group.actions[i]);
+                }
         }
 
         internal static string Serialize(Sps2SetupContext root)

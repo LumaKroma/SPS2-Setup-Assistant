@@ -35,6 +35,7 @@ namespace LumaKroma.Sps2SetupAssistant
         public bool legacy = true;
         // Zero means historical saved settings. Never initialize recommendations during deserialization.
         public int sps3PolicyVersion;
+        public string sps3MenuPath = "";
         public bool sps3AutoAvailable, sps3AutoDefaultOn, sps3AutoSaved, sps3SaveSockets;
         public bool sps3LegacyAvailable, sps3LegacyDefaultOn, sps3LegacySaved;
         // Policy 2: master affects emitted flags only; subordinate choices remain stored.
@@ -86,7 +87,7 @@ namespace LumaKroma.Sps2SetupAssistant
             var copy = new SetupSettings { family = family, menuLanguage = menuLanguage, displayNamesVersion = displayNamesVersion,
                 penetration = penetration, showInternalThickness = showInternalThickness, autoMode = autoMode,
                 legacy = legacy, localOnly = localOnly, modularAvatar = modularAvatar,
-                sps3AutoEligibilityVersion = sps3AutoEligibilityVersion, sps3PolicyVersion = sps3PolicyVersion, sps3AutoAvailable = sps3AutoAvailable,
+                sps3AutoEligibilityVersion = sps3AutoEligibilityVersion, sps3PolicyVersion = sps3PolicyVersion, sps3AutoAvailable = sps3AutoAvailable, sps3MenuPath = sps3MenuPath,
                 sps3AutoDefaultOn = sps3AutoDefaultOn, sps3AutoSaved = sps3AutoSaved, sps3SaveSockets = sps3SaveSockets,
                 sps3LegacyAvailable = sps3LegacyAvailable, sps3LegacyDefaultOn = sps3LegacyDefaultOn, sps3LegacySaved = sps3LegacySaved,
                 sps3LegacyMaster=sps3LegacyMaster, sps3LegacyPlugs=sps3LegacyPlugs, sps3LegacySockets=sps3LegacySockets,
@@ -207,7 +208,7 @@ namespace LumaKroma.Sps2SetupAssistant
         // Defaults for new SPS3 depth fields, including fields absent in a legacy Setup asset.
         public static SocketAnimationSettings NewDepthForPart(string partId, bool custom)
         {
-            var result = new SocketAnimationSettings { radiusWeightEnabled = true, radiusAutoCorrection = true };
+            var result = new SocketAnimationSettings { radiusWeightEnabled = false, radiusAutoCorrection = true };
             if (!custom && partId == "mouth") { result.range = new Vector2(0f, .05f); result.units = DepthUnits.Meters; }
             return result;
         }
@@ -225,16 +226,20 @@ namespace LumaKroma.Sps2SetupAssistant
         public SocketAnimationSettings entrySettings = new SocketAnimationSettings { range = new Vector2(0, .1f) };
         public List<DepthActionSettings> actions = new List<DepthActionSettings>();
         public SocketAnimationSettings ActiveSettings => kind == SocketAnimationKind.Depth ? depthSettings : entrySettings;
+        public bool mouthNeutralEnabled;
+        // A separate renderer binding. It is never a mesh-measurement or preview input.
+        public DepthActionSettings mouthNeutral = new DepthActionSettings { weight = 0 };
         public static SocketAnimationGroup Create(SocketAnimationKind kind, string partId = null, bool custom = false) => new SocketAnimationGroup {
             id = Guid.NewGuid().ToString("N"), kind = kind,
             depthSettings = kind == SocketAnimationKind.Depth ? SocketAnimationSettings.NewDepthForPart(partId, custom) :
-                new SocketAnimationSettings { radiusWeightEnabled = true, radiusAutoCorrection = true },
+                new SocketAnimationSettings { radiusWeightEnabled = false, radiusAutoCorrection = true },
             actions = new List<DepthActionSettings> { new DepthActionSettings() }
         };
         public SocketAnimationGroup Copy()
         {
             var copy = new SocketAnimationGroup { id = id, kind = kind, depthSettings = depthSettings?.Copy(),
-                entrySettings = entrySettings?.Copy(), actions = actions == null ? null : new List<DepthActionSettings>() };
+                entrySettings = entrySettings?.Copy(), actions = actions == null ? null : new List<DepthActionSettings>(),
+                mouthNeutralEnabled = mouthNeutralEnabled, mouthNeutral = mouthNeutral?.Copy() };
             if (actions != null) foreach (var action in actions) copy.actions.Add(action?.Copy());
             return copy;
         }

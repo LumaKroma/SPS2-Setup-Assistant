@@ -41,9 +41,17 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             new Vector2(FullSetupCatalog.SliderToDistance(min), FullSetupCatalog.SliderToDistance(max));
         internal void SetAnimationRangeFields(SocketSettings part, SocketAnimationGroup group, float start, float end)
         {
-            if (!AnimationFinite(start) || !AnimationFinite(end)) return;
-            start = Mathf.Clamp(start, -1, 3); end = Mathf.Clamp(end, -1, 3);
-            var range = new Vector2(Mathf.Min(start, end), Mathf.Max(start, end));
+            Vector2 range;
+            if (group.kind == SocketAnimationKind.Depth)
+            {
+                if (!FullSetupCatalog.TryDepthRangeFields(start, end, out range)) return;
+            }
+            else
+            {
+                if (!AnimationFinite(start) || !AnimationFinite(end)) return;
+                start = Mathf.Clamp(start, -1, 3); end = Mathf.Clamp(end, -1, 3);
+                range = new Vector2(Mathf.Min(start, end), Mathf.Max(start, end));
+            }
             if (range != group.ActiveSettings.range) EditAnimationGroup(part, group, g => g.ActiveSettings.range = range);
         }
         internal void SetAnimationRangeUnits(SocketSettings part, SocketAnimationGroup group, DepthUnits units)
@@ -148,6 +156,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                             (value.radiusFull < 0 || value.radiusZero < 0 || value.radiusZero > value.radiusFull))
                             EditorGUILayout.HelpBox(L("このグループを反映するには、範囲・スムージング・半径の値を確認してください。"), MessageType.Warning);
                         }
+                        if (kind == SocketAnimationKind.Depth && part.id == "mouth" && !part.custom && !activeOnly &&
+                            Sps3ControlsForDrawing) DrawMouthNeutral(part, group);
                         if (kind == SocketAnimationKind.Depth) DrawBlendPreviewControls(part, group);
                         EditorGUILayout.LabelField(new GUIContent(L("アクション"),kind==SocketAnimationKind.Active?L("Socketがオンの間に適用します。接触判定ではありません。時間変化にはAnimationClipを使用してください。"):""), EditorStyles.boldLabel);
                         foreach (var action in group.actions.ToArray())
@@ -164,6 +174,48 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 Change(() => { part.InitializeAnimationGroups(); var g = SocketAnimationGroup.Create(SocketAnimationKind.Depth, part.id, part.custom);
                     g.depthSettings.radiusWeightEnabled = false; g.depthSettings.radiusAutoCorrection = false;
                     g.actions[0].kind = DepthActionKind.Object; part.animationGroups.Add(g); });
+        }
+        private void DrawMouthNeutral(SocketSettings part, SocketAnimationGroup group)
+        {
+            bool enabled = EditorGUILayout.Toggle(new GUIContent(L("口形状の固定"), L("深度の範囲内だけ固定します。固定値には Plug 半径の重みを使いません。")), group.mouthNeutralEnabled);
+            if (enabled != group.mouthNeutralEnabled)
+                EditAnimationGroup(part, group, g => {
+                    g.mouthNeutralEnabled = enabled;
+                    if (enabled && g.mouthNeutral == null) g.mouthNeutral = new DepthActionSettings { weight = 0 };
+                });
+            if (!group.mouthNeutralEnabled || group.mouthNeutral == null) return;
+            if (!CustomBlendShapeOutput.CanAuthorHold)
+                EditorGUILayout.HelpBox(L("この環境では口形状の固定に必要なクリップを設定できません。"), MessageType.Warning);
+            var binding = group.mouthNeutral;
+            var renderer = (SkinnedMeshRenderer)EditorGUILayout.ObjectField(L("メッシュ"), binding.renderer, typeof(SkinnedMeshRenderer), true);
+            if (renderer != binding.renderer && (renderer == null ||
+                renderer.GetComponentInParent<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>(true) == descriptor))
+                EditAnimationGroup(part, group, g => { g.mouthNeutral.renderer = renderer; g.mouthNeutral.shape = ""; });
+            var mesh = binding.renderer != null ? binding.renderer.sharedMesh : null;
+            using (new EditorGUI.DisabledScope(mesh == null))
+            {
+                if (GUILayout.Button(string.IsNullOrEmpty(binding.shape) ? "BlendShape…" : binding.shape, EditorStyles.popup))
+                {
+                    var menu = new GenericMenu();
+                    for (int i = 0; i < mesh.blendShapeCount; i++)
+                    {
+                        string name = mesh.GetBlendShapeName(i);
+                        menu.AddItem(new GUIContent(name), binding.shape == name, () => {
+                            if (this != null && settings.parts.Contains(part) && part.animationGroups.Contains(group) &&
+                                group.mouthNeutralEnabled && binding.renderer != null && binding.renderer.sharedMesh == mesh &&
+                                mesh.GetBlendShapeIndex(name) >= 0)
+                                EditAnimationGroup(part, group, g => g.mouthNeutral.shape = name);
+                        });
+                    }
+                    menu.ShowAsContext();
+                }
+            }
+            float value = EditorGUILayout.Slider(L("固定値"), binding.weight, 0, 100);
+            if (value != binding.weight) EditAnimationGroup(part, group, g => g.mouthNeutral.weight = value);
+            if (mesh != null && !string.IsNullOrEmpty(binding.shape) && group.actions.Any(a => a?.kind == DepthActionKind.BlendShape && (a.renderer == null || a.renderer == binding.renderer) && a.shape == binding.shape))
+                EditorGUILayout.HelpBox(L("口開きと同じ形状は固定しません。"), MessageType.Info);
+            if (mesh == null || string.IsNullOrEmpty(binding.shape))
+                EditorGUILayout.HelpBox(L("口形状の固定には、有効なメッシュ、BlendShape、固定値を指定してください。"), MessageType.Warning);
         }
         private void DrawAnimationRange(SocketSettings part, SocketAnimationGroup group, bool basicOnly = false)
         {

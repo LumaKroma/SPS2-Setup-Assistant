@@ -5,3 +5,5 @@
 *.gif binary
 *.zip binary
 *.unitypackage binary
+Packages/com.lumakroma.sps2-setup-assistant/Editor/Compatibility/MouthShapeHoldEdit.cs.meta -text
+Packages/com.lumakroma.sps2-setup-assistant/Editor/Compatibility/SpsMenuDestination.cs.meta -text

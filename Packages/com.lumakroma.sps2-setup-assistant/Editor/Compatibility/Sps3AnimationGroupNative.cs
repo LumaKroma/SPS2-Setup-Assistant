@@ -13,6 +13,38 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
     internal static class Sps3AnimationGroupNative
     {
         internal const string DepthList = "depthActions2", EntryList = "plugEntryRadiusActions";
+        internal static string MouthNeutralProblem(SetupSettings setup, SocketSettings part, SocketAnimationGroup group)
+        {
+            var neutral = group.mouthNeutral;
+            if (neutral?.renderer == null || neutral.renderer.sharedMesh == null || string.IsNullOrEmpty(neutral.shape) ||
+                neutral.renderer.sharedMesh.GetBlendShapeIndex(neutral.shape) < 0 || !Finite(neutral.weight) ||
+                neutral.weight < 0 || neutral.weight > 100)
+                return "口形状の固定には、有効なメッシュ、BlendShape、固定値を指定してください。";
+            var owner = neutral.renderer.GetComponentInParent<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>(true);
+            if (owner == null || !group.actions.Any(a => a?.kind == DepthActionKind.BlendShape && a.renderer != null && (a.blendShapeMode == BlendShapeMode.Custom || a.weight > 0 && Finite(a.weight)) &&
+                a.renderer.GetComponentInParent<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>(true) == owner && a.renderer.sharedMesh != null &&
+                !string.IsNullOrEmpty(a.shape) && a.renderer.sharedMesh.GetBlendShapeIndex(a.shape) >= 0))
+                return "口形状の固定には、同じアバターで口を動かす深度アクションが必要です。";
+            foreach (var other in part.EffectiveAnimationGroups())
+            {
+                if (other.actions == null) continue;
+                foreach (var a in other.actions.Where(a => a != null)) {
+                    if (a.kind == DepthActionKind.AnimationClip && a.clip != null && AnimationUtility.GetCurveBindings(a.clip).Any(b =>
+                        b.type == typeof(SkinnedMeshRenderer) && b.propertyName == "blendShape." + neutral.shape))
+                        return "口のクリップと書き込み先が重ならないことを確認できません。";
+                    if (a.kind == DepthActionKind.BlendShape && a.shape == neutral.shape && (a.renderer == neutral.renderer || a.renderer == null))
+                        return "固定先とアニメーションに同じ BlendShape が選ばれています。";
+                }
+                if (other.id != group.id && other.kind == SocketAnimationKind.Depth && other.mouthNeutralEnabled &&
+                    other.mouthNeutral?.renderer == neutral.renderer && other.mouthNeutral.shape == neutral.shape)
+                    return "複数の深度グループが同じ表情抑制先を指定しています。";
+            }
+            foreach (var otherPart in setup.parts.Where(p => p != null && p.id != part.id && p.included && p.AnimationEnabled))
+                if (otherPart.EffectiveAnimationGroups().Where(g => g.actions != null).SelectMany(g => g.actions).Any(a => a?.kind == DepthActionKind.BlendShape &&
+                    a.shape == neutral.shape && (a.renderer == neutral.renderer || a.renderer == null)))
+                    return "固定先とアニメーションに同じ BlendShape が選ばれています。";
+            return null;
+        }
         internal static IEnumerable<SocketAnimationGroup> Ordered(SocketSettings part) =>
             part.EffectiveAnimationGroups().OrderBy(g => g.kind);
         internal static bool WeightPending(SocketAnimationSettings value) => value != null &&
@@ -167,6 +199,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             for (int i = 0; i < left.Length; i++)
             {
                 var x = left[i]; var y = right[i]; var xs = x?.ActiveSettings; var ys = y?.ActiveSettings;
+                if (a.id == "mouth" && x?.kind == SocketAnimationKind.Depth && y?.kind == SocketAnimationKind.Depth &&
+                    (x.mouthNeutralEnabled != y.mouthNeutralEnabled || x.mouthNeutralEnabled &&
+                    (x.mouthNeutral?.renderer != y.mouthNeutral?.renderer || x.mouthNeutral?.shape != y.mouthNeutral?.shape ||
+                    x.mouthNeutral?.weight != y.mouthNeutral?.weight))) return false;
                 if (x == null || y == null || xs == null || ys == null || x.kind != y.kind ||
                     x.kind != SocketAnimationKind.Active && (xs.range.x != ys.range.x || xs.range.y != ys.range.y || xs.units != ys.units || xs.enableSelf != ys.enableSelf ||
                     xs.enableOthers != ys.enableOthers || xs.smoothingSeconds != ys.smoothingSeconds) ||

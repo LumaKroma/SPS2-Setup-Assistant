@@ -48,7 +48,7 @@ foreach ($relativePath in $requiredFiles) {
 
 $manifest = Get-Content -Raw -LiteralPath $manifestPath | ConvertFrom-Json
 Assert-Condition ($manifest.name -eq 'com.lumakroma.sps2-setup-assistant') 'Unexpected package ID.'
-Assert-Condition ($manifest.version -eq '2.0.0-beta.2') 'Unexpected release version.'
+Assert-Condition ($manifest.version -eq '2.0.0-beta.3') 'Unexpected release version.'
 Assert-Condition ($manifest.unity -eq '2022.3') 'Unexpected Unity version.'
 Assert-Condition ($manifest.license -eq 'MIT') 'Package license must be MIT.'
 Assert-Condition ($manifest.vpmDependencies.'com.vrchat.avatars' -eq '>=3.10.4 <4.0.0') 'Unexpected VRChat SDK range.'
@@ -138,10 +138,11 @@ Assert-Condition ($compatibility.Contains('CreateSocket') -and $compatibility.Co
 Assert-Condition ($compatibility.Contains('net.nrzk.spsndmf') -and $compatibility.Contains('PackageMatches') -and $compatibility.Contains('SpsNdmf.Plugin.SpsNdmfPlugin') -and $compatibility.Contains('HasNativeNdmfBuildIntegration')) 'Dual-family package and native build boundaries are missing.'
 Assert-Condition (-not $compatibility.Contains('CaptureNdmf') -and -not (Test-Path -LiteralPath (Join-Path $packageRoot 'Editor/Compatibility/Ndmf/Sps2NdmfPlugin.cs'))) 'Assistant NDMF build passes must be absent.'
 Assert-Condition ($compatibility.Contains('CreateArmatureLink')) 'Public attachment API binding is missing.'
-# Two reviewed source snapshots each contain exactly one nonpublic, read-only lookup.
+# Reviewed source snapshots each contain exactly one nonpublic, read-only lookup.
 # No exemption for a directory, an assembly, another lookup, or changed source.
 $reviewedNonPublic = @{
-    'Editor/Compatibility/OwnedNativeMenuAuthoring.cs' = '509c5ab9c6b49cc149d4d57b95c594b0ce85a7141ad1b6e0cba8991422905de7'
+    'Editor/Compatibility/OwnedNativeMenuAuthoring.cs' = 'adacdc3dffc6fe878d134154e9b187ea505f7b6c0532ef8d4f89c9f6055c4cf4'
+    'Editor/Compatibility/SpsMenuDestination.cs' = '14a4749dfd44dcacf9d3fe226c6dfb600c53d4eddd3da94da01058453fc36679'
     'Editor/Compatibility/Sps3MenuLayoutSources.cs' = '8be428670c83550cc34f43d346f3d735b4d6b7e303e3c723ef5bb5c4a265604e'
 }
 foreach ($file in $compatibilityFiles) {

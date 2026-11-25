@@ -177,6 +177,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         private void AutoUndoChanged()
         {
+            if (blendPreviewDriver != null) EndBlendPreview();
             // ObjectChangeEvents handles target component/asset Undo. This catches the
             // EditorWindow's own serialized draft without refreshing for unrelated Undo.
             var now = settings == null ? null : JsonUtility.ToJson(settings);
@@ -241,7 +242,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         private void AutoSceneClosing(UnityEngine.SceneManagement.Scene scene, bool removingScene)
         {
-            if (descriptor != null && descriptor.gameObject.scene == scene) { RememberAvatar(); SaveWindowDraft(); }
+            if (descriptor != null && descriptor.gameObject.scene == scene) { EndBlendPreview(); RememberAvatar(); SaveWindowDraft(); }
         }
         private void AutoSceneOpened(UnityEngine.SceneManagement.Scene scene, UnityEditor.SceneManagement.OpenSceneMode mode)
         {
