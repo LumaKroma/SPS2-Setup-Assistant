@@ -52,7 +52,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 start = Mathf.Clamp(start, -1, 3); end = Mathf.Clamp(end, -1, 3);
                 range = new Vector2(Mathf.Min(start, end), Mathf.Max(start, end));
             }
-            if (range != group.ActiveSettings.range) EditAnimationGroup(part, group, g => g.ActiveSettings.range = range);
+            if (range != group.ActiveSettings.range) EditAnimationGroup(part, group, g => g.ActiveSettings.range = range, scalarEdit: true);
         }
         internal void SetAnimationRangeUnits(SocketSettings part, SocketAnimationGroup group, DepthUnits units)
         {
@@ -61,13 +61,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             EditAnimationGroup(part, group, g => g.ActiveSettings.units = units);
         }
         private static bool AnimationFinite(float n) => !float.IsNaN(n) && !float.IsInfinity(n);
-        private void EditAnimationGroup(SocketSettings part, SocketAnimationGroup group, Action<SocketAnimationGroup> edit)
+        private void EditAnimationGroup(SocketSettings part, SocketAnimationGroup group, Action<SocketAnimationGroup> edit, bool keepBlendPreview = false, bool scalarEdit = false)
         {
             Change(() => {
                 part.InitializeAnimationGroups();
                 var current = part.animationGroups.Single(g => g.id == group.id);
                 edit(current);
-            });
+            }, keepBlendPreview, scalarEdit && part.animationModelVersion == 1);
         }
         private static void RemoveAnimationAction(SocketSettings part, DepthActionSettings action)
         {
@@ -101,12 +101,12 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     {
                         using (new EditorGUILayout.HorizontalScope())
                         {
-                            if (activeOnly) EditorGUILayout.LabelField(kind == SocketAnimationKind.Depth ? "深度（限定）" : "Active");
+                            if (activeOnly) EditorGUILayout.LabelField(kind == SocketAnimationKind.Depth ? L("深度（限定）") : "Active");
                             else {
                             int selected = EditorGUILayout.Popup((int)group.kind, new[] { L("深度"), L("入口Plug半径"), L("アクティブ") });
                             if (selected != (int)group.kind) EditAnimationGroup(part, group, g => g.kind = (SocketAnimationKind)selected);
                             }
-                            using (new EditorGUI.DisabledScope(index == 0))
+                            if (index > 0)
                                 if (GUILayout.Button("↑", GUILayout.Width(26)))
                                 {
                                     var previous = groups[index - 1];
@@ -122,101 +122,91 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                             EditorGUILayout.HelpBox(L("グループの設定が欠損しているため、このグループは反映できません。"), MessageType.Warning);
                             continue;
                         }
-                        if(kind != SocketAnimationKind.Active) {
-                        if (activeOnly) EditorGUILayout.HelpBox(L("基本 Socket の深度は Local 単位・他人 ON・重みなし・Object ON 1件のみ対応します。他の設定は保持し、生成時に適用しません。"), MessageType.Info);
-                        DrawAnimationRange(part, group, activeOnly);
+                        if (kind != SocketAnimationKind.Active && activeOnly) EditorGUILayout.HelpBox(L("基本 Socket の深度は Local 単位・他人 ON・重みなし・Object ON 1件のみ対応します。他の設定は保持し、生成時に適用しません。"), MessageType.Info);
+                        if (kind != SocketAnimationKind.Active) DrawAnimationRange(part, group, activeOnly);
                         bool details = AnimationDetailsExpanded(part, group);
-                        bool nextDetails = EditorGUILayout.Foldout(details, L("詳細設定"), true);
-                        if (nextDetails != details) SetAnimationDetailsExpanded(part, group, nextDetails);
+                        bool nextDetails = (!activeOnly || kind != SocketAnimationKind.Active) && EditorGUILayout.Foldout(details, L("詳細設定"), true);
+                        if ((!activeOnly || kind != SocketAnimationKind.Active) && nextDetails != details) SetAnimationDetailsExpanded(part, group, nextDetails);
                         if (nextDetails)
-                        {
-                            bool self = EditorGUILayout.Toggle(L("自分に反応"), value.enableSelf);
-                            bool others = EditorGUILayout.Toggle(L("他人に反応"), value.enableOthers);
-                            float smoothing = EditorGUILayout.FloatField(new GUIContent(L("スムージング（秒）"), L("反応の変化をなめらかにします。0秒で補間待ちをなくします。")), value.smoothingSeconds);
-                            if (self != value.enableSelf || others != value.enableOthers || AnimationFinite(smoothing) && smoothing != value.smoothingSeconds)
-                                EditAnimationGroup(part, group, g => { g.ActiveSettings.enableSelf = self; g.ActiveSettings.enableOthers = others;
-                                    if (AnimationFinite(smoothing)) g.ActiveSettings.smoothingSeconds = smoothing; });
-                            if (kind == SocketAnimationKind.Depth)
+                            using (new SettingsIndent())
                             {
-                                using (new EditorGUI.DisabledScope(activeOnly))
-                                using (new EditorGUILayout.HorizontalScope())
+                                if (!activeOnly) DrawBlendShapeInterference(part, group);
+                                if (kind != SocketAnimationKind.Active)
                                 {
-                                    bool weighted = EditorGUILayout.ToggleLeft(new GUIContent(L("Plug半径で重み付け"), L("深度アニメーションの強さをPlug半径で調整します。入口Plug半径アニメーションとは別の設定です。")), value.radiusWeightEnabled);
-                                    if (weighted != value.radiusWeightEnabled)
-                                        EditAnimationGroup(part, group, g => g.depthSettings.radiusWeightEnabled = weighted);
-                                    using (new EditorGUI.DisabledScope(!value.radiusWeightEnabled))
-                                        DrawRadiusAutoToggle(part, group);
+                                    bool self = EditorGUILayout.ToggleLeft(L("自分に反応"), value.enableSelf);
+                                    bool others = EditorGUILayout.ToggleLeft(L("他人に反応"), value.enableOthers);
+                                    float smoothing = EditorGUILayout.FloatField(new GUIContent(L("スムージング（秒）"), L("反応の変化をなめらかにします。0秒で補間待ちをなくします。")), value.smoothingSeconds);
+                                    if (self != value.enableSelf || others != value.enableOthers || AnimationFinite(smoothing) && smoothing != value.smoothingSeconds)
+                                        EditAnimationGroup(part, group, g => { g.ActiveSettings.enableSelf = self; g.ActiveSettings.enableOthers = others;
+                                            if (AnimationFinite(smoothing)) g.ActiveSettings.smoothingSeconds = smoothing; }, scalarEdit: true);
+                                    if (!activeOnly && kind == SocketAnimationKind.Depth)
+                                    {
+                                        bool weighted = EditorGUILayout.ToggleLeft(new GUIContent(L("Plug半径で重み付け"), L("深度アニメーションの強さをPlug半径で調整します。入口Plug半径アニメーションとは別の設定です。")), value.radiusWeightEnabled);
+                                        if (weighted != value.radiusWeightEnabled)
+                                            EditAnimationGroup(part, group, g => g.depthSettings.radiusWeightEnabled = weighted);
+                                        if (value.radiusWeightEnabled)
+                                            using (new SettingsIndent())
+                                            {
+                                                DrawRadiusAutoToggle(part, group);
+                                                DrawRadiusCorrection(part, group);
+                                            }
+                                    }
                                 }
-                                if (value.radiusWeightEnabled) DrawRadiusCorrection(part, group);
                             }
-                        }
-                        if (kind == SocketAnimationKind.Depth && value.radiusWeightEnabled && !value.radiusAutoCorrection && value.radiusZero == 0 && value.radiusFull == 0)
+                        if (!activeOnly && kind == SocketAnimationKind.Depth && value.radiusWeightEnabled && !value.radiusAutoCorrection && value.radiusZero == 0 && value.radiusFull == 0)
                             EditorGUILayout.HelpBox(L("重み0と重み1の半径を入力するか、自動補正をオンにしてください。"), MessageType.Warning);
-                        if (value.range.x > value.range.y || value.smoothingSeconds < 0 || kind == SocketAnimationKind.Depth && value.radiusWeightEnabled &&
-                            (value.radiusFull < 0 || value.radiusZero < 0 || value.radiusZero > value.radiusFull))
+                        if (kind != SocketAnimationKind.Active && (value.range.x > value.range.y || value.smoothingSeconds < 0 ||
+                            !activeOnly && kind == SocketAnimationKind.Depth && value.radiusWeightEnabled && !value.radiusAutoCorrection &&
+                            (value.radiusFull < 0 || value.radiusZero < 0 || value.radiusZero > value.radiusFull)))
                             EditorGUILayout.HelpBox(L("このグループを反映するには、範囲・スムージング・半径の値を確認してください。"), MessageType.Warning);
-                        }
-                        if (kind == SocketAnimationKind.Depth && part.id == "mouth" && !part.custom && !activeOnly &&
-                            Sps3ControlsForDrawing) DrawMouthNeutral(part, group);
                         if (kind == SocketAnimationKind.Depth) DrawBlendPreviewControls(part, group);
-                        EditorGUILayout.LabelField(new GUIContent(L("アクション"),kind==SocketAnimationKind.Active?L("Socketがオンの間に適用します。接触判定ではありません。時間変化にはAnimationClipを使用してください。"):""), EditorStyles.boldLabel);
+                        using (new EditorGUILayout.HorizontalScope())
+                        {
+                            EditorGUILayout.LabelField(new GUIContent(L("アクション"), kind == SocketAnimationKind.Active
+                                ? L("Socketがオンの間に適用します。接触判定ではありません。時間変化にはAnimationClipを使用してください。") : ""), EditorStyles.boldLabel);
+                            if (!activeOnly || kind != SocketAnimationKind.Depth)
+                                if (GUILayout.Button(new GUIContent("+", L("アクションを追加")), EditorStyles.miniButton, GUILayout.Width(24)))
+                                    EditAnimationGroup(part, group, g => g.actions.Add(new DepthActionSettings()));
+                        }
                         foreach (var action in group.actions.ToArray())
                             if (action != null) DrawAction(part, action, kind == SocketAnimationKind.Active);
-                        using (new EditorGUI.DisabledScope(activeOnly && kind == SocketAnimationKind.Depth))
-                            if (GUILayout.Button(L("アクションを追加")))
-                                EditAnimationGroup(part, group, g => g.actions.Add(new DepthActionSettings()));
                     }
                 }
             }
-            if (GUILayout.Button(L("アニメーションを追加")))
-                Change(() => { part.InitializeAnimationGroups(); part.animationGroups.Add(SocketAnimationGroup.Create(activeOnly ? SocketAnimationKind.Active : SocketAnimationKind.Depth, part.id, part.custom)); });
-            if (basicDepth && GUILayout.Button("深度アニメーションを追加（限定）"))
-                Change(() => { part.InitializeAnimationGroups(); var g = SocketAnimationGroup.Create(SocketAnimationKind.Depth, part.id, part.custom);
-                    g.depthSettings.radiusWeightEnabled = false; g.depthSettings.radiusAutoCorrection = false;
-                    g.actions[0].kind = DepthActionKind.Object; part.animationGroups.Add(g); });
-        }
-        private void DrawMouthNeutral(SocketSettings part, SocketAnimationGroup group)
-        {
-            bool enabled = EditorGUILayout.Toggle(new GUIContent(L("口形状の固定"), L("深度の範囲内だけ固定します。固定値には Plug 半径の重みを使いません。")), group.mouthNeutralEnabled);
-            if (enabled != group.mouthNeutralEnabled)
-                EditAnimationGroup(part, group, g => {
-                    g.mouthNeutralEnabled = enabled;
-                    if (enabled && g.mouthNeutral == null) g.mouthNeutral = new DepthActionSettings { weight = 0 };
-                });
-            if (!group.mouthNeutralEnabled || group.mouthNeutral == null) return;
-            if (!CustomBlendShapeOutput.CanAuthorHold)
-                EditorGUILayout.HelpBox(L("この環境では口形状の固定に必要なクリップを設定できません。"), MessageType.Warning);
-            var binding = group.mouthNeutral;
-            var renderer = (SkinnedMeshRenderer)EditorGUILayout.ObjectField(L("メッシュ"), binding.renderer, typeof(SkinnedMeshRenderer), true);
-            if (renderer != binding.renderer && (renderer == null ||
-                renderer.GetComponentInParent<VRC.SDK3.Avatars.Components.VRCAvatarDescriptor>(true) == descriptor))
-                EditAnimationGroup(part, group, g => { g.mouthNeutral.renderer = renderer; g.mouthNeutral.shape = ""; });
-            var mesh = binding.renderer != null ? binding.renderer.sharedMesh : null;
-            using (new EditorGUI.DisabledScope(mesh == null))
+            using (new EditorGUILayout.HorizontalScope())
             {
-                if (GUILayout.Button(string.IsNullOrEmpty(binding.shape) ? "BlendShape…" : binding.shape, EditorStyles.popup))
-                {
-                    var menu = new GenericMenu();
-                    for (int i = 0; i < mesh.blendShapeCount; i++)
-                    {
-                        string name = mesh.GetBlendShapeName(i);
-                        menu.AddItem(new GUIContent(name), binding.shape == name, () => {
-                            if (this != null && settings.parts.Contains(part) && part.animationGroups.Contains(group) &&
-                                group.mouthNeutralEnabled && binding.renderer != null && binding.renderer.sharedMesh == mesh &&
-                                mesh.GetBlendShapeIndex(name) >= 0)
-                                EditAnimationGroup(part, group, g => g.mouthNeutral.shape = name);
-                        });
-                    }
-                    menu.ShowAsContext();
-                }
+                GUILayout.FlexibleSpace();
+                // Basic-only authoring keeps its existing Active route when Depth is unavailable.
+                var kind = activeOnly && !basicDepth ? SocketAnimationKind.Active : SocketAnimationKind.Depth;
+                var label = kind == SocketAnimationKind.Depth ? L("アニメーションを追加") : "+ " + L("アクティブ");
+                if (GUILayout.Button(new GUIContent(label), EditorStyles.miniButton, GUILayout.ExpandWidth(false)))
+                    Change(() => {
+                        part.InitializeAnimationGroups();
+                        var group = SocketAnimationGroup.Create(kind, part.id, part.custom);
+                        if (activeOnly && kind == SocketAnimationKind.Depth) {
+                            group.depthSettings.radiusWeightEnabled = false;
+                            group.depthSettings.radiusAutoCorrection = false;
+                            group.actions[0].kind = DepthActionKind.Object;
+                        }
+                        part.animationGroups.Add(group);
+                    });
             }
-            float value = EditorGUILayout.Slider(L("固定値"), binding.weight, 0, 100);
-            if (value != binding.weight) EditAnimationGroup(part, group, g => g.mouthNeutral.weight = value);
-            if (mesh != null && !string.IsNullOrEmpty(binding.shape) && group.actions.Any(a => a?.kind == DepthActionKind.BlendShape && (a.renderer == null || a.renderer == binding.renderer) && a.shape == binding.shape))
-                EditorGUILayout.HelpBox(L("口開きと同じ形状は固定しません。"), MessageType.Info);
-            if (mesh == null || string.IsNullOrEmpty(binding.shape))
-                EditorGUILayout.HelpBox(L("口形状の固定には、有効なメッシュ、BlendShape、固定値を指定してください。"), MessageType.Warning);
         }
+
+        private void DrawBlendShapeInterference(SocketSettings part, SocketAnimationGroup group)
+        {
+            if (!Sps3ControlsForDrawing || !CustomBlendShapeOutput.CanAuthorHold) return;
+            bool enabled = group.interferenceEnabled || group.mouthNeutralEnabled;
+            bool selected = EditorGUILayout.ToggleLeft(new GUIContent(L("アニメーション中のBlendShape干渉を抑止"),
+                L("表情のうち変形範囲が大きく重なる形状だけを一時的に戻します。設定の変更には再生成が必要です。")), enabled);
+            if (selected != enabled)
+                EditAnimationGroup(part, group, g => {
+                    g.interferenceEnabled = selected;
+                    // Keep the saved legacy binding, but never emit it beside automatic output.
+                    g.mouthNeutralEnabled = false;
+                });
+        }
+
         private void DrawAnimationRange(SocketSettings part, SocketAnimationGroup group, bool basicOnly = false)
         {
             var value = group.ActiveSettings;
@@ -234,7 +224,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             if (input && sliderChanged)
             {
                 var range = isDepth ? FullSetupCatalog.DepthRangeFromSlider(min, max) : AnimationSliderRange(min, max);
-                EditAnimationGroup(part, group, g => g.ActiveSettings.range = range);
+                if (range != value.range) EditAnimationGroup(part, group, g => g.ActiveSettings.range = range, scalarEdit: true);
             }
             using (new EditorGUILayout.HorizontalScope())
             {
@@ -249,9 +239,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                         : new[] { DepthUnits.Meters, DepthUnits.Local };
                     var labels = group.kind == SocketAnimationKind.Depth ? DepthUnitLabels : new[] { DepthUnitLabels[0], DepthUnitLabels[2] };
                     int index = Array.IndexOf(units, value.units);
-                    int selected;
-                    using (new EditorGUI.DisabledScope(basicOnly))
-                        selected = EditorGUILayout.Popup(index, labels, GUILayout.MinWidth(100));
+                    int selected = basicOnly ? index : EditorGUILayout.Popup(index, labels, GUILayout.MinWidth(100));
+                    if (basicOnly && index >= 0) GUILayout.Label(labels[index], EditorStyles.miniLabel);
                     if (input && (start != displayedStart || end != displayedEnd)) SetAnimationRangeFields(part, group, start, end);
                     if (input && selected >= 0 && selected < units.Length && selected != index) SetAnimationRangeUnits(part, group, units[selected]);
                 }

@@ -60,6 +60,19 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         [NonSerialized] private Dictionary<string, Hash128> assetWatch;
         [NonSerialized] private HashSet<string> assetDependencies;
         [NonSerialized] private string externalDraftJson;
+        [NonSerialized] private VRCAvatarDescriptor limitedDraftDisplayAvatar;
+        [NonSerialized] private bool limitedDraftDisplayKnown, limitedDraftDisplayValue;
+        private bool HasLimitedDraftForDrawing()
+        {
+            if (descriptor == null) return false;
+            if (!limitedDraftDisplayKnown || !ReferenceEquals(descriptor, limitedDraftDisplayAvatar))
+            {
+                limitedDraftDisplayValue = FullSetupGenerator.HasLimitedDraft(descriptor);
+                limitedDraftDisplayAvatar = descriptor;
+                limitedDraftDisplayKnown = true;
+            }
+            return limitedDraftDisplayValue;
+        }
         private sealed class TransformWatch
         {
             internal VRCAvatarDescriptor avatar;
@@ -166,6 +179,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         private void AutoHierarchyChanged()
         {
+            // A limited-output marker can be nested under an otherwise unrelated child.
+            limitedDraftDisplayKnown = false;
             try {
                 bool changed = externalWatch != null && externalWatch.Changed(descriptor);
                 if (!FuryNativeFeatureShapes.NotificationNeedsRefresh(externalWatch != null, changed, false)) return;
@@ -197,6 +212,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         private void InvalidateAutoDisplayCache() { autoDisplayCache?.Invalidate(); depthDisplayCache?.Invalidate(); generationPreviewCache?.Invalidate(); generationPreviewPass?.Invalidate(); familyDisplayCache?.Invalidate(); }
         private void AutoExternalContextChanged()
         {
+            limitedDraftDisplayKnown = false;
             EndBlendPreview();
             unchecked { autoContextRevision++; }
             externalWatch = null;
@@ -235,6 +251,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 UnityEditor.SceneManagement.EditorSceneManager.activeSceneChangedInEditMode -= AutoActiveSceneChanged;
             }
             autoDisplayHooksEnabled = false;
+            limitedDraftDisplayKnown = false;
+            limitedDraftDisplayAvatar = null;
             externalWatch = null;
             assetWatch = null; assetDependencies = null;
             unchecked { autoContextRevision++; }

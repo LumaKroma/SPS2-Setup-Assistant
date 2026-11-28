@@ -81,11 +81,22 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Model
         {
             var setup = CreateDefault();
             ApplySps3Preset(setup, 1);
+            EnableDefaultTpsPlugAnimations(setup);
             // New drafts prefer guided paths only when this reviewed Fury contract supports them.
             // Existing settings are copied, so explicit user choices are not overwritten.
             setup.penetration = VrcFuryCapabilities.ForAuthoring(SpsFamily.VrcFury, SpsAuthoringContract.Sps3Beta14).Path;
             foreach (var part in setup.parts) InitializeNewSps3Depth(part);
             return setup;
+        }
+
+        // Call only for a fresh SPS3 draft or a confirmed legacy-source regeneration.
+        // Existing SPS3 settings and explicit choices stay authoritative.
+        internal static void EnableDefaultTpsPlugAnimations(SetupSettings setup)
+        {
+            if (setup.family != SpsFamily.VrcFury || setup.sps3PolicyVersion != 1 ||
+                !Sps3OwnedGlobalOptions.SupportsLegacyTree) return;
+            setup.BeginLegacyTree();
+            setup.sps3LegacyTpsAnimations = true;
         }
 
         internal static void InitializeNewSps3Depth(SocketSettings part, bool keepRange = false, bool keepUnits = false)

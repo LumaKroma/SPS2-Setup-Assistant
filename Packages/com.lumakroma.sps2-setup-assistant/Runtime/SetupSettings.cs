@@ -226,6 +226,8 @@ namespace LumaKroma.Sps2SetupAssistant
         public SocketAnimationSettings entrySettings = new SocketAnimationSettings { range = new Vector2(0, .1f) };
         public List<DepthActionSettings> actions = new List<DepthActionSettings>();
         public SocketAnimationSettings ActiveSettings => kind == SocketAnimationKind.Depth ? depthSettings : entrySettings;
+        public bool interferenceEnabled;
+        [NonSerialized] public AnimationClip interferenceClip;
         public bool mouthNeutralEnabled;
         // A separate renderer binding. It is never a mesh-measurement or preview input.
         public DepthActionSettings mouthNeutral = new DepthActionSettings { weight = 0 };
@@ -239,6 +241,7 @@ namespace LumaKroma.Sps2SetupAssistant
         {
             var copy = new SocketAnimationGroup { id = id, kind = kind, depthSettings = depthSettings?.Copy(),
                 entrySettings = entrySettings?.Copy(), actions = actions == null ? null : new List<DepthActionSettings>(),
+                interferenceEnabled = interferenceEnabled, interferenceClip = interferenceClip,
                 mouthNeutralEnabled = mouthNeutralEnabled, mouthNeutral = mouthNeutral?.Copy() };
             if (actions != null) foreach (var action in actions) copy.actions.Add(action?.Copy());
             return copy;

@@ -147,7 +147,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                 if (part.animationModelVersion != 0 && ((existing == null && !regenerate) || previewOptionalOmission) &&
                     !Sps3AnimationGroupNative.CanWriteOptional(part, group.kind, out _)) continue;
                 var values = group.ActiveSettings;
-                if (group.kind == SocketAnimationKind.Depth && Sps3AnimationGroupNative.WeightPending(values) &&
+                if (group.kind == SocketAnimationKind.Depth && !values.radiusAutoCorrection && Sps3AnimationGroupNative.WeightPending(values) &&
                     !(group.actions?.Count > 0 && group.actions.All(a => GenerationWarningPolicy.MissingMouthShape(part, group, a))))
                     warnings?.Add(part.name + ": " + L("半径の重み0・1を入力するか、自動補正をオンにしてください。重み付けを適用せず、他の生成を続けます。"));
                 if (group.actions == null ||

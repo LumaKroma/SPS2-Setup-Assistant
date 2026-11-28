@@ -21,6 +21,11 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
             "legacySocketCompatibility", "tpsDepthAnimationCompatibility", "addDpsTipLight" };
         private static readonly Lazy<bool> MenuPathAvailable = new Lazy<bool>(() => VrcFuryApi.FindType(ModelType)?.GetField("menuPath")?.FieldType == typeof(string));
         internal static bool SupportsMenuPath => MenuPathAvailable.Value;
+        private static readonly Lazy<bool> LegacyTreeAvailable = new Lazy<bool>(() => {
+            var model = VrcFuryApi.FindType(ModelType);
+            return model != null && PolicyFields.All(field => model.GetField(field)?.FieldType == typeof(bool));
+        });
+        internal static bool SupportsLegacyTree => LegacyTreeAvailable.Value;
         private static int RequestedPolicy(SetupSettings s) => (s.sps3AutoAvailable ? 1 : 0) | (s.sps3AutoDefaultOn ? 2 : 0) |
             (s.sps3AutoSaved ? 4 : 0) | (s.sps3SaveSockets ? 8 : 0) | (s.sps3PolicyVersion == 2 ? s.LegacyTreeMask() :
             (s.sps3LegacyAvailable ? 16 : 0) | (s.sps3LegacyDefaultOn ? 32 : 0) | (s.sps3LegacySaved ? 64 : 0));

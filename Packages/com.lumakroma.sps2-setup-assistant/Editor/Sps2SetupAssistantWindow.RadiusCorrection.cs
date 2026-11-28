@@ -18,6 +18,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         [NonSerialized] private Matrix4x4 blendPreviewFrame;
         [NonSerialized] private Vector2 blendPreviewRadii;
         [NonSerialized] private bool blendPreviewRadiiValid;
+        [NonSerialized] private bool blendPreviewFrameValid;
         [NonSerialized] private string blendPreviewMessage;
         [NonSerialized] private string blendPreviewPartId, blendPreviewGroupId;
         private sealed class PreviewOriginal { internal SkinnedMeshRenderer renderer; internal Mesh mesh; internal string shape; internal int index; internal float weight, previewWeight; internal bool sceneWasDirty; internal GameObject prefabRoot; internal UnityEngine.Object prefabSource; internal string overrideEvidence; }
@@ -55,7 +56,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 if (!Mathf.Approximately(current, item.weight)) {
                     if (Mathf.Approximately(current, item.previewWeight)) {
                         try { renderer.SetBlendShapeWeight(item.index, item.weight); }
-                        catch (Exception e) { issues.Add(renderer.name + ": " + item.shape + " / " + SetupFeedback.Error(e, "元の重みを復元できませんでした。対象のメッシュを確認してください。")); }
+                        catch (Exception e) { issues.Add(renderer.name + ": " + item.shape + " / " + SetupFeedback.Error(e, L("元の重みを復元できませんでした。対象のメッシュを確認してください。"))); }
                         current = renderer.GetBlendShapeWeight(item.index);
                         if (!Mathf.Approximately(current, item.weight)) {
                             contaminated = true;
@@ -82,10 +83,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         private void EndBlendPreview() {
             EditorApplication.update -= CheckPreviewSelection;
             var driver=blendPreviewDriver; var clip=blendPreviewClip;
-            blendPreviewDriver=null; blendPreviewClip=null; blendPreviewRadiiValid=false; blendPreviewPartId=null; blendPreviewGroupId=null;
+            blendPreviewDriver=null; blendPreviewClip=null; blendPreviewRadiiValid=false; blendPreviewFrameValid=false; blendPreviewPartId=null; blendPreviewGroupId=null;
             if(driver==null && clip==null && previewOriginals==null) return;
             try { if(driver!=null && AnimationMode.InAnimationMode(driver)) AnimationMode.StopAnimationMode(driver); }
-            catch(Exception e) { blendPreviewMessage=SetupFeedback.Error(e, "プレビューの終了を確認できません。元の重みを確認してください。"); }
+            catch(Exception e) { blendPreviewMessage=SetupFeedback.Error(e, L("プレビューの終了を確認できません。元の重みを確認してください。")); }
             finally {
                 if(clip!=null) DestroyImmediate(clip); if(driver!=null) DestroyImmediate(driver);
                 RestorePreviewOriginals();
@@ -124,17 +125,21 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     bool keepOverride=prefabRoot!=null && ExistingPrefabBlendOverride(renderer,binding.propertyName);
                     bindings.Add((binding,renderer,index,value,action.weight,keepOverride));
                 }
-                blendPreviewRadiiValid=false;
+                blendPreviewRadiiValid = false;
+                blendPreviewFrameValid = false;
                 try {
-                    var depth=group.depthSettings;
-                    Vector2 radii=depth.radiusAutoCorrection ? RadiusAutoCorrection.Estimate(descriptor,settings,part,group) : new Vector2(depth.radiusZero,depth.radiusFull);
-                    // When weighting is off and no manual radius exists, estimate only on this explicit preview action.
-                    if (!depth.radiusWeightEnabled && radii.y<=0) radii=RadiusAutoCorrection.Estimate(descriptor,settings,part,group);
-                    if(!float.IsNaN(radii.x)&&!float.IsNaN(radii.y)&&!float.IsInfinity(radii.x)&&!float.IsInfinity(radii.y)&&radii.x>=0&&radii.y>0&&radii.x<=radii.y) {
-                        blendPreviewFrame=FullSetupGenerator.RadiusEstimateFrame(descriptor,settings,part,false).inverse;
-                        blendPreviewRadii=radii; blendPreviewRadiiValid=true;
-                    } else blendPreviewMessage=L("BlendShape を表示しています。半径を確認できないため円を省略しました。");
-                } catch(Exception e) { blendPreviewMessage=SetupFeedback.Error(e, "BlendShape を表示しています。半径を確認できないため円を省略しました。"); }
+                    var depth = group.depthSettings;
+                    blendPreviewFrame = FullSetupGenerator.RadiusEstimateFrame(descriptor, settings, part, false).inverse;
+                    blendPreviewFrameValid = true;
+                    bool automatic = depth.radiusAutoCorrection || (!depth.radiusWeightEnabled && depth.radiusFull <= 0);
+                    if (!automatic)
+                        SetBlendPreviewRadii(depth.radiusZero, depth.radiusFull);
+                    else if (RadiusAutoCorrection.TryEstimate(descriptor, settings, part, group, false, out var radii))
+                        SetBlendPreviewRadii(radii.x, radii.y);
+                } catch (Exception e) {
+                    if (!group.depthSettings.radiusAutoCorrection)
+                        blendPreviewMessage = SetupFeedback.Error(e, L("BlendShape を表示しています。半径を確認できないため円を省略しました。"));
+                }
                 driver=CreateInstance<AnimationModeDriver>(); driver.hideFlags=HideFlags.HideAndDontSave;
                 AnimationMode.StartAnimationMode(driver);
                 if(!AnimationMode.InAnimationMode(driver)) throw new InvalidOperationException("Could not start owned AnimationMode.");
@@ -149,7 +154,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 previewSelectionId=Selection.activeInstanceID;
                 EditorApplication.update += CheckPreviewSelection;
                 SceneView.RepaintAll();
-            } catch(Exception e) { blendPreviewMessage=SetupFeedback.Error(e, "プレビューを開始できませんでした。対象のメッシュを確認してください。"); }
+            } catch(Exception e) { blendPreviewMessage=SetupFeedback.Error(e, L("プレビューを開始できませんでした。対象のメッシュを確認してください。")); }
             finally {
                 if(driver!=null) { if(AnimationMode.InAnimationMode(driver)) AnimationMode.StopAnimationMode(driver); DestroyImmediate(driver); }
                 if(clip!=null) DestroyImmediate(clip);
@@ -174,24 +179,127 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             var selected=Selection.activeGameObject;
             if(selected==null || descriptor==null || !(selected.transform==descriptor.transform || selected.transform.IsChildOf(descriptor.transform))) { EndBlendPreview(); Repaint(); }
         }
-        private void ResolveRadiusPreview(SocketSettings part, SocketAnimationGroup group, bool auto)
+        private sealed class RadiusPreviewEntry
         {
-            if(!FinishPreviewForOperation()) return;
-            EditAnimationGroup(part,group,g=>{
-                g.depthSettings.SetRadiusAutoCorrection(auto);
-                if(auto) RadiusAutoCorrection.ResolvePreview(g.depthSettings,
-                    ()=>RadiusAutoCorrection.Estimate(descriptor,settings,part,g),
-                    ()=>RadiusAutoCorrection.NativeDefault(descriptor,settings,part,false));
-            });
+            internal SocketSettings part;
+            internal SocketAnimationGroup group;
+            internal int draftRevision, contextRevision, measuredContextRevision;
+            internal string input;
+            internal Vector2? radii;
+            internal bool ready;
         }
+        private readonly System.Collections.Generic.Dictionary<string, RadiusPreviewEntry> radiusPreviewEntries
+            = new System.Collections.Generic.Dictionary<string, RadiusPreviewEntry>();
+        private VRC.SDK3.Avatars.Components.VRCAvatarDescriptor radiusPreviewAvatar;
+        private double radiusPreviewRefreshAt;
+        private bool radiusPreviewRefreshScheduled;
+
+        private void CancelRadiusPreviewRefresh()
+        {
+            EditorApplication.update -= RefreshRadiusPreview;
+            radiusPreviewRefreshScheduled = false;
+            radiusPreviewEntries.Clear();
+            radiusPreviewAvatar = null;
+        }
+
+        private Vector2? ReadRadiusPreview(SocketSettings part, SocketAnimationGroup group)
+        {
+            if (!ReferenceEquals(radiusPreviewAvatar, descriptor))
+            {
+                CancelRadiusPreviewRefresh();
+                radiusPreviewAvatar = descriptor;
+            }
+            string key = AnimationDetailsKey(part, group);
+            if (!radiusPreviewEntries.TryGetValue(key, out var entry))
+            {
+                entry = new RadiusPreviewEntry();
+                radiusPreviewEntries.Add(key, entry);
+            }
+            if (ReferenceEquals(entry.part, part) && ReferenceEquals(entry.group, group) &&
+                entry.draftRevision == shapeSelectionRevision && entry.contextRevision == autoContextRevision)
+                return entry.ready ? entry.radii : null;
+
+            entry.part = part;
+            entry.group = group;
+            entry.draftRevision = shapeSelectionRevision;
+            entry.contextRevision = autoContextRevision;
+            entry.ready = false;
+            radiusPreviewRefreshAt = EditorApplication.timeSinceStartup + .2;
+            if (!radiusPreviewRefreshScheduled)
+            {
+                radiusPreviewRefreshScheduled = true;
+                EditorApplication.update += RefreshRadiusPreview;
+            }
+            return null;
+        }
+
+        private void RefreshRadiusPreview()
+        {
+            if (this == null || EditorApplication.isPlayingOrWillChangePlaymode)
+            {
+                CancelRadiusPreviewRefresh();
+                return;
+            }
+            if (EditorApplication.timeSinceStartup < radiusPreviewRefreshAt || AnimationMode.InAnimationMode() ||
+                previewOriginals != null || EditorApplication.isCompiling || EditorApplication.isUpdating) return;
+
+            // One estimate per update. Never run BakeMesh or mutate the draft in IMGUI.
+            foreach (var key in radiusPreviewEntries.Keys.ToArray())
+            {
+                var entry = radiusPreviewEntries[key];
+                var part = entry.part;
+                var group = entry.group;
+                if (descriptor == null || settings?.parts == null || !settings.parts.Contains(part) ||
+                    !part.included || !part.AnimationEnabled || group.kind != SocketAnimationKind.Depth ||
+                    part.animationGroups?.Contains(group) != true || group.depthSettings == null || !group.depthSettings.radiusWeightEnabled ||
+                    !group.depthSettings.radiusAutoCorrection)
+                {
+                    radiusPreviewEntries.Remove(key);
+                    continue;
+                }
+                if (entry.ready || entry.draftRevision != shapeSelectionRevision || entry.contextRevision != autoContextRevision) continue;
+                string input = RadiusAutoCorrection.PreviewInput(descriptor, settings, part, group);
+                if (entry.measuredContextRevision != autoContextRevision || entry.input != input)
+                    entry.radii = RadiusAutoCorrection.TryEstimate(descriptor, settings, part, group, false, out var radii)
+                        ? radii : (Vector2?)null;
+                entry.input = input;
+                entry.measuredContextRevision = autoContextRevision;
+                entry.ready = true;
+                Repaint();
+                return;
+            }
+            EditorApplication.update -= RefreshRadiusPreview;
+            radiusPreviewRefreshScheduled = false;
+        }
+
+        private bool IsBlendPreviewActive(SocketSettings part, SocketAnimationGroup group) =>
+            blendPreviewDriver != null && blendPreviewPartId == part.id && blendPreviewGroupId == group.id;
+
+        private void SetBlendPreviewRadii(float zero, float full)
+        {
+            blendPreviewRadiiValid = blendPreviewFrameValid && AnimationFinite(zero) && AnimationFinite(full) &&
+                zero >= 0 && full > 0 && zero <= full;
+            blendPreviewRadii = new Vector2(zero, full);
+        }
+
         private void DrawRadiusAutoToggle(SocketSettings part, SocketAnimationGroup group)
         {
-            bool auto=EditorGUILayout.ToggleLeft(new GUIContent(L("自動補正"), L("Plug 半径で重み付けを有効にすると使用できます。")),group.depthSettings.radiusAutoCorrection,GUILayout.Width(100));
-            if(auto!=group.depthSettings.radiusAutoCorrection) ResolveRadiusPreview(part,group,auto);
+            bool auto = EditorGUILayout.ToggleLeft(new GUIContent(L("自動補正"), L("対象メッシュの開口から、重み付けに使う半径を自動で推定します。")),
+                group.depthSettings.radiusAutoCorrection);
+            if (auto == group.depthSettings.radiusAutoCorrection) return;
+            // Going manual preserves the currently sampled BlendShapes and their original-weight snapshot.
+            // Auto measurement requires the original mesh state, so enabling it ends the temporary preview.
+            bool keepPreview = !auto && IsBlendPreviewActive(part, group);
+            if (!keepPreview && !FinishPreviewForOperation()) return;
+            EditAnimationGroup(part, group, g => g.depthSettings.SetRadiusAutoCorrection(auto), keepPreview);
+            if (keepPreview) {
+                SetBlendPreviewRadii(group.depthSettings.radiusZero, group.depthSettings.radiusFull);
+                SceneView.RepaintAll();
+            }
         }
         private void DrawBlendPreviewControls(SocketSettings part, SocketAnimationGroup group)
         {
-            bool active=blendPreviewDriver!=null && blendPreviewPartId==part.id && blendPreviewGroupId==group.id; var prior=GUI.backgroundColor;
+            bool active=IsBlendPreviewActive(part,group); var prior=GUI.backgroundColor;
             try {
                 if(active) GUI.backgroundColor=new Color(.3f,.6f,1f,1f);
                 if(GUILayout.Button(active ? L("プレビューを終了") : L("BlendShape プレビュー"))) {
@@ -209,46 +317,47 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         private void DrawRadiusCorrection(SocketSettings part,SocketAnimationGroup group)
         {
             var value=group.depthSettings;
-            bool auto=value.radiusAutoCorrection;
-            if(auto && GUILayout.Button(L("再計算"))) {
-                ResolveRadiusPreview(part,group,true);
-                value=part.animationGroups.Single(g=>g.id==group.id).depthSettings;
-            }
-            float zero=auto&&value.radiusAutoHasResult?value.radiusAutoZero:value.radiusZero;
-            float full=auto&&value.radiusAutoHasResult?value.radiusAutoFull:value.radiusFull;
             bool hasMinimum = RadiusMinimumForDrawing();
-            using(new EditorGUI.DisabledScope(auto)) {
-                // The minimum is not present in early Fury versions. Never silently
-                // rewrite an existing manual minimum merely because it is unavailable.
-                if (hasMinimum) {
-                    float lo=FullSetupCatalog.DistanceToSlider(zero), hi=FullSetupCatalog.DistanceToSlider(full);
-                    bool input=Event.current!=null && AnimationRangeInputEvent(Event.current.type);
-                    EditorGUI.BeginChangeCheck();EditorGUILayout.MinMaxSlider(ref lo,ref hi,.25f,1);
-                    bool slider=EditorGUI.EndChangeCheck();
-                    if(!auto && slider && input) { zero=FullSetupCatalog.SliderToDistance(lo);full=FullSetupCatalog.SliderToDistance(hi); }
+            if (value.radiusAutoCorrection)
+            {
+                var radii = ReadRadiusPreview(part, group);
+                using (new EditorGUILayout.HorizontalScope())
+                {
+                    string zeroLabel = radii.HasValue ? radii.Value.x.ToString("G5") : "—";
+                    string fullLabel = radii.HasValue ? radii.Value.y.ToString("G5") : "—";
+                    if (hasMinimum) EditorGUILayout.LabelField(L("重み 0"), zeroLabel);
+                    EditorGUILayout.LabelField(L("重み 1"), fullLabel);
+                    EditorGUILayout.LabelField(L("Socket Local"), GUILayout.Width(85));
                 }
-                using(new EditorGUILayout.HorizontalScope()) {
-                    if(auto && !value.radiusAutoHasResult) {
-                        if(hasMinimum) EditorGUILayout.LabelField(L("重み 0"), L("未計算"));
-                        EditorGUILayout.LabelField(L("重み 1"), L("未計算"));
-                    } else {
-                        if(hasMinimum) zero=EditorGUILayout.FloatField(new GUIContent(L("重み 0"), L("深度アニメーションの重みが 0 になる Plug 半径です。Socket のローカル単位で入力します。")),zero);
-                        full=EditorGUILayout.FloatField(new GUIContent(L("重み 1"), L("深度アニメーションの重みが最大になる Plug 半径です。Socket のローカル単位で入力します。")),full);
-                    }
-                    EditorGUILayout.LabelField("Socket Local",GUILayout.Width(85));
-                }
-                if(!hasMinimum && !auto && zero!=0) {
-                    EditorGUILayout.HelpBox(L("この VRCFury には重み 0 の設定がありません。保存された手動値は保持しています。適用するには明示的に 0 にしてください。"),MessageType.Warning);
-                    if(GUILayout.Button("手動の重み 0 を 0 にする")) zero=0;
-                }
-                if(!auto && AnimationFinite(zero)&&AnimationFinite(full)&&(zero!=value.radiusZero||full!=value.radiusFull))
-                    EditAnimationGroup(part,group,g=>{g.depthSettings.radiusZero=zero;g.depthSettings.radiusFull=full;});
+                return;
             }
-            if(auto && !value.radiusAutoHasResult)
-                EditorGUILayout.HelpBox(L("「再計算」を押してください。計算できない場合は生成時にFury標準値を使います。"),MessageType.Warning);
-            if(auto && !string.IsNullOrEmpty(value.radiusAutoMessage))
-                EditorGUILayout.HelpBox(value.radiusAutoMessage,MessageType.Warning);
-
+            float zero = value.radiusZero, full = value.radiusFull;
+            // The minimum is not present in early Fury versions. Never silently
+            // rewrite an existing manual minimum merely because it is unavailable.
+            if (hasMinimum) {
+                float lo=FullSetupCatalog.DistanceToSlider(zero), hi=FullSetupCatalog.DistanceToSlider(full);
+                bool input=Event.current!=null && AnimationRangeInputEvent(Event.current.type);
+                EditorGUI.BeginChangeCheck();EditorGUILayout.MinMaxSlider(ref lo,ref hi,.25f,1);
+                bool slider=EditorGUI.EndChangeCheck();
+                if(slider && input) { zero=FullSetupCatalog.SliderToDistance(lo);full=FullSetupCatalog.SliderToDistance(hi); }
+            }
+            using(new EditorGUILayout.HorizontalScope()) {
+                if(hasMinimum) zero=EditorGUILayout.FloatField(new GUIContent(L("重み 0"), L("深度アニメーションの重みが 0 になる Plug 半径です。Socket のローカル単位で入力します。")),zero);
+                full=EditorGUILayout.FloatField(new GUIContent(L("重み 1"), L("深度アニメーションの重みが最大になる Plug 半径です。Socket のローカル単位で入力します。")),full);
+                EditorGUILayout.LabelField(L("Socket Local"),GUILayout.Width(85));
+            }
+            if(!hasMinimum && zero!=0) {
+                EditorGUILayout.HelpBox(L("この VRCFury には重み 0 の設定がありません。保存された手動値は保持しています。適用するには明示的に 0 にしてください。"),MessageType.Warning);
+                if(GUILayout.Button(L("手動の重み 0 を 0 にする"))) zero=0;
+            }
+            if(AnimationFinite(zero)&&AnimationFinite(full)&&(zero!=value.radiusZero||full!=value.radiusFull)) {
+                bool keepPreview = IsBlendPreviewActive(part, group);
+                EditAnimationGroup(part, group, g => { g.depthSettings.radiusZero = zero; g.depthSettings.radiusFull = full; }, keepPreview, scalarEdit: true);
+                if (keepPreview) {
+                    SetBlendPreviewRadii(zero, full);
+                    SceneView.RepaintAll();
+                }
+            }
         }
     }
 }

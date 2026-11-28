@@ -16,18 +16,58 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         internal static Matrix4x4 BakedToSocket(Transform renderer,Matrix4x4 worldToSocket)
             => worldToSocket*Matrix4x4.TRS(renderer.position,renderer.rotation,Vector3.one);
 
-        internal static void ResolvePreview(SocketAnimationSettings value,Func<Vector2> estimate,Func<Vector2> nativeDefault)
+        // Setup only probes a snapshot. If the current geometry cannot supply a valid
+        // interval, leave existing/native radius values alone rather than guessing.
+        internal static bool TryEstimate(VRCAvatarDescriptor avatar, SetupSettings setup, SocketSettings part,
+            SocketAnimationGroup group, bool regenerate, out Vector2 radii)
         {
-            if (!value.radiusAutoCorrection) throw new InvalidOperationException("Automatic radius is off.");
-            try { var result=estimate(); value.RecordRadiusAutoResult(result.x,result.y,false,""); }
-            catch(InvalidOperationException error) {
-                try { var result=nativeDefault(); value.RecordRadiusAutoResult(result.x,result.y,true,
-                    "開口の推定不可: "+error.Message+" / Fury標準値を使用しています。"); }
-                catch(InvalidOperationException unavailable) {
-                    value.radiusAutoMessage="今回の計算は未適用: "+error.Message+" / Fury標準値も未確定: "+unavailable.Message+
-                        "。前回結果または保存値を保持しています。";
+            radii = default;
+            try
+            {
+                radii = Estimate(avatar, setup, part, group, regenerate);
+                return radii.x >= 0 && radii.y > radii.x && !float.IsInfinity(radii.y);
+            }
+            catch (Exception e) when (e is InvalidOperationException || e is ArgumentException || e is UnityException)
+            {
+                return false;
+            }
+        }
+
+        private static bool HasCompetingAction(SetupSettings setup, SocketAnimationGroup group, SkinnedMeshRenderer source) =>
+            setup.parts.Where(p => p != null && p.included && p.AnimationEnabled).Any(p =>
+                p.EffectiveAnimationGroups().Any(g => g?.actions != null && g.actions.Any(a =>
+                    a != null && !group.actions.Contains(a) && !GenerationWarningPolicy.MissingMouthShape(p, g, a) &&
+                    (a.kind == DepthActionKind.AnimationClip || a.kind == DepthActionKind.BlendShape && a.renderer == source))));
+
+        // Compared after a draft edit, outside IMGUI. Range, menu, smoothing, and
+        // manual radii do not change the measured geometry.
+        internal static string PreviewInput(VRCAvatarDescriptor avatar, SetupSettings setup, SocketSettings part, SocketAnimationGroup group)
+        {
+            var key = new System.Text.StringBuilder();
+            void Add(string value) => key.Append(value?.Length ?? 0).Append(':').Append(value);
+            void ObjectId(Object value) => Add(value != null ? value.GetInstanceID().ToString() : null);
+            ObjectId(avatar);
+            Add(((int)setup.family).ToString());
+            Add(part.id);
+            Add(part.custom ? "custom" : "built-in");
+            ObjectId(part.target);
+            var actions = group.actions == null ? null : GenerationWarningPolicy.OutputActions(part, group);
+            if (actions != null)
+            {
+                if (actions.Count > 0 && actions[0]?.renderer != null)
+                    Add(HasCompetingAction(setup, group, actions[0].renderer) ? "overlap" : "clear");
+                foreach (var action in actions)
+                {
+                    if (action == null) { Add("null"); continue; }
+                    Add(((int)action.kind).ToString());
+                    Add(((int)action.blendShapeMode).ToString());
+                    ObjectId(action.renderer);
+                    ObjectId(action.renderer != null ? action.renderer.sharedMesh : null);
+                    Add(action.shape);
+                    Add(action.weight.ToString("R", System.Globalization.CultureInfo.InvariantCulture));
                 }
             }
+            return key.ToString();
         }
         internal static Vector2 Estimate(VRCAvatarDescriptor avatar,SetupSettings setup,SocketSettings part,SocketAnimationGroup group,bool regenerate=false)
         {
@@ -48,12 +88,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     throw new InvalidOperationException("単一 100 フレーム、0 より大きく 100 以下の値のみ推定できます。");
                 shapes.Add(new KeyValuePair<int,float>(shape,action.weight));
             }
-            foreach(var otherPart in setup.parts.Where(p=>p.included&&p.AnimationEnabled))
-                foreach(var otherGroup in otherPart.EffectiveAnimationGroups())
-                    foreach(var other in otherGroup.actions)
-                        if(other!=null && !group.actions.Contains(other) && !GenerationWarningPolicy.MissingMouthShape(otherPart, otherGroup, other) && (other.kind==DepthActionKind.AnimationClip ||
-                            other.kind==DepthActionKind.BlendShape && other.renderer==source))
-                            throw new InvalidOperationException("別のアクションとの合成を安全に推定できません。");
+            if (HasCompetingAction(setup, group, source))
+                throw new InvalidOperationException("別のアクションとの合成を安全に推定できません。");
             foreach (var shape in shapes) if (source.GetBlendShapeWeight(shape.Key) != 0)
                 throw new InvalidOperationException("現在の BlendShape が有効です。複合変形を推定しません。");
             FullSetupGenerator.RequireRadiusFrame(source.transform.localToWorldMatrix);
@@ -61,7 +97,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             GameObject temp=null,surfaceProbe=null;Mesh before=null,after=null; UnityEngine.SceneManagement.Scene surfaceScene=default;
             try {
                 // Bake on an owned scratch renderer only. Never change the source renderer, weights or mesh.
-                temp=new GameObject("SPS radius estimate scratch"){hideFlags=HideFlags.HideAndDontSave};temp.SetActive(false);
+                surfaceScene=UnityEditor.SceneManagement.EditorSceneManager.NewPreviewScene();
+                temp=new GameObject("SPS radius estimate scratch"){hideFlags=HideFlags.HideAndDontSave};
+                UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(temp,surfaceScene);temp.SetActive(false);
                 temp.transform.SetPositionAndRotation(source.transform.position,source.transform.rotation);
                 temp.transform.localScale=source.transform.lossyScale;
                 var copy=temp.AddComponent<SkinnedMeshRenderer>();copy.sharedMesh=mesh;copy.bones=source.bones;copy.rootBone=source.rootBone;copy.quality=source.quality;
@@ -93,7 +131,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 // the original broad ranking rather than rejecting the estimate.
                 MeshCollider surfaceCollider=null;
                 try {
-                    surfaceScene=UnityEditor.SceneManagement.EditorSceneManager.NewPreviewScene();
                     surfaceProbe=new GameObject("SPS radius surface ranking scratch"){hideFlags=HideFlags.HideAndDontSave};
                     UnityEngine.SceneManagement.SceneManager.MoveGameObjectToScene(surfaceProbe,surfaceScene);
                     surfaceProbe.transform.SetPositionAndRotation(copy.transform.position,copy.transform.rotation);
@@ -101,9 +138,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     if(surfaceCollider.sharedMesh==null) surfaceCollider=null;
                 } catch(Exception error) when(error is InvalidOperationException || error is ArgumentException || error is UnityException) {
                     if(surfaceProbe!=null) Object.DestroyImmediate(surfaceProbe);
-                    if(surfaceScene.IsValid() && surfaceScene.isLoaded) UnityEditor.SceneManagement.EditorSceneManager.ClosePreviewScene(surfaceScene);
-                    surfaceProbe=null; surfaceScene=default; surfaceCollider=null;
-                    Debug.LogWarning("SPS radius surface ranking unavailable; using the existing contour ranking: "+error.Message);
+                    surfaceProbe=null; surfaceCollider=null;
                 }
 
                 var probeForward=worldToSocket.inverse.MultiplyVector(Vector3.forward).normalized;
@@ -188,12 +223,6 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             }
             return result;
         }
-        internal static Vector2 NativeDefault(VRCAvatarDescriptor avatar,SetupSettings setup,SocketSettings part,bool regenerate)
-        {
-            // Inspector toggle defaults are not a public, unit-verifiable API.
-            // Do not invent a value from a release label or a copied constant.
-            throw new InvalidOperationException("Fury の重み有効時の標準値と単位を API で確認できません。ネイティブ初期値を保持します。");
-        }
         internal static string DeferredKey(SocketSettings part,SocketAnimationGroup group) => part.id + "\0" + group.id;
         internal static bool ResolveDeferred(SocketSettings part,Transform futureSocket,HashSet<string> deferred,ICollection<string> warnings)
         {
@@ -206,18 +235,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             if(!original.parts.Any(p=>p.included&&p.AnimationEnabled&&p.animationModelVersion==1&&
                 p.animationGroups.Any(g=>g!=null&&g.kind==SocketAnimationKind.Depth&&g.depthSettings!=null&&g.depthSettings.radiusWeightEnabled&&g.depthSettings.radiusAutoCorrection)))return original;
             var copy=original.Copy();
-            var existing=FullSetupGenerator.Find(avatar);
             foreach(var part in copy.parts.Where(p=>p.included&&p.AnimationEnabled&&p.animationModelVersion==1))
                 foreach(var group in part.animationGroups.Where(g=>g!=null&&g.kind==SocketAnimationKind.Depth&&g.depthSettings!=null&&g.depthSettings.radiusWeightEnabled&&g.depthSettings.radiusAutoCorrection)) {
                     if (group.actions != null && group.actions.Count > 0 &&
                         group.actions.All(a => GenerationWarningPolicy.MissingMouthShape(part, group, a))) continue;
-                    try {var result=Estimate(avatar,copy,part,group,regenerate);group.depthSettings.RecordRadiusAutoResult(result.x,result.y,false,"");}
-                    catch(InvalidOperationException e){
-                        group.depthSettings.radiusKeepNative=true;
-                        warnings.Add("自動半径を適用できません: " + part.id + " / " + e.Message +
-                            " / 半径フィールドは変更しません。新規の場合は Fury の初期状態（重みが無効の場合があります）を使います。保存済み入力は保持します。");
-                        continue;
-                    }
+                    if (TryEstimate(avatar, copy, part, group, regenerate, out var result))
+                        group.depthSettings.RecordRadiusAutoResult(result.x, result.y, false, "");
+                    else group.depthSettings.radiusKeepNative = true;
                 }
             return copy;
         }

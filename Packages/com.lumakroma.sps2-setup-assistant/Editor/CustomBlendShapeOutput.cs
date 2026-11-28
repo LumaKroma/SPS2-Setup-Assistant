@@ -32,9 +32,19 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     var separate=group.Copy();separate.actions=new List<DepthActionSettings>{action};yield return separate;
                 }
             }
+            foreach (var group in part.EffectiveAnimationGroups().Where(g => g.interferenceEnabled &&
+                g.kind != SocketAnimationKind.Active && g.interferenceClip != null))
+            {
+                var hold = group.Copy();
+                hold.depthSettings.radiusWeightEnabled = false;
+                hold.depthSettings.radiusKeepNative = false;
+                hold.depthSettings.radiusFull = hold.depthSettings.radiusZero = 0;
+                hold.actions = new List<DepthActionSettings> { InterferenceAction(group) };
+                yield return hold;
+            }
             if (!part.custom && part.id == "mouth" && part.AnimationEnabled)
                 foreach (var g in part.EffectiveAnimationGroups().Where(g => g.kind == SocketAnimationKind.Depth &&
-                    g.mouthNeutralEnabled && g.mouthNeutral?.clip != null)) {
+                    !g.interferenceEnabled && g.mouthNeutralEnabled && g.mouthNeutral?.clip != null)) {
                     var hold = g.Copy();
                     hold.depthSettings.radiusWeightEnabled = false;
                     hold.depthSettings.radiusKeepNative = false;
@@ -44,6 +54,19 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     yield return hold;
                 }
         }
+        private static DepthActionSettings InterferenceAction(SocketAnimationGroup group) =>
+            new DepthActionSettings { kind = DepthActionKind.AnimationClip, clip = group.interferenceClip };
+
+        internal static IEnumerable<DepthActionSettings> ActiveActions(SocketSettings part)
+        {
+            foreach (var group in Sps3AnimationGroupNative.Ordered(part).Where(g => g.kind == SocketAnimationKind.Active))
+            {
+                foreach (var action in group.actions) yield return action;
+                if (group.interferenceEnabled && group.interferenceClip != null)
+                    yield return InterferenceAction(group);
+            }
+        }
+
         internal static void Validate(VRCAvatarDescriptor avatar,SetupSettings settings)
         {
             foreach(var part in settings.parts)
@@ -143,13 +166,14 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         internal static void Prepare(VRCAvatarDescriptor avatar,SetupSettings settings,Sps2SetupAsset owner, List<string> warnings)
         {
+            BlendShapeInterference.Prepare(avatar, settings, owner);
             var mouth = settings.parts.FirstOrDefault(p => p.id == "mouth" && !p.custom);
             if (mouth?.animationGroups != null)
                 foreach (var g in mouth.animationGroups.Where(g => g?.mouthNeutral != null)) g.mouthNeutral.clip = null;
             if (mouth?.animationModelVersion == 1 && mouth.included && mouth.AnimationEnabled) {
                 foreach (var group in mouth.animationGroups.Where(g => g.kind == SocketAnimationKind.Depth && g.mouthNeutral != null)) {
                     var binding = group.mouthNeutral;
-                    if (!group.mouthNeutralEnabled) continue;
+                    if (!group.mouthNeutralEnabled || group.interferenceEnabled) continue;
                     var problem = Sps3AnimationGroupNative.MouthNeutralProblem(settings, mouth, group);
                     if (problem == null && !CanAuthorHold) problem = "この環境では口形状の固定に必要なクリップを設定できません。";
                     if (problem == null && !Sps3AnimationGroupNative.CanWriteOptional(mouth, SocketAnimationKind.Depth, out _))

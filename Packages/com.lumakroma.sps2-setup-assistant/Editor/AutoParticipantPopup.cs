@@ -1,3 +1,4 @@
+using static LumaKroma.Sps2SetupAssistant.Editor.Localization.Sps2Localization;
 using System.Linq;
 using UnityEditor;
 using UnityEditor.IMGUI.Controls;
@@ -33,10 +34,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             if (!RefreshIfNeeded()) { editorWindow.Close(); return; }
             if (Event.current.type == EventType.KeyDown && Event.current.keyCode == KeyCode.Escape && string.IsNullOrEmpty(Input.compositionString))
             { Event.current.Use(); editorWindow.Close(); return; }
-            GUILayout.Label("Auto 参加部位を選択", EditorStyles.boldLabel);
+            GUILayout.Label(L("Auto 参加部位を選択"), EditorStyles.boldLabel);
             selection.Query = search.OnGUI(selection.Query);
             if (selection.HasAmbiguousIds)
-                EditorGUILayout.HelpBox("ID が不明・重複している部位は安全のため編集できません。", MessageType.Warning);
+                EditorGUILayout.HelpBox(L("ID が不明・重複している部位は安全のため編集できません。"), MessageType.Warning);
             scroll = EditorGUILayout.BeginScrollView(scroll);
             bool changed=false;
             foreach (var row in selection.VisibleRows) {
@@ -44,7 +45,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 if(next!=row.Selected) { row.Selected=next; changed=true; }
             }
             EditorGUILayout.EndScrollView();
-            GUILayout.Label(selection.Rows.Count(r => r.Selected) + " 部位を選択（検索対象外も保持）", EditorStyles.miniLabel);
+            GUILayout.Label(string.Format(L("{0} 部位を選択（検索対象外も保持）"), selection.Rows.Count(r => r.Selected)), EditorStyles.miniLabel);
             if(changed) {
                 string query=selection.Query;
                 if(!selection.Apply()) { editorWindow.Close(); return; }

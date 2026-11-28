@@ -417,6 +417,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Generation
                 parts.Values.Any(e => e.Element("sps3AutoParticipant") != null);
             if (!hasPolicy && draft.sps3PolicyVersion == 0 && draft.sps3AutoEligibilityVersion == 0)
                 FullSetupCatalog.InitializeSps3AutoDefaults(draft, draft.autoMode);
+            // This projection is only used when regenerating explicitly from a legacy SPS2 origin.
+            if (saved.Element("sps3LegacyTpsAnimations") == null)
+                FullSetupCatalog.EnableDefaultTpsPlugAnimations(draft);
 
             foreach (var part in draft.parts) {
                 parts.TryGetValue(part.id, out var raw);

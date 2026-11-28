@@ -40,7 +40,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             if(GUIUtility.hotControl==id){
                 if(e.type==EventType.MouseDrag&&action.blendShapePoints.Contains(draggedBlendShapePoint)){
                     float position=Mathf.Clamp01((e.mousePosition.x-rect.x)/Mathf.Max(1,rect.width));
-                    if(draggedBlendShapePoint.position!=position)Change(()=>draggedBlendShapePoint.position=position);e.Use();
+                    if(draggedBlendShapePoint.position!=position)Change(()=>draggedBlendShapePoint.position=position, scalarEdit: true);e.Use();
                 } else if(e.type==EventType.MouseUp||!action.blendShapePoints.Contains(draggedBlendShapePoint)){
                     GUIUtility.hotControl=0;draggedBlendShapePoint=null;if(e.type==EventType.MouseUp)e.Use();
                 }
@@ -66,13 +66,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             }
             if(action.blendShapeMode!=BlendShapeMode.Custom)return;
             var group=part.animationGroups?.FirstOrDefault(g=>g.actions.Contains(action));
-            if(group==null){EditorGUILayout.HelpBox("グループ参照が不明です。元の設定を保持します。",MessageType.Warning);return;}
+            if(group==null){EditorGUILayout.HelpBox(L("グループ参照が不明です。元の設定を保持します。"),MessageType.Warning);return;}
             int interpolation=EditorGUILayout.Popup(L("補間"),(int)action.blendShapeInterpolation,new[]{L("リニア"),L("スムーズ"),L("円弧 In/Out")});
             if(interpolation!=(int)action.blendShapeInterpolation && OwnsDepthAction(part,action))
                 Change(()=>action.blendShapeInterpolation=(BlendShapeInterpolation)interpolation);
             var range=group.ActiveSettings.range;bool depth=group.kind==SocketAnimationKind.Depth;
-            EditorGUILayout.LabelField("入力位置 / BlendShape 値 ("+group.ActiveSettings.units+")");
-            if (depth) using (new EditorGUILayout.HorizontalScope()) { EditorGUILayout.LabelField("\u5916\u5074\uff08\u9060\uff09", EditorStyles.miniLabel); GUILayout.FlexibleSpace(); EditorGUILayout.LabelField("\u5185\u5074\uff08\u8fd1\uff09", EditorStyles.miniLabel, GUILayout.Width(70)); }
+            var labels = DepthUnitLabels;
+            int unit = (int)group.ActiveSettings.units;
+            EditorGUILayout.LabelField(string.Format(L("入力位置 / BlendShape 値（{0}）"), unit >= 0 && unit < labels.Length ? labels[unit] : L("未設定")));
+            if (depth) using (new EditorGUILayout.HorizontalScope()) { EditorGUILayout.LabelField(L("外側（遠）"), EditorStyles.miniLabel); GUILayout.FlexibleSpace(); EditorGUILayout.LabelField(L("内側（近）"), EditorStyles.miniLabel, GUILayout.Width(70)); }
             DrawBlendShapePointTrack(part,action);
             if(action.blendShapePoints!=null)foreach(var point in action.blendShapePoints.ToArray()) {
                 if(point==null)continue;
@@ -83,12 +85,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     using(new EditorGUI.DisabledScope(endpoint))next=EditorGUILayout.FloatField(input);
                     float value=EditorGUILayout.FloatField(point.value);
                     if(BlendShapePointPlan.Finite(next)&&BlendShapePointPlan.Finite(value)&&(next!=input||value!=point.value)&&OwnsDepthAction(part,action)) {
-                        if(range.x<range.y)Change(()=>{point.position=BlendShapePointPlan.Progress(next,range.x,range.y,depth);point.value=value;});
+                        if(range.x<range.y)Change(()=>{point.position=BlendShapePointPlan.Progress(next,range.x,range.y,depth);point.value=value;}, scalarEdit: true);
                     }
-                    using(new EditorGUI.DisabledScope(endpoint))if(GUILayout.Button("−",GUILayout.Width(24))&&OwnsDepthAction(part,action))Change(()=>action.blendShapePoints.Remove(point));
+                    if (!endpoint && GUILayout.Button("−",GUILayout.Width(24)) && OwnsDepthAction(part,action)) Change(()=>action.blendShapePoints.Remove(point));
+                    else if (endpoint) GUILayout.Space(24);
                 }
             }
-            if(GUILayout.Button(new GUIContent("+", "中間点を追加"),GUILayout.Width(28))&&OwnsDepthAction(part,action))Change(()=>{
+            if(GUILayout.Button(new GUIContent("+", L("中間点を追加")),GUILayout.Width(28))&&OwnsDepthAction(part,action))Change(()=>{
                 if(action.blendShapePoints==null||action.blendShapePoints.Count<2){
                     action.blendShapePoints=new System.Collections.Generic.List<BlendShapePoint>{new BlendShapePoint{position=0,value=action.weight},new BlendShapePoint{position=1,value=action.weight}};return;
                 }

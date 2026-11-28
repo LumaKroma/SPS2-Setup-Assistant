@@ -204,6 +204,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                     (x.mouthNeutral?.renderer != y.mouthNeutral?.renderer || x.mouthNeutral?.shape != y.mouthNeutral?.shape ||
                     x.mouthNeutral?.weight != y.mouthNeutral?.weight))) return false;
                 if (x == null || y == null || xs == null || ys == null || x.kind != y.kind ||
+                    x.interferenceEnabled != y.interferenceEnabled ||
                     x.kind != SocketAnimationKind.Active && (xs.range.x != ys.range.x || xs.range.y != ys.range.y || xs.units != ys.units || xs.enableSelf != ys.enableSelf ||
                     xs.enableOthers != ys.enableOthers || xs.smoothingSeconds != ys.smoothingSeconds) ||
                     x.kind == SocketAnimationKind.Depth && (WeightActive(xs) != WeightActive(ys) ||
@@ -437,7 +438,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor.Compatibility
                     if (!common && part.AnimationEnabled && part.animationGroups.Any(g=>g.kind==SocketAnimationKind.Active) &&
                         target.FindProperty("addMenuItem")?.boolValue == false)
                         warnings?.Add("Active AnimationにはFury側のSocketメニューが必要です。FuryのAdd Menu Itemを確認してください。手動設定は変更しません。");
-                    var active = part.AnimationEnabled ? Sps3AnimationGroupNative.Ordered(part).Where(g=>g.kind==SocketAnimationKind.Active).SelectMany(g=>g.actions) : Enumerable.Empty<DepthActionSettings>();
+                    var active = part.AnimationEnabled ? CustomBlendShapeOutput.ActiveActions(part) : Enumerable.Empty<DepthActionSettings>();
                     var activeItems = active.ToArray();
                     var activeCaps = FuryActiveShapeProbe.Inspect();
                     var existingActive = target.FindProperty("activeActions.actions");

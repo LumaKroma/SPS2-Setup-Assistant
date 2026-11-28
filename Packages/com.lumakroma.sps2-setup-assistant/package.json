@@ -1,7 +1,7 @@
 {
   "name": "com.lumakroma.sps2-setup-assistant",
   "displayName": "SPS3 Setup Assistant",
-  "version": "2.0.0-beta.3",
+  "version": "2.0.0-beta.4",
   "description": "Editor setup assistant for SPS sockets on VRChat avatars.",
   "unity": "2022.3",
   "author": {

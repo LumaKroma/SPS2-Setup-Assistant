@@ -84,10 +84,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             EditorApplication.delayCall += RecoverAvatar;
             SceneView.duringSceneGui += DrawBlendPreviewScene; Selection.selectionChanged += PreviewSelectionChanged; AssemblyReloadEvents.beforeAssemblyReload += EndBlendPreview; UnityEditor.SceneManagement.EditorSceneManager.sceneSaving += StopPreviewOnSceneSaving;
         }
-        private void OnDisable() { EndBlendPreview(); SaveWindowDraft(); SceneView.duringSceneGui -= DrawBlendPreviewScene; Selection.selectionChanged -= PreviewSelectionChanged; AssemblyReloadEvents.beforeAssemblyReload -= EndBlendPreview; UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= StopPreviewOnSceneSaving; DisableAutoDisplayCache(); InvalidateShapeSelection(); EditorApplication.playModeStateChanged -= PlayModeChanged; EditorApplication.delayCall -= RecoverAvatar; }
+        private void OnDisable() { CancelRadiusPreviewRefresh(); EndBlendPreview(); SaveWindowDraft(); SceneView.duringSceneGui -= DrawBlendPreviewScene; Selection.selectionChanged -= PreviewSelectionChanged; AssemblyReloadEvents.beforeAssemblyReload -= EndBlendPreview; UnityEditor.SceneManagement.EditorSceneManager.sceneSaving -= StopPreviewOnSceneSaving; DisableAutoDisplayCache(); InvalidateShapeSelection(); EditorApplication.playModeStateChanged -= PlayModeChanged; EditorApplication.delayCall -= RecoverAvatar; }
         private void PlayModeChanged(PlayModeStateChange state)
         {
-            if (state == PlayModeStateChange.ExitingEditMode) { EndBlendPreview(); SaveWindowDraft(); RememberAvatar(); }
+            if (state == PlayModeStateChange.ExitingEditMode) { CancelRadiusPreviewRefresh(); EndBlendPreview(); SaveWindowDraft(); RememberAvatar(); }
             if (state == PlayModeStateChange.EnteredEditMode) RecoverAvatar();
             Repaint();
         }
@@ -250,10 +250,10 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 if (menuLanguage != settings.menuLanguage) Change(() => settings.menuLanguage = menuLanguage);
                 var next = (VRCAvatarDescriptor)EditorGUILayout.ObjectField(L("アバター"), descriptor, typeof(VRCAvatarDescriptor), true);
                 if (next != descriptor) Change(() => BindAvatar(next));
-                if (descriptor != null && FullSetupGenerator.HasLimitedDraft(descriptor) && GUILayout.Button("保存済みの限定設定を読み込む")) {
+                if (HasLimitedDraftForDrawing() && GUILayout.Button(L("保存済みの限定設定を読み込む"))) {
                     try {
                         var saved = FullSetupGenerator.FindLimitedDraft(descriptor);
-                        if (saved != null) { Change(() => settings = saved); SetMessage("限定出力の保存済み設定を読み込みました。既存の SPS と保存アセットは変更していません。", true); }
+                        if (saved != null) { Change(() => settings = saved); SetMessage(L("限定出力の保存済み設定を読み込みました。既存の SPS と保存アセットは変更していません。"), true); }
                     } catch (Exception e) { SetMessage(SetupFeedback.Error(e), false); }
                 }
                 if (legacySetupNotice.State == Sps3LegacySetupState.NeedsInspection)
@@ -405,15 +405,13 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         private bool DrawSectionToggle(string title, bool value, bool available, Action<bool> setter)
         {
+            if (!available) return false;
             GUILayout.Space(20);
-            using(new EditorGUILayout.HorizontalScope()) {
-                GUILayout.Label(title,EditorStyles.boldLabel);
-                GUILayout.FlexibleSpace();
-                using(new EditorGUI.DisabledScope(!available)) {
-                    bool next=EditorGUILayout.Toggle(value,GUILayout.Width(18));
-                    if(next!=value) Change(()=>setter(next));
-                    return next;
-                }
+            using (new EditorGUILayout.VerticalScope())
+            {
+                bool next = EditorGUILayout.ToggleLeft(title, value, EditorStyles.boldLabel);
+                if (next != value) Change(() => setter(next));
+                return next;
             }
         }
         private void DrawAutoOptions()
@@ -425,16 +423,19 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 if(native) { if(!Sps3ControlsVisible)return; FullSetupCatalog.InitializeSps3Controls(settings); settings.sps3AutoAvailable=v; }
                 else { settings.autoMode=v; legacyOrigin.autoFromScene=false; }
             }) || !native) return;
-            Sps3Toggle("Auto 初期状態 ON", current && settings.sps3AutoDefaultOn, v => settings.sps3AutoDefaultOn = v);
-            Sps3Toggle("Auto の状態を保存", current && settings.sps3AutoSaved, v => settings.sps3AutoSaved = v);
-            DrawAutoParticipants();
+            using (new SettingsIndent())
+            {
+                Sps3Toggle("Auto 初期状態 ON", current && settings.sps3AutoDefaultOn, v => settings.sps3AutoDefaultOn = v);
+                Sps3Toggle("Auto の状態を保存", current && settings.sps3AutoSaved, v => settings.sps3AutoSaved = v);
+                DrawAutoParticipants();
+            }
         }
         private void DrawAutoParticipants()
         {
             var selected = settings.parts.Where(p => p != null && p.included && settings.Sps3IncludeInAuto(p)).ToArray();
             using (new EditorGUILayout.HorizontalScope()) {
-                EditorGUILayout.PrefixLabel("Auto参加部位");
-                var label=selected.Length==0 ? "未選択" : string.Join("、",selected.Select(p=>SocketDisplayNames.Resolve(p,settings.menuLanguage)));
+                EditorGUILayout.PrefixLabel(L("Auto参加部位"));
+                var label=selected.Length==0 ? L("未選択") : string.Join("、",selected.Select(p=>SocketDisplayNames.Resolve(p,settings.menuLanguage)));
                 var content=new GUIContent(label,label);
                 var button=GUILayoutUtility.GetRect(content,EditorStyles.popup);
                 if(GUI.Button(button,content,EditorStyles.popup)) {
@@ -445,20 +446,20 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             var capacity = GetAutoDisplaySnapshot().Capacity;
             EditorGUILayout.LabelField(new GUIContent(
                 "Auto 候補: この選択 " + capacity.Draft + " / 現在全体 " +
-                (capacity.Current.HasValue ? capacity.Current.Value.ToString() : "未確認") + " / 適用後見込み " +
-                (capacity.Prospective.HasValue ? capacity.Prospective.Value.ToString() : "未確認"),
-                "適用後見込みは、所有を確認できた現在の Setup 分を差し引き、今回の選択を加えた数です。外部・非アクティブの候補も枠を使います。生成成功や実際の優先順を保証する値ではありません。"), EditorStyles.miniLabel);
+                (capacity.Current.HasValue ? capacity.Current.Value.ToString() : L("未確認")) + " / 適用後見込み " +
+                (capacity.Prospective.HasValue ? capacity.Prospective.Value.ToString() : L("未確認")),
+                L("適用後見込みは、所有を確認できた現在の Setup 分を差し引き、今回の選択を加えた数です。外部・非アクティブの候補も枠を使います。生成成功や実際の優先順を保証する値ではありません。")), EditorStyles.miniLabel);
             if (capacity.ExceedsLimit)
-                EditorGUILayout.HelpBox("Auto参加部位を減らしてください。アバター全体の先頭16個までがAuto対象です。対象外は手動メニューで使えます。", MessageType.Warning);
+                EditorGUILayout.HelpBox(L("Auto参加部位を減らしてください。アバター全体の先頭16個までがAuto対象です。対象外は手動メニューで使えます。"), MessageType.Warning);
             else if (descriptor != null && capacity.PossibleOverflow)
                 EditorGUILayout.HelpBox(capacity.Current.HasValue
-                    ? "Auto参加部位を見直してください。適用後にアバター全体で16個を超える可能性があります。"
-                    : "他のSetupや手動Socketも確認してください。Autoはアバター全体で16個までです。", MessageType.Warning);
+                    ? L("Auto参加部位を見直してください。適用後にアバター全体で16個を超える可能性があります。")
+                    : L("他のSetupや手動Socketも確認してください。Autoはアバター全体で16個までです。"), MessageType.Warning);
         }
         internal AutoParticipantSelection CreateAutoParticipantSelection()
         {
             try { return OpenAutoParticipantSelection(); }
-            catch (Exception e) { InvalidateAutoDisplayCache(); SetMessage(SetupFeedback.Error(e, "Auto 参加部位を開けませんでした。"), false); return null; }
+            catch (Exception e) { InvalidateAutoDisplayCache(); SetMessage(SetupFeedback.Error(e, L("Auto 参加部位を開けませんでした。")), false); return null; }
         }
         private void DrawLegacyOptions()
         {
@@ -481,20 +482,19 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                 v=>{if(native)Edit(s=>s.sps3LegacyMaster=v);else settings.legacy=v;}) || !native)return;
             bool plugs=tree?settings.sps3LegacyPlugs:current?settings.sps3LegacyAvailable:settings.legacy;
             bool sockets=tree?settings.sps3LegacySockets:settings.legacy;
-            Sps3Toggle("旧Plug互換",plugs,v=>Edit(s=>s.sps3LegacyPlugs=v));
-            using(new EditorGUILayout.HorizontalScope()) {
-                GUILayout.Space(18);
-                using(new EditorGUI.DisabledScope(!plugs))
-                    Sps3Toggle("TPS Plug Animations",tree?settings.sps3LegacyTpsAnimations:(nativeChildren&1)!=0,v=>Edit(s=>s.sps3LegacyTpsAnimations=v));
+            using (new SettingsIndent())
+            {
+                Sps3Toggle("旧Plug互換", plugs, v => Edit(s => s.sps3LegacyPlugs = v));
+                if (plugs)
+                    using (new SettingsIndent())
+                        Sps3Toggle("TPS Plug Animations", tree ? settings.sps3LegacyTpsAnimations : (nativeChildren & 1) != 0, v => Edit(s => s.sps3LegacyTpsAnimations = v));
+                Sps3Toggle("旧Socket互換", sockets, v => Edit(s => s.sps3LegacySockets = v));
+                if (sockets)
+                    using (new SettingsIndent())
+                        Sps3Toggle("DPS Socket Animations", tree ? settings.sps3LegacyDpsAnimations : (nativeChildren & 2) != 0, v => Edit(s => s.sps3LegacyDpsAnimations = v));
+                Sps3Toggle("Legacy 初期状態 ON", current ? settings.sps3LegacyDefaultOn : settings.legacy, v => Edit(s => s.sps3LegacyDefaultOn = v));
+                Sps3Toggle("Legacy の状態を保存", current && settings.sps3LegacySaved, v => Edit(s => s.sps3LegacySaved = v));
             }
-            Sps3Toggle("旧Socket互換",sockets,v=>Edit(s=>s.sps3LegacySockets=v));
-            using(new EditorGUILayout.HorizontalScope()) {
-                GUILayout.Space(18);
-                using(new EditorGUI.DisabledScope(!sockets))
-                    Sps3Toggle("DPS Socket Animations",tree?settings.sps3LegacyDpsAnimations:(nativeChildren&2)!=0,v=>Edit(s=>s.sps3LegacyDpsAnimations=v));
-            }
-            Sps3Toggle("Legacy 初期状態 ON",current?settings.sps3LegacyDefaultOn:settings.legacy,v=>Edit(s=>s.sps3LegacyDefaultOn=v));
-            Sps3Toggle("Legacy の状態を保存",current&&settings.sps3LegacySaved,v=>Edit(s=>s.sps3LegacySaved=v));
         }
 
         private void DrawOptions()
@@ -502,20 +502,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             GUILayout.Space(20);
             GUILayout.Label(L("その他の設定"), EditorStyles.boldLabel);
             if (settings.family == SpsFamily.VrcFury && AttachmentBackendRegistry.IsAvailable(AttachmentBackend.VrcFuryWithModularAvatar))
-                Toggle("Modular Avatar で追従", settings.modularAvatar, v => settings.modularAvatar = v,
-                    "Modular Avatar の Bone Proxy を使用して追従します。既存の生成物の方式を変更する場合は再生成が必要です。");
+                Toggle(L("Modular Avatar で追従"), settings.modularAvatar, v => settings.modularAvatar = v,
+                    L("Modular Avatar の Bone Proxy を使用して追従します。既存の生成物の方式を変更する場合は再生成が必要です。"));
             CompatibleToggle(L("貫通"), settings.penetration, v => settings.penetration = v, DepthCapabilitiesForDrawing.Path,
                 L("口-肛門の間にプラグが通る経路を生成します。非常に長いプラグの場合、体を貫通します。\n「首付近で太さを0にする」をオンにすると、口の入口では太さを保ち、首付近から体内の太さを0にします。出口の外では元の太さに戻します。"));
-            if (!DepthCapabilitiesForDrawing.Path)
-                EditorGUILayout.HelpBox("このFury版では貫通経路をまだ生成できません。貫通をオフにして生成してください。保存済みの経路設定は保持します。",MessageType.Warning);
-            if (settings.penetration)
-            {
-                using (new EditorGUILayout.HorizontalScope())
-                {
-                    GUILayout.Space(18);
-                    CompatibleToggle(L("首付近で太さを0にする"), !settings.showInternalThickness, v => settings.showInternalThickness = !v, DepthCapabilitiesForDrawing.Collapse);
-                }
-            }
+            if (settings.penetration && !DepthCapabilitiesForDrawing.Path)
+                EditorGUILayout.HelpBox(L("このFury版では貫通経路をまだ生成できません。貫通をオフにして生成してください。保存済みの経路設定は保持します。"),MessageType.Warning);
+            if (settings.penetration && DepthCapabilitiesForDrawing.Path && DepthCapabilitiesForDrawing.Collapse)
+                using (new SettingsIndent())
+                    CompatibleToggle(L("首付近で太さを0にする"), !settings.showInternalThickness, v => settings.showInternalThickness = !v, true);
             if (Sps3ControlsForDrawing) DrawSpsMenuDestination();
             if (Sps3ControlsForDrawing)
                 Sps3Toggle("ソケットの状態を保存", settings.sps3PolicyVersion >= 1 && settings.sps3SaveSockets, v => settings.sps3SaveSockets = v);
@@ -536,8 +531,8 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
 
         internal static string TitleForOutput(FuryFeatureOutputPlan.Mode mode, bool sps3) =>
-            mode == FuryFeatureOutputPlan.Mode.NativeBasicSps3 ? "SPS3 Setup Assistant（基本 Socket）" :
-            mode == FuryFeatureOutputPlan.Mode.PlacementOnly ? "SPS Setup Assistant (生成停止)" :
+            mode == FuryFeatureOutputPlan.Mode.NativeBasicSps3 ? L("SPS3 Setup Assistant（基本 Socket）") :
+            mode == FuryFeatureOutputPlan.Mode.PlacementOnly ? L("SPS Setup Assistant (生成停止)") :
             sps3 ? "SPS3 Setup Assistant" : "SPS2 Setup Assistant";
         internal static bool IsLimitedOutput(FuryFeatureOutputPlan.Mode mode) =>
             mode == FuryFeatureOutputPlan.Mode.PlacementOnly || mode == FuryFeatureOutputPlan.Mode.NativeBasicSps3;
@@ -553,16 +548,16 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             if (preview.Route.Mode == FuryFeatureOutputPlan.Mode.PlacementOnly)
             {
                 EditorGUILayout.HelpBox(FuryUnavailableNotice.Explain(preview.Route.Reason), MessageType.Warning);
-                EditorGUILayout.HelpBox("既存の単一 SPS3 Socket は、設定変更がない場合に限り配置だけを更新できます。Socket 設定の変更・複数 Socket・経路付きは未対応です。", MessageType.Info);
+                EditorGUILayout.HelpBox(L("既存の単一 SPS3 Socket は、設定変更がない場合に限り配置だけを更新できます。Socket 設定の変更・複数 Socket・経路付きは未対応です。"), MessageType.Info);
                 using (new EditorGUI.DisabledScope(descriptor == null || EditorApplication.isPlayingOrWillChangePlaymode))
-                    if (GUILayout.Button("既存 Socket の配置だけを更新"))
+                    if (GUILayout.Button(L("既存 Socket の配置だけを更新")))
                     {
                         try {
                             if(!FinishPreviewForOperation()) return;
                             var plan = FullSetupGenerator.PrepareExistingPlacement(descriptor, settings);
-                            if (EditorUtility.DisplayDialog("配置のみの更新", "既存 Socket と設定は変更せず、配置だけを更新します。シーンの変更は Undo できます。続行しますか？", "更新", "キャンセル")) {
+                            if (EditorUtility.DisplayDialog(L("配置のみの更新"), L("既存 Socket と設定は変更せず、配置だけを更新します。シーンの変更は Undo できます。続行しますか？"), L("更新"), L("キャンセル"))) {
                                 FullSetupGenerator.CommitExistingPlacement(plan);
-                                SetMessage("配置を更新しました。シーンを保存すると変更が保持されます。", true);
+                                SetMessage(L("配置を更新しました。シーンを保存すると変更が保持されます。"), true);
                             }
                         } catch (Exception e) { SetMessage(SetupFeedback.Error(e), false); }
                     }
@@ -594,21 +589,21 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
 
                 }
             }
-            // Test plug creation is independent from the current generation draft.
-            using (new EditorGUI.DisabledScope(descriptor == null || !generated || EditorApplication.isPlayingOrWillChangePlaymode || !DepthCapabilitiesForDrawing.TestPlug))
+            // Test plug creation depends on an existing setup, not the current draft.
+            if (descriptor != null && generated && !EditorApplication.isPlayingOrWillChangePlaymode && DepthCapabilitiesForDrawing.TestPlug)
             {
-                    using (new EditorGUI.DisabledScope(!DepthCapabilitiesForDrawing.TestPlug))
-                    if (GUILayout.Button(L("貫通テストプラグ出現"), GUILayout.Height(30)))
-                    {
-                        if(!FinishPreviewForOperation()) return;
-                        bool ok = FullSetupGenerator.ShowLongTestPlug(descriptor, out var error); SetMessage(error, ok);
-                    }
-                    using (new EditorGUI.DisabledScope(!DepthCapabilitiesForDrawing.TestPlug))
-                    if (GUILayout.Button(L("テストプラグ出現"), GUILayout.Height(30)))
-                    {
-                        if(!FinishPreviewForOperation()) return;
-                        bool ok = FullSetupGenerator.ShowTestPlug(descriptor, out var error); SetMessage(error, ok);
-                    }
+                if (GUILayout.Button(L("貫通テストプラグ出現"), GUILayout.Height(30)))
+                {
+                    if (!FinishPreviewForOperation()) return;
+                    bool ok = FullSetupGenerator.ShowLongTestPlug(descriptor, out var error);
+                    SetMessage(error, ok);
+                }
+                if (GUILayout.Button(L("テストプラグ出現"), GUILayout.Height(30)))
+                {
+                    if (!FinishPreviewForOperation()) return;
+                    bool ok = FullSetupGenerator.ShowTestPlug(descriptor, out var error);
+                    SetMessage(error, ok);
+                }
             }
         }
 
@@ -618,6 +613,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         private void DrawPart(SocketSettings part)
         {
+            bool basicNative = false, canEditAnimation = false, usesAnimationGroups = false;
             using (new EditorGUILayout.VerticalScope(EditorStyles.helpBox))
             {
                 using (new EditorGUILayout.HorizontalScope())
@@ -628,23 +624,15 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     if (included != part.included) Change(() => part.included = included);
                     if (part.included)
                     {
-                        using (new EditorGUI.DisabledScope(!BasicNativeForDrawing && (LimitedOutputForDrawing || !DepthCapabilitiesForDrawing.Depth)))
+                        basicNative = BasicNativeForDrawing;
+                        canEditAnimation = basicNative || (!LimitedOutputForDrawing && DepthCapabilitiesForDrawing.Depth);
+                        usesAnimationGroups = canEditAnimation && (basicNative || Sps3ControlsForDrawing || part.animationModelVersion != 0);
+                        if (usesAnimationGroups)
                         {
-                        if (LimitedOutputForDrawing && !BasicNativeForDrawing) return;
-                if (BasicNativeForDrawing || Sps3ControlsForDrawing || part.animationModelVersion != 0)
-                        {
-                            bool animation = EditorGUILayout.ToggleLeft(new GUIContent(L("アニメーション"), !DepthCapabilitiesForDrawing.Depth ? L("この構成では深度の保存先を確認できません。") : string.Empty), part.AnimationEnabled, GUILayout.Width(130));
-                            if (animation != part.AnimationEnabled) Change(() => { part.InitializeAnimationGroups(); part.animationEnabled = animation; });
+                            bool animation = EditorGUILayout.ToggleLeft(L("アニメーション"), part.AnimationEnabled, GUILayout.Width(130));
+                            if (animation != part.AnimationEnabled)
+                                Change(() => { part.InitializeAnimationGroups(); part.animationEnabled = animation; });
                         }
-                        else
-                        {
-                        bool depth = EditorGUILayout.ToggleLeft(L("深度アクション"), part.depth && DepthCapabilitiesForDrawing.Depth, GUILayout.Width(EditorStyles.toggle.CalcSize(new GUIContent(L("深度アクション"))).x + 4));
-                        if (DepthCapabilitiesForDrawing.Depth && depth != part.depth) Change(() => { part.depth = depth; if (depth && part.actions.Count == 0) part.actions.Add(new DepthActionSettings()); });
-                        }
-                        }
-                    }
-                    if (part.included)
-                    {
                         bool editing = IsNameEditing(part);
                         bool nextEditing = EditorGUILayout.ToggleLeft(new GUIContent(L("表示名変更"), L("オフにするとメニュー言語の標準名へ戻ります。")), editing,
                             GUILayout.Width(EditorStyles.toggle.CalcSize(new GUIContent(L("表示名変更"))).x + 4));
@@ -664,18 +652,24 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     var customName = EditorGUILayout.TextField(new GUIContent(L("メニュー表示名"), L("空欄で標準名を使用します。個別名は言語変更後も保持されます。")), part.menuNameOverride ?? "");
                     if (customName != (part.menuNameOverride ?? "")) Change(() => part.menuNameOverride = customName);
                 }
-                if (LimitedOutputForDrawing && !BasicNativeForDrawing) return;
-                if (BasicNativeForDrawing || Sps3ControlsForDrawing || part.animationModelVersion != 0)
+                if (!part.included || !canEditAnimation) return;
+                if (usesAnimationGroups)
                 {
-                    if (part.included && part.AnimationEnabled) DrawAnimationGroups(part, BasicNativeForDrawing);
+                    if (part.AnimationEnabled) DrawAnimationGroups(part, basicNative);
                     return;
                 }
-                if (!part.included || !part.depth || !DepthCapabilitiesForDrawing.Depth) return;
-                using (new EditorGUI.DisabledScope(!part.included))
+                using (new SettingsIndent())
                 {
-                    DrawRange(part);
-                    foreach (var action in part.actions.ToArray()) DrawAction(part, action);
-                    if (GUILayout.Button("＋", GUILayout.Width(28))) Change(() => part.actions.Add(new DepthActionSettings()));
+                    bool depth = EditorGUILayout.ToggleLeft(L("深度アクション"), part.depth);
+                    if (depth != part.depth)
+                        Change(() => { part.depth = depth; if (depth && part.actions.Count == 0) part.actions.Add(new DepthActionSettings()); });
+                    if (part.depth)
+                        using (new SettingsIndent())
+                        {
+                            DrawRange(part);
+                            foreach (var action in part.actions.ToArray()) DrawAction(part, action);
+                            if (GUILayout.Button("＋", GUILayout.Width(28))) Change(() => part.actions.Add(new DepthActionSettings()));
+                        }
                 }
             }
         }
@@ -724,7 +718,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                         bool SupportedKind(DepthActionKind k) => k == DepthActionKind.BlendShape ? caps.BlendShape : k == DepthActionKind.AnimationClip ? caps.Clip : caps.ObjectOn || caps.ObjectOff;
                         var choices = new[] { DepthActionKind.BlendShape, DepthActionKind.AnimationClip, DepthActionKind.Object }.Where(k => caps.State && SupportedKind(k) || k == action.kind).ToArray();
                         int selected = Array.IndexOf(choices, action.kind);
-                        var labels = choices.Select(k => ActionKindLabels[(int)k] + (caps.State && SupportedKind(k) ? "" : " (利用不可・設定保持)")).ToArray();
+                        var labels = choices.Select(k => ActionKindLabels[(int)k] + (caps.State && SupportedKind(k) ? "" : L(" (利用不可・設定保持)"))).ToArray();
                         int picked = EditorGUILayout.Popup(selected, labels);
                         if (picked >= 0 && picked < choices.Length && choices[picked] != action.kind) Change(() => action.kind = choices[picked]);
                     } else {
@@ -734,7 +728,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     if (GUILayout.Button("−", GUILayout.Width(24))) Change(() => RemoveAnimationAction(part, action));
                 }
                 if (active && !ActiveShapeForDrawing.Supports(action))
-                    EditorGUILayout.HelpBox("この Active 操作は現在の Fury では利用できません。設定は保持します。", MessageType.Warning);
+                    EditorGUILayout.HelpBox(L("この Active 操作は現在の Fury では利用できません。設定は保持します。"), MessageType.Warning);
                 if (action.kind == DepthActionKind.BlendShape)
                 {
                     bool missingSavedRenderer = HasUnresolvedRenderer(part, action);
@@ -775,7 +769,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                         var target = (GameObject)EditorGUILayout.ObjectField(action.target, typeof(GameObject), true);
                         var caps = active ? ActiveShapeForDrawing : default;
                         var states = active ? new[] { true, false }.Where(x => (x ? caps.ObjectOn : caps.ObjectOff) || x == action.objectOn).ToArray() : new[] { true, false };
-                        var labels = states.Select(x => (x ? "ON" : "OFF") + (active && !(x ? caps.ObjectOn : caps.ObjectOff) ? " (利用不可)" : "")).ToArray();
+                        var labels = states.Select(x => (x ? "ON" : "OFF") + (active && !(x ? caps.ObjectOn : caps.ObjectOff) ? L(" (利用不可)") : "")).ToArray();
                         int mode = EditorGUILayout.Popup(Array.IndexOf(states, action.objectOn), labels, GUILayout.Width(110));
                         bool nextOn = mode >= 0 && mode < states.Length ? states[mode] : action.objectOn;
                         if (target != action.target || nextOn != action.objectOn) Change(() => { action.target = target; action.objectOn = nextOn; });
@@ -797,7 +791,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         {
             if (!OwnsDepthAction(part, action) || float.IsNaN(weight) || float.IsInfinity(weight)) return;
             weight = Mathf.Clamp(weight, 0, 100);
-            if (weight != action.weight) Change(() => action.weight = weight);
+            if (weight != action.weight) Change(() => action.weight = weight, scalarEdit: true);
         }
         internal BlendShapeSelection BeginShapeSelection(SocketSettings part, DepthActionSettings action)
         {
@@ -906,7 +900,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             if (regenerate) {
                 try {
                     var existing=FullSetupGenerator.Find(descriptor);
-                    if(existing==null || (upgradeDraft != null && existing.identity != legacyOrigin.identity)) { SetMessage("生成対象が変わりました。操作をやり直してください。", false); return; }
+                    if(existing==null || (upgradeDraft != null && existing.identity != legacyOrigin.identity)) { SetMessage(L("生成対象が変わりました。操作をやり直してください。"), false); return; }
                     var additions=RegenerationImpact.Inspect(existing,null,additionsOnly:true);
                     RegenerationImpact.Report freshConfirmed=null;
                     if(additions.AdditionalObjects.Count!=0 || additions.AdditionalComponents.Count!=0) {
@@ -938,9 +932,9 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             }
             // Basic native output is intentionally not owned by the full SPS generator.
             // Never silently add a second active Socket beside it.
-            if (!CanProceedWithLimitedNative(descriptor, () => EditorUtility.DisplayDialog("基本 Socket と通常生成の確認",
-                    "既存の基本 Socket を残したまま通常の SPS を作成すると、Socket が重複して動作する可能性があります。既存の Prefab と設定は削除しません。両方を残して生成しますか？",
-                    "両方を残して生成", "キャンセル"))) return;            bool migrating = false;
+            if (!CanProceedWithLimitedNative(descriptor, () => EditorUtility.DisplayDialog(L("基本 Socket と通常生成の確認"),
+                    L("既存の基本 Socket を残したまま通常の SPS を作成すると、Socket が重複して動作する可能性があります。既存の Prefab と設定は削除しません。両方を残して生成しますか？"),
+                    L("両方を残して生成"), L("キャンセル")))) return;            bool migrating = false;
             RegenerationImpact.Report confirmed = null;
             try {
                 var current = FullSetupGenerator.Find(descriptor);
@@ -957,7 +951,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                         SpsAuthoringCompatibility.HasRetainedActiveLocalDepth(outputSettings, current)) {
                         try { Sps3SingleDepthScaleProjection.RequireRetainedEquivalentGroups(outputSettings, current.settings); }
                         catch (InvalidOperationException e) {
-                            SetMessage(SetupFeedback.Error(e, "既存の Local 深度を安全に再生成できませんでした。"), false);
+                            SetMessage(SetupFeedback.Error(e, L("既存の Local 深度を安全に再生成できませんでした。")), false);
                             return;
                         }
                     }
@@ -966,21 +960,21 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
                     // unrelated external references or unmatched native settings.
                     // Until their preservation is proven, report and stop without a modal.
                     if (impact.ExternalReferences.Count != 0 || impact.NativeEdits.Count != 0) {
-                        SetMessage("外部参照または保存済み Socket 設定の保全を確認できないため、置き換えを行いません。既存の生成物は変更されていません。", false);
+                        SetMessage(L("外部参照または保存済み Socket 設定の保全を確認できないため、置き換えを行いません。既存の生成物は変更されていません。"), false);
                         return;
                     }
                     if (impact.AdditionalObjects.Count != 0 || impact.AdditionalComponents.Count != 0) {
                         string Items(string title, System.Collections.Generic.List<string> values) => values.Count == 0 ? "" :
                             "\n" + title + " (" + values.Count + ")\n" + string.Join("\n", values.Take(5)) + (values.Count > 5 ? "\n…" : "") + "\n";
-                        string detail = Items("生成物内の追加オブジェクト", impact.AdditionalObjects) +
-                            Items("生成物内の追加コンポーネント", impact.AdditionalComponents);
-                        if (!EditorUtility.DisplayDialog("再生成の確認", "生成物を置き換えると、次の追加物が失われる場合があります。\n" + detail +
-                            "\nキャンセルすると変更しません。", "置き換える", "キャンセル")) return;
+                        string detail = Items(L("生成物内の追加オブジェクト"), impact.AdditionalObjects) +
+                            Items(L("生成物内の追加コンポーネント"), impact.AdditionalComponents);
+                        if (!EditorUtility.DisplayDialog(L("再生成の確認"), L("生成物を置き換えると、次の追加物が失われる場合があります。\n") + detail +
+                            L("\nキャンセルすると変更しません。"), L("置き換える"), L("キャンセル"))) return;
                         confirmed = impact;
                     }
                 }
             }
-            catch (Exception e) { SetMessage(SetupFeedback.Error(e, "再生成で影響を受ける対象を確認できませんでした。"), false); return; }
+            catch (Exception e) { SetMessage(SetupFeedback.Error(e, L("再生成で影響を受ける対象を確認できませんでした。")), false); return; }
             bool ok = confirmed == null
                 ? FullSetupGenerator.ApplyWithOutcome(descriptor, outputSettings, regenerate, out var root, out var result, out var changed)
                 : FullSetupGenerator.ApplyWithConfirmedImpact(descriptor, outputSettings, confirmed, out root, out result, out changed);
@@ -990,6 +984,7 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
         }
         private void ShowGenerationResult(string notes, bool ok, bool changed)
         {
+            if (changed) limitedDraftDisplayKnown = false;
             if (string.IsNullOrWhiteSpace(notes)) SetMessage(ok ? (changed ? L("生成しました。シーンを保存してください。") : L("変更はありません。")) : L("生成できませんでした。"), ok);
             else SetMessage(notes, ok && changed ? MessageType.Warning : MessageType.Error);
         }
@@ -1015,11 +1010,27 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             }
         }
 
+        private sealed class SettingsIndent : IDisposable
+        {
+            public SettingsIndent()
+            {
+                EditorGUILayout.BeginHorizontal();
+                GUILayout.Space(14);
+                EditorGUILayout.BeginVertical();
+            }
+
+            public void Dispose()
+            {
+                EditorGUILayout.EndVertical();
+                EditorGUILayout.EndHorizontal();
+            }
+        }
+
         private void CompatibleToggle(string label, bool value, Action<bool> set, bool available, string tooltip = null)
         {
             bool allowDisable = !available && value && settings.family == SpsFamily.VrcFury && FuryMinimalSps3Probe.AvailableForPreview(out _);
-            using (new EditorGUI.DisabledScope(!available && !allowDisable))
-                Toggle(label, value && (available || allowDisable), v => { if (available || (allowDisable && !v)) set(v); }, available ? tooltip : L("この版では利用できません。") + SpsBackend.Guide(settings.family));
+            if (!available && !allowDisable) return;
+            Toggle(label, value, v => { if (available || (allowDisable && !v)) set(v); }, available ? tooltip : L("この版では利用できません。") + SpsBackend.Guide(settings.family));
         }
 
         private void Toggle(string label, bool value, Action<bool> set, string tooltip = null)
@@ -1066,22 +1077,28 @@ namespace LumaKroma.Sps2SetupAssistant.Editor
             }
             GUI.Label(rect, new GUIContent("?", tooltip), helpStyle);
         }
-        private void Change(Action change)
+        private void Change(Action change, bool keepBlendPreview = false, bool scalarEdit = false)
         {
             var beforeSettings = settings;
             var beforeAvatar = descriptor;
-            var beforeJson = settings == null ? null : JsonUtility.ToJson(settings);
+            // Scalar callers have already compared the edited value. Keep Undo and
+            // the current draft snapshot without serializing the old draft again.
+            var beforeJson = scalarEdit ? externalDraftJson : settings == null ? null : JsonUtility.ToJson(settings);
             Undo.RecordObject(this, L("SPS2 設定"));
             try { change(); }
             catch { InvalidateShapeSelection(); externalWatch = null; assetWatch = null; assetDependencies = null; throw; }
             var afterJson = settings == null ? null : JsonUtility.ToJson(settings);
-            if (!FuryNativeFeatureShapes.DraftChanged(beforeSettings, settings, beforeAvatar, descriptor, beforeJson, afterJson)) return;
+            bool keepSceneWatches = scalarEdit && ReferenceEquals(beforeSettings, settings) && ReferenceEquals(beforeAvatar, descriptor);
+            if (!scalarEdit && !FuryNativeFeatureShapes.DraftChanged(beforeSettings, settings, beforeAvatar, descriptor, beforeJson, afterJson)) return;
             if(!draftCannotLoad && draftUnresolvedKeys!=null) {
                 draftUnresolvedKeys=Sps2SetupStorage.StillMissingDraftReferences(settings,draftUnresolvedKeys);
                 if(draftUnresolvedKeys.Length==0) { draftSaveBlocked=false; draftReferenceWarning=null; }
                 else draftReferenceWarning=DescribeMissingDraftReferences();
             }
-            EndBlendPreview(); InvalidateShapeSelection(); externalWatch = null; assetWatch = null; assetDependencies = null;
+            if (!keepBlendPreview) EndBlendPreview();
+            InvalidateShapeSelection();
+            externalDraftJson = afterJson;
+            if (!keepSceneWatches) { externalWatch = null; assetWatch = null; assetDependencies = null; }
             EditorUtility.SetDirty(this); Repaint();
         }
     }
